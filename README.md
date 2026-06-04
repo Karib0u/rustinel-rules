@@ -1,6 +1,26 @@
-# rustinel-rules
+<p align="center">
+  <img src="docs/images/logo-rustinel.png" alt="Rustinel logo" width="220">
+</p>
 
-> Official, curated detection content for the [Rustinel](https://github.com/Karib0u/rustinel) endpoint detection engine.
+<h1 align="center">rustinel-rules</h1>
+
+<p align="center">
+  <strong>Official, curated detection content for the Rustinel endpoint detection engine</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Karib0u/rustinel-rules/actions/workflows/validate.yml"><img src="https://github.com/Karib0u/rustinel-rules/actions/workflows/validate.yml/badge.svg" alt="Validate"></a>
+  <img src="https://img.shields.io/badge/detection--as--code-✓-ff8a3d?style=flat-square" alt="Detection as Code">
+  <img src="https://img.shields.io/badge/content-Sigma%20·%20YARA%20·%20IOC-ff8a3d?style=flat-square" alt="Sigma · YARA · IOC">
+  <a href="https://github.com/Karib0u/rustinel"><img src="https://img.shields.io/badge/engine-Rustinel-d97835?style=flat-square&logo=rust" alt="Engine: Rustinel"></a>
+  <img src="https://img.shields.io/badge/license-DRL%201.1-ff8a3d?style=flat-square" alt="License: DRL 1.1">
+</p>
+
+<p align="center">
+  <a href="https://github.com/Karib0u/rustinel">Rustinel engine</a> ·
+  <a href="https://docs.rustinel.io/">Documentation</a> ·
+  <a href="docs/packs.md">Pack catalog</a>
+</p>
 
 `rustinel-rules` is the **trusted, versioned, tested and reproducible** detection-content
 repository for Rustinel. It ships ready-to-load **Sigma**, **YARA** and **IOC** packs that
