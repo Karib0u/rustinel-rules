@@ -88,6 +88,11 @@ Essential  ⊂  Advanced  ⊂  Hunting
 | **Windows Hunting**   | hunting   |   ❌    | Advanced + broad/noisier hunting content for analysts.              |
 | **Linux Essential**   | essential |   ✅    | Low-noise, high-confidence Linux detections. Safe default.          |
 | **Linux Advanced**    | advanced  |   ❌    | Essential + broader Linux detections (persistence, exec).           |
+| **macOS Essential**   | essential |   ❌    | _Experimental._ Keychain theft, Gatekeeper bypass, cryptominers.    |
+| **macOS Advanced**    | advanced  |   ❌    | _Experimental._ Essential + launch-item persistence, cradles, exec. |
+
+> **macOS packs are experimental and post-v1** — not yet production-ready, so both ship
+> `default: false`. See [docs/packs.md#macos](docs/packs.md#macos) for the details and current limits.
 
 See the full catalog and per-pack rule inventory in **[docs/packs.md](docs/packs.md)**.
 
@@ -103,7 +108,8 @@ rustinel-rules/
 │   └── ioc/<os|common>/    # IOC sets (.yml — typed: hashes / ips / domains / paths_regex)
 ├── packs/                  # Pack manifests (reference artifacts by id; never copies)
 │   ├── windows/{essential,advanced,hunting}/pack.yml
-│   └── linux/{essential,advanced}/pack.yml
+│   ├── linux/{essential,advanced}/pack.yml
+│   └── macos/{essential,advanced}/pack.yml          # experimental (post-v1)
 ├── schemas/                # JSON Schema for pack.yml and IOC sets (v1)
 ├── tools/                  # Build + validation tooling (lib.py, validate.py, build_packs.py)
 ├── docs/                   # Documentation (you are here)
