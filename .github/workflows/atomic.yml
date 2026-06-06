@@ -97,4 +97,5 @@ jobs:
           path: |
             tests/atomic/report-*.json
             tests/atomic/.engine/logs/
+          include-hidden-files: true   # .engine/ is a dotdir, skipped otherwise
           if-no-files-found: warn

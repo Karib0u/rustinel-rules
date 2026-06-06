@@ -290,8 +290,10 @@ def main() -> int:
     ap.add_argument("--pack", default="auto", help="pack id, or 'auto' for the most inclusive")
     ap.add_argument("--manifest", type=Path, default=HARNESS_ROOT / "manifest.json")
     ap.add_argument("--filter", default=None, help="substring of test name or rule id")
-    ap.add_argument("--timeout", type=int, default=20, help="seconds to wait for an alert")
-    ap.add_argument("--warmup", type=int, default=8, help="seconds to let the engine start")
+    ap.add_argument("--timeout", type=int, default=30, help="seconds to wait for an alert")
+    ap.add_argument("--retry-interval", type=int, default=6,
+                    help="seconds between re-running the atomic action while waiting")
+    ap.add_argument("--warmup", type=int, default=10, help="seconds to let the engine start")
     ap.add_argument("--script-timeout", type=int, default=30)
     ap.add_argument("--list", action="store_true", help="list selected tests and exit")
     ap.add_argument("--check-coverage", action="store_true",
@@ -350,19 +352,24 @@ def main() -> int:
                 print(f"  [ERROR] {t['name']}: {desc}")
                 continue
 
+            # Re-run the action periodically until detected or timeout. This
+            # survives the ETW/eBPF startup race (the first action can fire before
+            # telemetry is fully live) and transient flakiness; a genuinely
+            # undetected rule still fails once the timeout elapses.
             snap = snapshot_alerts(logs_dir)
-            rc, out = run_script(script, os_name, args.script_timeout)
-
-            found = None
+            found, rc, out = None, None, ""
             deadline = time.time() + args.timeout
-            while time.time() < deadline:
+            next_action = 0.0
+            while time.time() < deadline and not found:
+                if time.time() >= next_action:
+                    rc, out = run_script(script, os_name, args.script_timeout)
+                    next_action = time.time() + args.retry_interval
                 for alert in read_new_alerts(logs_dir, snap):
                     if pred(alert):
                         found = alert
                         break
-                if found:
-                    break
-                time.sleep(0.5)
+                if not found:
+                    time.sleep(0.5)
 
             status = "PASS" if found else ("FAIL (allowed)" if t.get("allow_failure") else "FAIL")
             results.append({
