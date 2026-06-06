@@ -30,5 +30,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: low
-  test_status: manual
-  test_reason: Requires LSASS dump behavior that is blocked or unstable on hosted GitHub runners.
+  test_status: atomic

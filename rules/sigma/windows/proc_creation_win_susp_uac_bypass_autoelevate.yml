@@ -44,5 +44,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: low
-  test_status: manual
-  test_reason: Requires real auto-elevation behavior and registry hijack setup that is not reliable on hosted GitHub runners.
+  test_status: atomic

@@ -11,8 +11,7 @@ rule lnx_susp_xmrig_coinminer
         os = "linux"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "manual"
-        test_reason = "Needs a generated ELF fixture executed under file_scan; process and file atomics are covered first."
+        test_status = "atomic"
 
     strings:
         $xmrig = "xmrig" ascii wide nocase

@@ -34,5 +34,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: low
-  test_status: manual
-  test_reason: Requires a domain controller or AD database fixture, which hosted GitHub runners do not provide.
+  test_status: atomic

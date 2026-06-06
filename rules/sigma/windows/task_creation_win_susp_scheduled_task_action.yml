@@ -56,4 +56,5 @@ rustinel:
   telemetry:
     - task_creation
   expected_false_positive_level: low
-  test_status: none
+  test_status: manual
+  test_reason: Task creation telemetry did not fire reliably on hosted Windows runners with engine v1.1.1.
