@@ -30,7 +30,7 @@ The engine writes alerts as ECS NDJSON to `logs/alerts.json.<date>`. A test
 | IOC / custom | an explicit `expect: {field, contains}` (IOC alerts use `rule.name = "ioc:<kind>:<indicator>"`, so EICAR matches on `rule.description ~ "EICAR"`) |
 
 Most rules are *behavioural* (they match a process command line, a file path, a
-registry key), so the atomic actions are **safe simulations** — a reverse-shell
+registry key), so the atomic actions are **safe simulations** - a reverse-shell
 command line aimed at a closed local port, `powershell -EncodedCommand` running a
 benign `Write-Host`, a cron file containing `true`, an HKCU Run value pointing at
 notepad. Nothing malicious executes; the telemetry is what trips the rule. EICAR
@@ -56,7 +56,7 @@ CI: [`.github/workflows/atomic.yml`](../../.github/workflows/atomic.yml).
 ## What the runner does
 
 1. Picks the most inclusive pack for the OS from `dist/index.json` (packs are
-   cumulative — `linux-advanced`, `windows-hunting`) and copies it next to the
+   cumulative - `linux-advanced`, `windows-hunting`) and copies it next to the
    engine.
 2. Writes a `config.toml` pointing the engine's Sigma/YARA/IOC paths at that
    pack and alerts at `<engine-dir>/logs/`.
@@ -98,7 +98,8 @@ No-engine commands (work anywhere, including macOS):
 
 ```bash
 python3 tests/atomic/run_atomics.py --list                  # selected tests + join keys
-python3 tests/atomic/run_atomics.py --check-coverage        # manifest vs rules' test_status
+python3 tests/atomic/run_atomics.py --check-coverage        # manifest vs artifact test_status
+python3 tests/atomic/run_atomics.py --check-coverage --strict-essential
 python3 tests/atomic/run_atomics.py --filter eicar --platform linux
 ```
 
@@ -113,8 +114,10 @@ python3 tests/atomic/run_atomics.py --filter eicar --platform linux
    `engine`, `script`. For Sigma/YARA the title resolves automatically; for IOC
    or anything else, add `expect: {field, contains}`.
 3. `python3 tests/atomic/run_atomics.py --list` to confirm the join key resolves.
-4. (Optional) Flip that rule's `rustinel.test_status` to `atomic`.
-   `--check-coverage` reports which `atomic`-marked rules still lack a test.
+4. Flip that artifact's `test_status` to `atomic`.
+   `--check-coverage` reports platform-specific manifest gaps and Essential
+   rules still marked `none`. Add `--strict-essential` when you want those
+   Essential gaps, or manual entries without `test_reason`, to fail the check.
 
 Use `"allow_failure": true` for environment-dependent tests (e.g. EICAR) so they
 are reported but do not gate CI.

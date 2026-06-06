@@ -50,6 +50,10 @@ jobs:
           uv run python tools/build_packs.py
         shell: bash
 
+      - name: Check atomic coverage metadata
+        run: python tests/atomic/run_atomics.py --check-coverage
+        shell: bash
+
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |

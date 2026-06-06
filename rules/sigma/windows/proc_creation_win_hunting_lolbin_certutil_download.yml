@@ -3,7 +3,7 @@ id: 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10
 status: experimental
 description: >
   Broad hunting lead for certutil.exe used with URL-cache / download flags to
-  retrieve remote content — a living-off-the-land technique. Expected to be
+  retrieve remote content - a living-off-the-land technique. Expected to be
   noisy in environments where certutil is used for legitimate certificate work.
 references:
   - https://attack.mitre.org/techniques/T1105/
@@ -31,4 +31,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: high
-  test_status: none
+  test_status: atomic

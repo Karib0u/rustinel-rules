@@ -31,3 +31,4 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: manual
+  test_reason: Manual because a reliable hosted-runner simulation needs process telemetry for a no-argument rundll32 launch without OS interference.

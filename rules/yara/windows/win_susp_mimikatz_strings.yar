@@ -12,6 +12,7 @@ rule win_susp_mimikatz_strings
         telemetry = "file_scan"
         expected_false_positive_level = "low"
         test_status = "manual"
+        test_reason = "Needs a generated Windows PE fixture executed under file_scan; process and registry atomics are covered first."
 
     strings:
         $s1 = "sekurlsa::logonpasswords" ascii wide nocase

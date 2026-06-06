@@ -45,6 +45,11 @@ ATOMICS_DIR = HARNESS_ROOT / "atomics"
 ID_RE = re.compile(r"^id:\s*(.+?)\s*$", re.MULTILINE)
 TITLE_RE = re.compile(r"^title:\s*(.+?)\s*$", re.MULTILINE)
 TEST_STATUS_RE = re.compile(r"^\s*test_status:\s*([A-Za-z_]+)\s*$", re.MULTILINE)
+TEST_REASON_RE = re.compile(r"^\s*test_reason:\s*(.+?)\s*$", re.MULTILINE)
+YARA_RULE_RE = re.compile(r"\brule\s+([A-Za-z_][A-Za-z0-9_]*)")
+YARA_META_ID_RE = re.compile(r'\bid\s*=\s*"([^"]+)"')
+YARA_TEST_STATUS_RE = re.compile(r'\btest_status\s*=\s*"([^"]+)"')
+YARA_TEST_REASON_RE = re.compile(r'\btest_reason\s*=\s*"([^"]+)"')
 
 
 # --------------------------------------------------------------------------- #
@@ -61,30 +66,132 @@ def detect_platform() -> str:
     return s
 
 
+def _clean_scalar(value: str) -> str:
+    return value.strip().strip("'\"")
+
+
+def _extract_yaml_list(text: str, field: str) -> list[str]:
+    match = re.search(rf"^{field}:\s*$", text, re.MULTILINE)
+    if not match:
+        return []
+    out: list[str] = []
+    for line in text[match.end():].splitlines():
+        if not line.strip():
+            continue
+        if not line.startswith("  "):
+            break
+        item = line.strip()
+        if item.startswith("- "):
+            item = item[2:].split("#", 1)[0].strip()
+            if item:
+                out.append(_clean_scalar(item))
+    return out
+
+
+def _extract_yaml_scalar(text: str, field: str) -> str | None:
+    match = re.search(rf"^{field}:\s*(.+?)\s*$", text, re.MULTILINE)
+    if not match:
+        return None
+    return _clean_scalar(match.group(1).split("#", 1)[0])
+
+
 def index_rules(rules_dir: Path) -> dict[str, dict]:
-    """Map rule id -> {title, test_status, file} by scanning the rules repo.
+    """Map artifact id to title, status, reason and path by scanning sources.
 
     Deliberately a line scan (not a YAML parse) so the runner stays
-    dependency-free; Sigma rules keep `id:` and `title:` on their own lines.
+    dependency-free; the firing runner has to work under plain sudo python.
     """
     out: dict[str, dict] = {}
     root = rules_dir / "rules"
     if not root.is_dir():
         return out
-    for path in root.rglob("*.yml"):
+
+    for path in (root / "sigma").rglob("*.yml"):
         text = path.read_text(encoding="utf-8", errors="ignore")
         m_id = ID_RE.search(text)
         if not m_id:
             continue
-        rid = m_id.group(1).strip().strip("'\"")
+        rid = _clean_scalar(m_id.group(1))
         m_title = TITLE_RE.search(text)
         m_status = TEST_STATUS_RE.search(text)
+        m_reason = TEST_REASON_RE.search(text)
         out[rid] = {
-            "title": m_title.group(1).strip().strip("'\"") if m_title else None,
-            "test_status": m_status.group(1) if m_status else None,
+            "title": _clean_scalar(m_title.group(1)) if m_title else None,
+            "test_status": m_status.group(1).lower() if m_status else None,
+            "test_reason": _clean_scalar(m_reason.group(1)) if m_reason else None,
+            "file": str(path.relative_to(rules_dir)),
+        }
+
+    for path in (root / "yara").rglob("*.yar"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        m_name = YARA_RULE_RE.search(text)
+        m_id = YARA_META_ID_RE.search(text)
+        if not m_id and not m_name:
+            continue
+        rid = (m_id.group(1) if m_id else m_name.group(1)).strip()
+        m_status = YARA_TEST_STATUS_RE.search(text)
+        m_reason = YARA_TEST_REASON_RE.search(text)
+        out[rid] = {
+            "title": m_name.group(1) if m_name else rid,
+            "test_status": m_status.group(1).lower() if m_status else None,
+            "test_reason": m_reason.group(1).strip() if m_reason else None,
+            "file": str(path.relative_to(rules_dir)),
+        }
+
+    for path in (root / "ioc").rglob("*.yml"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        m_id = ID_RE.search(text)
+        if not m_id:
+            continue
+        rid = _clean_scalar(m_id.group(1))
+        m_status = TEST_STATUS_RE.search(text)
+        m_reason = TEST_REASON_RE.search(text)
+        out[rid] = {
+            "title": rid,
+            "test_status": m_status.group(1).lower() if m_status else None,
+            "test_reason": _clean_scalar(m_reason.group(1)) if m_reason else None,
             "file": str(path.relative_to(rules_dir)),
         }
     return out
+
+
+def load_source_packs(rules_dir: Path) -> dict[str, dict]:
+    packs: dict[str, dict] = {}
+    for path in (rules_dir / "packs").rglob("pack.yml"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        pack_id = _extract_yaml_scalar(text, "id")
+        if not pack_id:
+            continue
+        packs[pack_id] = {
+            "id": pack_id,
+            "os": _extract_yaml_scalar(text, "os"),
+            "level": _extract_yaml_scalar(text, "level"),
+            "extends": _extract_yaml_list(text, "extends"),
+            "rules": _extract_yaml_list(text, "rules"),
+            "file": str(path.relative_to(rules_dir)),
+        }
+    return packs
+
+
+def resolve_source_pack_rules(pack_id: str, packs: dict[str, dict]) -> list[str]:
+    ordered: list[str] = []
+    seen: set[str] = set()
+
+    def visit(current: str, stack: list[str]):
+        if current in stack:
+            raise SystemExit(f"Pack extends cycle: {' -> '.join(stack + [current])}")
+        pack = packs.get(current)
+        if not pack:
+            raise SystemExit(f"Unknown pack in extends: {current}")
+        for parent in pack.get("extends", []):
+            visit(parent, stack + [current])
+        for rule_id in pack.get("rules", []):
+            if rule_id not in seen:
+                seen.add(rule_id)
+                ordered.append(rule_id)
+
+    visit(pack_id, [])
+    return ordered
 
 
 def pick_pack(dist_dir: Path, os_name: str, requested: str) -> dict:
@@ -97,7 +204,7 @@ def pick_pack(dist_dir: Path, os_name: str, requested: str) -> dict:
             if p["id"] == requested:
                 return p
         sys.exit(f"Pack '{requested}' not found for os={os_name}")
-    # auto: the most inclusive (highest rule_count) pack — packs are cumulative.
+    # auto: the most inclusive (highest rule_count) pack - packs are cumulative.
     return max(packs, key=lambda p: p.get("rule_count", 0))
 
 
@@ -112,7 +219,7 @@ def setup_engine(engine_dir: Path, dist_dir: Path, pack: dict) -> Path:
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
 
-    config = f"""# Generated by run_atomics.py — points the engine at pack '{pack_id}'.
+    config = f"""# Generated by run_atomics.py - points the engine at pack '{pack_id}'.
 [scanner]
 sigma_enabled = true
 sigma_rules_path = "{pack_id}/rules/sigma"
@@ -254,22 +361,82 @@ def run_script(script: Path, os_name: str, timeout: int):
 # --------------------------------------------------------------------------- #
 # Coverage report (no engine needed)                                          #
 # --------------------------------------------------------------------------- #
-def coverage(tests: list[dict], rules: dict[str, dict]) -> int:
-    have = {t["id"] for t in tests}
-    want = {rid for rid, r in rules.items() if r.get("test_status") == "atomic"}
-    print("Coverage (rule test_status == 'atomic' <-> manifest):\n")
-    missing = sorted(want - have)
-    extra = sorted(have - set(rules))
-    untracked = sorted(have & set(rules) - want)
-    for rid in missing:
-        print(f"  MISSING test   {rid}  {rules[rid].get('title')}")
-    for rid in untracked:
-        print(f"  has test, status={rules[rid].get('test_status')!r:9} {rid}  {rules[rid].get('title')}")
-    for rid in extra:
-        print(f"  UNKNOWN id     {rid}  (in manifest, not in rules repo)")
-    print(f"\n  {len(have)} tests in manifest, {len(want)} rules marked atomic, "
-          f"{len(missing)} missing, {len(extra)} unknown.")
-    return 1 if (missing or extra) else 0
+def coverage(
+    tests: list[dict],
+    rules: dict[str, dict],
+    packs: dict[str, dict],
+    strict_essential: bool,
+) -> int:
+    manifest_keys = {(t["platform"], t["id"]) for t in tests}
+    manifest_ids = {t["id"] for t in tests}
+    known_ids = set(rules)
+    platforms_by_rule: dict[str, set[str]] = {}
+    essential_ids: set[tuple[str, str]] = set()
+
+    for pack in packs.values():
+        os_name = pack.get("os")
+        if os_name == "macos":
+            continue
+        for rule_id in resolve_source_pack_rules(pack["id"], packs):
+            platforms_by_rule.setdefault(rule_id, set()).add(os_name)
+            if pack.get("level") == "essential":
+                essential_ids.add((os_name, rule_id))
+
+    expected_atomic: set[tuple[str, str]] = set()
+    for rule_id, rule in rules.items():
+        if rule.get("test_status") != "atomic":
+            continue
+        platforms = platforms_by_rule.get(rule_id)
+        if platforms:
+            expected_atomic.update((platform, rule_id) for platform in platforms)
+        elif rule_id in manifest_ids:
+            expected_atomic.update(key for key in manifest_keys if key[1] == rule_id)
+
+    missing_atomic = sorted(expected_atomic - manifest_keys)
+    unknown = sorted(key for key in manifest_keys if key[1] not in known_ids)
+    untracked = sorted(
+        key for key in manifest_keys
+        if key[1] in known_ids and rules[key[1]].get("test_status") != "atomic"
+    )
+    essential_none = sorted(
+        key for key in essential_ids
+        if rules.get(key[1], {}).get("test_status") in (None, "none")
+    )
+    manual_without_reason = sorted(
+        key for key in essential_ids
+        if rules.get(key[1], {}).get("test_status") == "manual"
+        and not rules.get(key[1], {}).get("test_reason")
+    )
+
+    print("Coverage (per platform manifest entries vs artifact test_status):\n")
+    for platform, rule_id in missing_atomic:
+        print(f"  MISSING test   {platform:<7} {rule_id}  {rules[rule_id].get('title')}")
+    for platform, rule_id in untracked:
+        status = rules[rule_id].get("test_status")
+        print(f"  has test, status={status!r:9} {platform:<7} {rule_id}  {rules[rule_id].get('title')}")
+    for platform, rule_id in unknown:
+        print(f"  UNKNOWN id     {platform:<7} {rule_id}  (in manifest, not in rules repo)")
+
+    if essential_none:
+        print("\nEssential rules still marked none:")
+        for platform, rule_id in essential_none:
+            rule = rules.get(rule_id, {})
+            print(f"  {platform:<7} {rule_id}  {rule.get('title')}  ({rule.get('file')})")
+
+    if manual_without_reason:
+        print("\nEssential manual rules missing test_reason:")
+        for platform, rule_id in manual_without_reason:
+            rule = rules.get(rule_id, {})
+            print(f"  {platform:<7} {rule_id}  {rule.get('title')}  ({rule.get('file')})")
+
+    print(
+        f"\n  {len(tests)} tests in manifest, {len(manifest_keys)} platform/id pairs, "
+        f"{len(expected_atomic)} expected atomic pairs, {len(missing_atomic)} missing, "
+        f"{len(unknown)} unknown."
+    )
+    if strict_essential:
+        return 1 if (missing_atomic or unknown or essential_none or manual_without_reason) else 0
+    return 1 if (missing_atomic or unknown) else 0
 
 
 # --------------------------------------------------------------------------- #
@@ -298,6 +465,8 @@ def main() -> int:
     ap.add_argument("--list", action="store_true", help="list selected tests and exit")
     ap.add_argument("--check-coverage", action="store_true",
                     help="compare manifest with rules' test_status and exit")
+    ap.add_argument("--strict-essential", action="store_true",
+                    help="with --check-coverage, fail on Essential none/manual-without-reason")
     ap.add_argument("--keep-running", action="store_true", help="leave the engine running")
     args = ap.parse_args()
 
@@ -307,7 +476,8 @@ def main() -> int:
     tests = select_tests(load_manifest(args.manifest), os_name, args.filter)
 
     if args.check_coverage:
-        return coverage(load_manifest(args.manifest), rules)
+        packs = load_source_packs(args.rules_dir)
+        return coverage(load_manifest(args.manifest), rules, packs, args.strict_essential)
 
     if not tests:
         print(f"No tests selected for platform={os_name} filter={args.filter!r}")
@@ -336,7 +506,7 @@ def main() -> int:
     time.sleep(args.warmup)
     if proc.poll() is not None:
         fh.close()
-        print("\nENGINE FAILED TO START — last output:\n")
+        print("\nENGINE FAILED TO START - last output:\n")
         print(stdout_log.read_text(encoding="utf-8", errors="ignore")[-3000:])
         print("\nLikely cause: insufficient privilege for eBPF/ETW, or kernel "
               "doesn't support the probes on this runner.")
@@ -406,7 +576,7 @@ def report(results: list[dict], os_name: str) -> int:
 
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
-        lines = [f"### Atomic firing tests — {os_name}", "",
+        lines = [f"### Atomic firing tests - {os_name}", "",
                  "| Rule | Engine | Result |", "|---|---|---|"]
         emoji = {"PASS": "✅ PASS", "FAIL": "❌ FAIL", "FAIL (allowed)": "⚠️ FAIL (allowed)",
                  "ERROR": "🛑 ERROR"}
