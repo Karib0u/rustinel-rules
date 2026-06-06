@@ -1,0 +1,75 @@
+{
+  "_comment": [
+    "Each test maps an atomic action script (under atomics/) to a rule in this repo.",
+    "A test PASSES when the engine writes a matching alert after the script runs.",
+    "  - sigma/yara: the join key is rule.name == the rule's title (resolved by 'id'",
+    "    from rules/). No need to repeat the title here.",
+    "  - ioc/custom: give an explicit 'expect' {field, contains|equals} match,",
+    "    because IOC alerts use rule.name = 'ioc:<kind>:<indicator>'.",
+    "Set 'allow_failure': true for environment-dependent tests that should be",
+    "reported but not gate CI. Run `--check-coverage` to see which rules marked",
+    "test_status: atomic still lack a test here."
+  ],
+  "tests": [
+    {
+      "id": "a3c5c821-004a-4e52-8684-0f7f9ea0404c",
+      "name": "linux_reverse_shell_dev_tcp",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/reverse_shell_dev_tcp.sh"
+    },
+    {
+      "id": "94fb53c7-debd-4287-99e4-6eb0ba923731",
+      "name": "linux_download_pipe_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/download_pipe_shell.sh"
+    },
+    {
+      "id": "4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84",
+      "name": "linux_cron_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cron_persistence.sh"
+    },
+    {
+      "id": "ioc-eicar-test",
+      "name": "linux_eicar_ioc",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/eicar_ioc.sh",
+      "allow_failure": true,
+      "expect": { "field": "rule.description", "contains": "EICAR" }
+    },
+    {
+      "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
+      "name": "windows_encoded_powershell",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/encoded_powershell.ps1"
+    },
+    {
+      "id": "3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10",
+      "name": "windows_certutil_download",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/certutil_download.ps1"
+    },
+    {
+      "id": "a1b2c3d4-7e8f-4012-9a3b-4c5d6e7f0a10",
+      "name": "windows_run_key_persistence",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/run_key_persistence.ps1"
+    },
+    {
+      "id": "ioc-eicar-test",
+      "name": "windows_eicar_ioc",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/eicar_ioc.ps1",
+      "allow_failure": true,
+      "expect": { "field": "rule.description", "contains": "EICAR" }
+    }
+  ]
+}

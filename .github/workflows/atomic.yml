@@ -1,0 +1,100 @@
+name: atomic
+
+# Firing tests: install the rustinel engine on real Windows + Linux runners,
+# perform an atomic action for each rule, and check the rule produced an alert.
+# Installs published engine releases (>= v1.1.0) via the official install scripts.
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: "Only run tests whose name/id contains this substring"
+        required: false
+        default: ""
+      pack:
+        description: "Pack id to load (or 'auto')"
+        required: false
+        default: "auto"
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"        # nightly 06:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  atomic:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Build rules pack
+        run: |
+          uv sync --frozen
+          uv run python tools/validate.py
+          uv run python tools/build_packs.py
+        shell: bash
+
+      - name: Install rustinel engine (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+            | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine"
+        shell: bash
+
+      - name: Install rustinel engine (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.ps1 -OutFile install.ps1
+          powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine"
+        shell: pwsh
+
+      - name: Exclude workspace from Defender (Windows, for EICAR)
+        if: matrix.platform == 'windows'
+        run: Add-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE" -ErrorAction SilentlyContinue
+        shell: pwsh
+
+      - name: Run atomic tests (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo -E python3 tests/atomic/run_atomics.py \
+            --platform linux \
+            --engine-dir "$GITHUB_WORKSPACE/tests/atomic/.engine" \
+            --pack "${{ github.event.inputs.pack || 'auto' }}" \
+            --filter "${{ github.event.inputs.filter }}"
+        shell: bash
+
+      - name: Run atomic tests (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          python tests\atomic\run_atomics.py `
+            --platform windows `
+            --engine-dir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" `
+            --pack "${{ github.event.inputs.pack || 'auto' }}" `
+            --filter "${{ github.event.inputs.filter }}"
+        shell: pwsh
+
+      - name: Upload report + engine logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atomic-report-${{ matrix.platform }}
+          path: |
+            tests/atomic/report-*.json
+            tests/atomic/.engine/logs/
+          if-no-files-found: warn
