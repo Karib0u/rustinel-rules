@@ -34,4 +34,5 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: low
-  test_status: atomic
+  test_status: manual
+  test_reason: Real NTDS.dit extraction requires a live domain controller / AD database; a safe command-line smoke test (cmd echo ntds.dit) does not produce reliable process_creation telemetry on hosted Windows runners. Validated manually.

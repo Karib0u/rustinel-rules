@@ -175,14 +175,6 @@
       "script": "windows/uac_bypass_parent.ps1"
     },
     {
-      "id": "a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22",
-      "name": "windows_ntds_dit_reference",
-      "platform": "windows",
-      "engine": "sigma",
-      "script": "windows/ntds_dit_reference.ps1",
-      "allow_failure": true
-    },
-    {
       "id": "b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23",
       "name": "windows_wdigest_registry",
       "platform": "windows",
