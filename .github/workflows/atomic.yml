@@ -54,18 +54,51 @@ jobs:
         run: python tests/atomic/run_atomics.py --check-coverage --strict-essential
         shell: bash
 
+      # Resolve "latest" ourselves with an authenticated API call (GITHUB_TOKEN,
+      # ~1000 req/h/repo) instead of letting the install script make an
+      # unauthenticated one (60 req/h shared across all runner IPs -> 403).
+      # Passing --version then makes the install script skip the API call entirely.
+      - name: Resolve latest rustinel version
+        id: engine
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh release view --repo Karib0u/rustinel --json tagName --jq '.tagName')"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "Resolved rustinel engine version: ${tag#v}"
+        shell: bash
+
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |
-          curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
-            | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine"
+          for attempt in 1 2 3; do
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
+              exit 0
+            fi
+            echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
+            sleep "$((attempt * 10))"
+          done
+          echo "engine install failed after 3 attempts" >&2
+          exit 1
         shell: bash
 
       - name: Install rustinel engine (Windows)
         if: matrix.platform == 'windows'
         run: |
           Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.ps1 -OutFile install.ps1
-          powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine"
+          $ok = $false
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            try {
+              powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" -Version "${{ steps.engine.outputs.version }}" -Force
+              if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+            } catch {
+              Write-Host "attempt $attempt threw: $_"
+            }
+            Write-Host "engine install attempt $attempt failed; retrying in $($attempt * 10)s"
+            Start-Sleep -Seconds ($attempt * 10)
+          }
+          if (-not $ok) { exit 1 }
         shell: pwsh
 
       - name: Exclude workspace from Defender (Windows, for EICAR)
