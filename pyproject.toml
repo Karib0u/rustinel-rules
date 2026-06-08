@@ -12,8 +12,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15",
-    "ty>=0.0.1",
+    "ruff>=0.15.16",
+    "ty>=0.0.44",
 ]
 
 # This repo ships detection content plus helper scripts under tools/; it is not a
