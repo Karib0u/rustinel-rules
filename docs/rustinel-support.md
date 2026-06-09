@@ -274,7 +274,7 @@ flattens them and tags each line with its source set id for provenance.
 
 ## 7. Alert output
 
-Rustinel writes alerts as **ECS 9.3.0 NDJSON** to `logs/alerts.json.<date>`, which ingests cleanly
+Rustinel writes alerts as **ECS 9.4.0 NDJSON** to `logs/alerts.json.<date>`, which ingests cleanly
 into SIEM/log pipelines. Each Sigma/YARA/IOC match becomes one alert record carrying the rule/IOC
 identity, the matched event fields, and ATT&CK context where available.
 
