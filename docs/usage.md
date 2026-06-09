@@ -67,8 +67,11 @@ Rebuild a pack into the same location and the engine picks it up without a resta
 
 ## `config.toml` reference (rule-relevant sections)
 
-Defaults shown are the engine defaults. Only the paths above are required to load a pack; the rest
-are tuning knobs.
+This is the pack-installer's subset of the engine config — only the keys that affect loading and
+matching detection content. The **full, canonical reference** (logging, alerts, network
+aggregation, every default) lives in the engine docs:
+[Configuration](https://docs.rustinel.io/configuration/). Defaults shown here are the engine
+defaults; only the paths above are required to load a pack, the rest are tuning knobs.
 
 ### `[scanner]` — Sigma & YARA
 
@@ -112,6 +115,7 @@ are tuning knobs.
 | --- | ------- | ------- |
 | `paths` | OS-shipped dirs (e.g. `C:\Windows\`, `/usr/bin/`, `/System/`) | Trusted prefixes applied to YARA, hash IOC, and response. Per-module allowlists fall back to this. |
 
+<a id="active-response"></a>
 ### `[response]` — optional active response
 
 | Key | Default | Meaning |
@@ -141,4 +145,3 @@ are tuning knobs.
 
 For the engine itself (install, run as a service/daemon, telemetry setup), see the
 [Rustinel documentation](https://docs.rustinel.io/).
-</content>

@@ -124,9 +124,9 @@ positives may occur — especially from package installs — so tune before rely
 > macOS packs are **experimental and post-v1** — not yet production-ready — so both are
 > `default: false`. Content is built on Apple's EndpointSecurity sensor (process, file, network,
 > DNS). The process exec event carries full `CommandLine` (argv) natively, but **code-signing
-> fields are not yet exposed**, which caps how low the false-positive rate can go; see the
-> [code-signing telemetry proposal](proposals/macos-codesigning-telemetry.md) for the engine
-> enhancement that would let several Advanced rules graduate to Essential.
+> fields are not yet exposed**, which caps how low the false-positive rate can go. Exposing
+> code-signing telemetry is a planned engine enhancement that would let several Advanced rules
+> graduate to Essential.
 
 ### macOS Essential
 
@@ -179,4 +179,3 @@ After a build, `dist/index.json` carries the resolved, machine-readable version 
 per-pack `rule_count`, `ioc_count`, `attack_coverage`, `telemetry_requirements`, the list of
 resolved `rules`, a `sha256`, and the drop-in `engine` paths. See
 [the build output](repository.md#indexjson-shape).
-</content>

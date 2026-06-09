@@ -146,4 +146,3 @@ automatically:
 - [Pack catalog & rule inventory](packs.md)
 - [What Rustinel supports](rustinel-support.md) — before authoring anything
 - [Using a pack with Rustinel](usage.md)
-</content>

@@ -108,8 +108,8 @@ you write portable Sigma.
 > **macOS: command-line and parent fields are native, except `ParentCommandLine`.** ESF exec events
 > carry `CommandLine` (argv), `ParentImage`, `ParentProcessId` and `CurrentDirectory` directly, so
 > they are reliably populated (no `/proc` race). However **`ParentCommandLine` is not provided** on
-> macOS — don't depend on it in macOS rules. Code-signing fields are not exposed yet either; see the
-> [code-signing telemetry proposal](proposals/macos-codesigning-telemetry.md).
+> macOS — don't depend on it in macOS rules. Code-signing fields are not exposed yet either, a
+> known gap planned for a future engine enhancement.
 
 ### `file_event` (and `file_create` / `file_delete` / `file_change` / `file_rename`)
 
@@ -294,4 +294,3 @@ safeguards and a minimum-severity gate, all off/conservative by default. See
 - [ ] Every `|modifier` used is in the [modifier table](#field-modifiers-fieldmodifier).
 - [ ] `rustinel.telemetry` lists the right channel(s) (`file_scan` for YARA/hash IOC).
 - [ ] `uv run python tools/validate.py` passes.
-</content>
