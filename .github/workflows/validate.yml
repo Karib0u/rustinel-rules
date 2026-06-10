@@ -6,15 +6,18 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     name: Detection as Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -35,14 +38,14 @@ jobs:
         run: uv run python validate.py
 
   build:
-    name: Build pack artifacts
+    name: Build release artifacts
     runs-on: ubuntu-latest
     needs: validate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
@@ -53,8 +56,12 @@ jobs:
         working-directory: tools
         run: uv run python build_packs.py
 
+      - name: Build website catalog (catalog.json)
+        working-directory: tools
+        run: uv run python build_catalog.py
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rustinel-rules-dist
           path: dist/

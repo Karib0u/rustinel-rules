@@ -73,6 +73,7 @@ artifacts the engine consumes, plus an `index.json` catalog.
 ```bash
 uv run python tools/validate.py        # gate: structure, metadata, ids, telemetry, IOC sanity
 uv run python tools/build_packs.py     # materialize dist/ (folders + zips + index.json)
+uv run python tools/build_catalog.py   # materialize dist/catalog.json for the website
 ```
 
 Output lands in `dist/`:
@@ -80,6 +81,7 @@ Output lands in `dist/`:
 ```text
 dist/
 ├── index.json                       # Catalog of all packs (+ engine paths, sha256, counts)
+├── catalog.json                     # Website catalog: rules, ATT&CK techniques, packs
 ├── windows-essential/               # Materialized flat pack folder (engine drop-in)
 │   ├── pack.yml                      # Cleaned manifest + build metadata (version, counts)
 │   └── rules/
@@ -99,6 +101,23 @@ What the build does for each pack:
 4. **Writes** a cleaned `pack.yml` with build metadata and zips the folder.
 5. **Records** a catalog entry in `index.json` with engine paths and a `sha256`.
 
+## Website catalog
+
+`tools/build_catalog.py` produces `dist/catalog.json`, a richer catalog for the Rustinel website.
+It contains full rule records, ATT&CK technique metadata, pack memberships and source URLs. The
+website repository syncs that generated file into its committed `src/data/rustinel-rules.json`
+snapshot, then builds from that snapshot without needing this repo checked out.
+
+When detection content changes, refresh the website data in two steps:
+
+```bash
+# from rustinel-rules
+uv run python tools/build_catalog.py
+
+# from ../rustinel-front-final
+npm run sync:rules
+```
+
 ### `index.json` shape
 
 Each pack entry includes drop-in `engine` paths so an installer can wire `config.toml`
@@ -107,12 +126,12 @@ automatically:
 ```json
 {
   "id": "windows-essential",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "default": true,
   "rule_count": 14,
   "ioc_count": 3,
   "sha256": "…",
-  "artifact": "windows-essential-0.1.0.zip",
+  "artifact": "windows-essential-0.2.0.zip",
   "engine": {
     "sigma_rules_path": "windows-essential/rules/sigma",
     "yara_rules_path": "windows-essential/rules/yara",
@@ -129,4 +148,3 @@ automatically:
 - [Pack catalog & rule inventory](packs.md)
 - [What Rustinel supports](rustinel-support.md) — before authoring anything
 - [Using a pack with Rustinel](usage.md)
-</content>

@@ -12,6 +12,8 @@ description: >
 os:
   - common
 severity: low
+test_status: atomic
+test_reason: Covered by Linux and Windows atomic IOC tests; currently allow-failure until file_scan timing is stable.
 references:
   - https://www.eicar.org/download-anti-malware-testfile/
 indicators:

@@ -11,7 +11,7 @@ rule win_susp_mimikatz_strings
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "manual"
+        test_status = "atomic"
 
     strings:
         $s1 = "sekurlsa::logonpasswords" ascii wide nocase

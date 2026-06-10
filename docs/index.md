@@ -49,4 +49,3 @@ uv run ruff check tools         # lint
 uv run ruff format tools        # format
 uv run ty check                 # type-check
 ```
-</content>

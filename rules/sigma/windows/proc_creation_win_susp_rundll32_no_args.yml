@@ -30,4 +30,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: medium
-  test_status: manual
+  test_status: atomic

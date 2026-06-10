@@ -42,4 +42,5 @@ rustinel:
   telemetry:
     - ps_script
   expected_false_positive_level: medium
-  test_status: none
+  test_status: manual
+  test_reason: PowerShell script-block telemetry did not fire on hosted Windows runners with engine v1.1.1.

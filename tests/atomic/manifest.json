@@ -1,0 +1,243 @@
+{
+  "_comment": [
+    "Each test maps an atomic action script (under atomics/) to a rule in this repo.",
+    "A test PASSES when the engine writes a matching alert after the script runs.",
+    "  - sigma/yara: the join key is rule.name == the rule's title (resolved by 'id'",
+    "    from rules/). No need to repeat the title here.",
+    "  - ioc/custom: give an explicit 'expect' {field, contains|equals} match,",
+    "    because IOC alerts use rule.name = 'ioc:<kind>:<indicator>'.",
+    "Set 'allow_failure': true for environment-dependent tests that should be",
+    "reported but not gate CI. Run `--check-coverage` to see which rules marked",
+    "test_status: atomic still lack a test here."
+  ],
+  "tests": [
+    {
+      "id": "0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40",
+      "name": "linux_ldso_preload_hijack",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ldso_preload_hijack.sh"
+    },
+    {
+      "id": "1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51",
+      "name": "linux_ssh_authorized_keys",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ssh_authorized_keys.sh"
+    },
+    {
+      "id": "2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62",
+      "name": "linux_sudoers_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sudoers_tamper.sh"
+    },
+    {
+      "id": "a3c5c821-004a-4e52-8684-0f7f9ea0404c",
+      "name": "linux_reverse_shell_dev_tcp",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/reverse_shell_dev_tcp.sh"
+    },
+    {
+      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
+      "name": "linux_webserver_spawns_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webserver_spawns_shell.sh"
+    },
+    {
+      "id": "9ac8732e-1818-4cda-89ac-01ca08a7b836",
+      "name": "linux_sshd_config_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sshd_config_tamper.sh"
+    },
+    {
+      "id": "94fb53c7-debd-4287-99e4-6eb0ba923731",
+      "name": "linux_download_pipe_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/download_pipe_shell.sh"
+    },
+    {
+      "id": "4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84",
+      "name": "linux_cron_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cron_persistence.sh"
+    },
+    {
+      "id": "3d4e5f60-7182-4394-9da5-2e3f4a5b6c73",
+      "name": "linux_systemd_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/systemd_persistence.sh"
+    },
+    {
+      "id": "5f607182-93a4-45b6-9fc7-4a5b6c7d8e95",
+      "name": "linux_shell_profile_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/shell_profile_persistence.sh"
+    },
+    {
+      "id": "60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6",
+      "name": "linux_exec_from_world_writable",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/exec_from_world_writable.sh"
+    },
+    {
+      "id": "yara-lnx-xmrig-coinminer",
+      "name": "linux_xmrig_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/xmrig_yara_fixture.sh"
+    },
+    {
+      "id": "ioc-eicar-test",
+      "name": "linux_eicar_ioc",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/eicar_ioc.sh",
+      "allow_failure": true,
+      "expect": { "field": "rule.description", "contains": "EICAR" }
+    },
+    {
+      "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
+      "name": "windows_encoded_powershell",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/encoded_powershell.ps1"
+    },
+    {
+      "id": "7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05",
+      "name": "windows_lsass_comsvcs_minidump",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/lsass_comsvcs_minidump.ps1"
+    },
+    {
+      "id": "1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04",
+      "name": "windows_shadow_copy_deletion",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/shadow_copy_deletion.ps1"
+    },
+    {
+      "id": "9a0c3e75-6d8b-4f12-bc34-1e7a5d9c0b06",
+      "name": "windows_regsvr32_remote_scriptlet",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/regsvr32_remote_scriptlet.ps1"
+    },
+    {
+      "id": "3c6f9b22-7e1a-4d85-9c0b-2a8d4e6f1b07",
+      "name": "windows_mshta_remote_execution",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/mshta_remote_execution.ps1"
+    },
+    {
+      "id": "c4a7f2e9-5d3b-4810-a6c1-9e0f3b7d2a03",
+      "name": "windows_office_spawns_shell",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/office_spawns_shell.ps1"
+    },
+    {
+      "id": "5e8b1d44-9c2a-4f67-8d03-7b1a6e3c9d08",
+      "name": "windows_eventlog_clear",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/eventlog_clear.ps1"
+    },
+    {
+      "id": "b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11",
+      "name": "windows_defender_registry_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/defender_registry_tamper.ps1"
+    },
+    {
+      "id": "e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20",
+      "name": "windows_registry_hive_dump",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/registry_hive_dump.ps1"
+    },
+    {
+      "id": "f2b8c4d1-6e90-4a27-9d3b-5a1c2e7f8b21",
+      "name": "windows_uac_bypass_parent",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/uac_bypass_parent.ps1"
+    },
+    {
+      "id": "b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23",
+      "name": "windows_wdigest_registry",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wdigest_registry.ps1"
+    },
+    {
+      "id": "3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10",
+      "name": "windows_certutil_download",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/certutil_download.ps1"
+    },
+    {
+      "id": "9c8b7a6e-1d2f-4a3b-9c0d-2e3f4a5b6c71",
+      "name": "windows_rundll32_no_args",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/rundll32_no_args.ps1"
+    },
+    {
+      "id": "6f0d2a91-3b7c-4e58-9a16-8c4e1d7b2a09",
+      "name": "windows_local_admin_account",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/local_admin_account.ps1"
+    },
+    {
+      "id": "a1b2c3d4-7e8f-4012-9a3b-4c5d6e7f0a10",
+      "name": "windows_run_key_persistence",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/run_key_persistence.ps1"
+    },
+    {
+      "id": "4a596825-4674-4db3-b360-842435edf11a",
+      "name": "windows_schtasks_create",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/schtasks_create.ps1"
+    },
+    {
+      "id": "2a3c3182-80b8-42d4-bd39-83c55582ef70",
+      "name": "windows_wmic_process_create",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmic_process_create.ps1"
+    },
+    {
+      "id": "yara-win-mimikatz-strings",
+      "name": "windows_mimikatz_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/mimikatz_yara_fixture.ps1"
+    },
+    {
+      "id": "ioc-eicar-test",
+      "name": "windows_eicar_ioc",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/eicar_ioc.ps1",
+      "allow_failure": true,
+      "expect": { "field": "rule.description", "contains": "EICAR" }
+    }
+  ]
+}

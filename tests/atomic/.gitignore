@@ -1,0 +1,5 @@
+# Engine + pack staged at runtime
+.engine/
+# Run output
+report-*.json
+__pycache__/

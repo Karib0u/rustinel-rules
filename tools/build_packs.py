@@ -34,7 +34,7 @@ import yaml
 
 import lib
 
-DEFAULT_VERSION = "0.1.0"
+DEFAULT_VERSION = "0.2.0"
 
 # Per-type IOC output: type -> (filename, human title, format note).
 IOC_FILES = {

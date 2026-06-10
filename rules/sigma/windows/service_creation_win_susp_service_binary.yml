@@ -41,4 +41,5 @@ rustinel:
   telemetry:
     - service_creation
   expected_false_positive_level: medium
-  test_status: none
+  test_status: manual
+  test_reason: Service creation telemetry did not fire reliably on hosted Windows runners with engine v1.1.1.

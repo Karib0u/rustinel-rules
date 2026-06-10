@@ -1,6 +1,6 @@
 [project]
 name = "rustinel-rules-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = "Validation and build tooling for rustinel-rules detection content."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,8 +13,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15",
-    "ty>=0.0.1",
+    "ruff>=0.15.16",
+    "ty>=0.0.45",
 ]
 radegast = [
     "requests>=2.34.2",

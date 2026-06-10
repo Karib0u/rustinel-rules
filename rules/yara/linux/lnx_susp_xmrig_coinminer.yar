@@ -11,7 +11,7 @@ rule lnx_susp_xmrig_coinminer
         os = "linux"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "manual"
+        test_status = "atomic"
 
     strings:
         $xmrig = "xmrig" ascii wide nocase

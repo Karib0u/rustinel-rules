@@ -195,4 +195,3 @@ uv run python tools/build_packs.py  # should produce dist/ cleanly
 
 For the CI checks that run on every push, see
 [Detection as Code](detection-as-code.md).
-</content>

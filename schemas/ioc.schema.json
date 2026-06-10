@@ -39,6 +39,14 @@
     "license": {
       "type": "string"
     },
+    "test_status": {
+      "type": "string",
+      "enum": ["none", "atomic", "manual", "dynamic"]
+    },
+    "test_reason": {
+      "type": "string",
+      "minLength": 1
+    },
     "indicators": {
       "type": "object",
       "description": "Indicators grouped by type. At least one non-empty group is required.",
