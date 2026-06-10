@@ -79,6 +79,7 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         shutil.rmtree(out_dir)
     (out_dir / "sigma").mkdir(parents=True, exist_ok=True)
     (out_dir / "yara").mkdir(parents=True, exist_ok=True)
+    (out_dir / "ioc").mkdir(parents=True, exist_ok=True)
 
     resolved_ids = lib.resolve_pack_rules(pack, by_id)
     copied = []
@@ -91,11 +92,12 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
                 f"[build] pack '{pack_id}' references unknown artifact '{artifact_id}'"
             )
 
-        if art.kind in ("sigma", "yara"):
-            dest = out_dir / art.kind / art.path.name
-            shutil.copy2(art.path, dest)
-            copied.append({"id": artifact_id, "kind": art.kind, "file": art.path.name})
-        elif art.kind == "ioc":
+        dest = out_dir / art.kind / art.path.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(art.path, dest)
+        copied.append({"id": artifact_id, "kind": art.kind, "file": art.path.name})
+
+        if art.kind == "ioc":
             count = 0
             for ioc_type, entries in art.indicators.items():
                 for value, comment in entries:
@@ -147,12 +149,12 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         "sha256": sha256_file(zip_path),
         # Drop-in paths for Rustinel config.toml (relative to dist/).
         "engine": {
-            "sigma_rules_path": f"{pack_id}/rules/sigma",
-            "yara_rules_path": f"{pack_id}/rules/yara",
-            "hashes_path": f"{pack_id}/rules/ioc/hashes.txt",
-            "ips_path": f"{pack_id}/rules/ioc/ips.txt",
-            "domains_path": f"{pack_id}/rules/ioc/domains.txt",
-            "paths_regex_path": f"{pack_id}/rules/ioc/paths_regex.txt",
+            "sigma_rules_path": f"{pack_id}/sigma",
+            "yara_rules_path": f"{pack_id}/yara",
+            "hashes_path": f"{pack_id}/ioc/hashes.txt",
+            "ips_path": f"{pack_id}/ioc/ips.txt",
+            "domains_path": f"{pack_id}/ioc/domains.txt",
+            "paths_regex_path": f"{pack_id}/ioc/paths_regex.txt",
         },
     }
 
