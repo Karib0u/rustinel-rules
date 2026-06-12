@@ -8,6 +8,7 @@ dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.0",
     "yara-x>=1.0",
+    "ruamel.yaml>=0.18.0",
 ]
 
 [dependency-groups]
@@ -21,6 +22,7 @@ dev = [
 # backend, no install of this project itself).
 [tool.uv]
 package = false
+exclude-newer = "3 days"  # Prevent supply-chain attacks by excluding recently published versions of dependencies.
 
 [tool.ruff]
 line-length = 100

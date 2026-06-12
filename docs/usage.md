@@ -18,11 +18,13 @@ dist/
 ├── index.json
 ├── windows-essential/            # <- drop-in folder
 │   ├── pack.yml
-│   └── rules/{sigma,yara,ioc}/
-└── windows-essential-0.2.0.zip   # <- distributable artifact
+│   ├── sigma/
+│   ├── yara/
+│   └── ioc/
+└── windows-essential-0.1.0.zip   # <- distributable artifact
 ```
 
-Pass `--version X.Y.Z` to `build_packs.py` to stamp a release version (default `0.2.0`).
+Pass `--version X.Y.Z` to `build_packs.py` to stamp a release version (default `0.1.0`).
 
 ## 2. Point `config.toml` at the pack
 
@@ -32,16 +34,16 @@ Use the paths from the pack's `engine` block in `dist/index.json` (shown here fo
 ```toml
 [scanner]
 sigma_enabled    = true
-sigma_rules_path = "windows-essential/rules/sigma"
+sigma_rules_path = "windows-essential/sigma"
 yara_enabled     = true
-yara_rules_path  = "windows-essential/rules/yara"
+yara_rules_path  = "windows-essential/yara"
 
 [ioc]
 enabled          = true
-hashes_path      = "windows-essential/rules/ioc/hashes.txt"
-ips_path         = "windows-essential/rules/ioc/ips.txt"
-domains_path     = "windows-essential/rules/ioc/domains.txt"
-paths_regex_path = "windows-essential/rules/ioc/paths_regex.txt"
+hashes_path      = "windows-essential/ioc/hashes.txt"
+ips_path         = "windows-essential/ioc/ips.txt"
+domains_path     = "windows-essential/ioc/domains.txt"
+paths_regex_path = "windows-essential/ioc/paths_regex.txt"
 ```
 
 > Swap `windows-essential` for any other pack id (`windows-advanced`, `linux-essential`, …). Because
@@ -67,11 +69,8 @@ Rebuild a pack into the same location and the engine picks it up without a resta
 
 ## `config.toml` reference (rule-relevant sections)
 
-This is the pack-installer's subset of the engine config — only the keys that affect loading and
-matching detection content. The **full, canonical reference** (logging, alerts, network
-aggregation, every default) lives in the engine docs:
-[Configuration](https://docs.rustinel.io/configuration/). Defaults shown here are the engine
-defaults; only the paths above are required to load a pack, the rest are tuning knobs.
+Defaults shown are the engine defaults. Only the paths above are required to load a pack; the rest
+are tuning knobs.
 
 ### `[scanner]` — Sigma & YARA
 
@@ -115,7 +114,6 @@ defaults; only the paths above are required to load a pack, the rest are tuning 
 | --- | ------- | ------- |
 | `paths` | OS-shipped dirs (e.g. `C:\Windows\`, `/usr/bin/`, `/System/`) | Trusted prefixes applied to YARA, hash IOC, and response. Per-module allowlists fall back to this. |
 
-<a id="active-response"></a>
 ### `[response]` — optional active response
 
 | Key | Default | Meaning |
@@ -145,3 +143,4 @@ defaults; only the paths above are required to load a pack, the rest are tuning 
 
 For the engine itself (install, run as a service/daemon, telemetry setup), see the
 [Rustinel documentation](https://docs.rustinel.io/).
+</content>

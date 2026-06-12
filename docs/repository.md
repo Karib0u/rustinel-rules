@@ -53,9 +53,11 @@ Key manifest fields:
 | `id` / `name` | Stable id (`^[a-z0-9]+(-[a-z0-9]+)*$`) and human name. |
 | `os` | `windows` \| `linux` \| `macos`. |
 | `level` | `essential` \| `advanced` \| `hunting`. |
+| `pack_schema_version` | Required pack manifest schema version (must be `2`). |
 | `default` | Whether this pack is enabled by default. |
 | `extends` | Pack ids cumulatively included (rules merged, never duplicated). |
-| `rules` | Artifact ids added by *this* pack. |
+| `rules` | Optional dictionary specifying rules directly in this pack (`has`), or rules to include (`includes`) / exclude (`excludes`) from extended packs or automatic sources. |
+| `sources` | Optional dictionary of upstream sources categorized by type (`manual`, `sigma`, `yara`). |
 | `requires_rustinel` | Engine version constraint, e.g. `">=1.0.2"`. |
 | `attack_coverage` | ATT&CK technique ids covered (drift-checked against members). |
 | `telemetry_requirements` | Rustinel telemetry channels the pack needs. |
@@ -82,18 +84,17 @@ dist/
 ├── catalog.json                     # Website catalog: rules, ATT&CK techniques, packs
 ├── windows-essential/               # Materialized flat pack folder (engine drop-in)
 │   ├── pack.yml                      # Cleaned manifest + build metadata (version, counts)
-│   └── rules/
-│       ├── sigma/                    # .yml  -> scanner.sigma_rules_path
-│       ├── yara/                     # .yar  -> scanner.yara_rules_path
-│       └── ioc/                      # hashes.txt / ips.txt / domains.txt / paths_regex.txt
+│   ├── sigma/                        # .yml  -> scanner.sigma_rules_path
+│   ├── yara/                         # .yar  -> scanner.yara_rules_path
+│   └── ioc/                          # hashes.txt / ips.txt / domains.txt / paths_regex.txt
 ├── windows-essential-<version>.zip   # Rustinel-compatible artifact
 └── ...
 ```
 
 What the build does for each pack:
 
-1. **Resolves** the cumulative rule list (`extends` + `rules`, de-duplicated).
-2. **Copies** each Sigma/YARA file into the flat `rules/sigma` and `rules/yara` folders.
+1. **Resolves** the cumulative rule list (`extends` + `rules` with `has`/`includes`/`excludes` or pack subfolders, de-duplicated).
+2. **Copies** each Sigma/YARA file into the flat `sigma` and `yara` folders.
 3. **Flattens** every referenced IOC set into the four per-type files in `VALUE;COMMENT` format,
    prefixing each line with its source set id (`[ioc-…]`) so provenance survives into alerts.
 4. **Writes** a cleaned `pack.yml` with build metadata and zips the folder.
@@ -131,12 +132,12 @@ automatically:
   "sha256": "…",
   "artifact": "windows-essential-0.2.0.zip",
   "engine": {
-    "sigma_rules_path": "windows-essential/rules/sigma",
-    "yara_rules_path": "windows-essential/rules/yara",
-    "hashes_path": "windows-essential/rules/ioc/hashes.txt",
-    "ips_path": "windows-essential/rules/ioc/ips.txt",
-    "domains_path": "windows-essential/rules/ioc/domains.txt",
-    "paths_regex_path": "windows-essential/rules/ioc/paths_regex.txt"
+    "sigma_rules_path": "windows-essential/sigma",
+    "yara_rules_path": "windows-essential/yara",
+    "hashes_path": "windows-essential/ioc/hashes.txt",
+    "ips_path": "windows-essential/ioc/ips.txt",
+    "domains_path": "windows-essential/ioc/domains.txt",
+    "paths_regex_path": "windows-essential/ioc/paths_regex.txt"
   }
 }
 ```

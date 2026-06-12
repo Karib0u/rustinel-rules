@@ -1,12 +1,12 @@
 name: Linux Advanced
 id: linux-advanced
 description: >
-  Linux Essential plus broader production detections. More false positives may
-  occur than in Essential (notably from package installs); tune per environment
-  before relying on by default.
+    Linux Essential plus broader production detections. More false positives may
+    occur than in Essential (notably from package installs); tune per environment
+    before relying on by default.
 os: linux
 level: advanced
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: medium
@@ -27,10 +27,13 @@ telemetry_requirements:
   - file_scan
 test_status: none
 sources:
-  - https://attack.mitre.org/
+    manual:
+      - https://attack.mitre.org/
 rules:
-  - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
-  - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
-  - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
-  - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
-  - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
+    has:
+        sigma:
+          - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
+          - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
+          - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
+          - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
+          - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
