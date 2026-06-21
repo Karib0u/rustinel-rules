@@ -236,7 +236,6 @@ REQUIRED_PACK_FIELDS = [
     "default",
     "status",
     "extends",
-    "rules",
 ]
 
 
@@ -255,8 +254,8 @@ def check_packs(packs, artifacts, rep: Report):
         for field in REQUIRED_PACK_FIELDS:
             if field not in pack:
                 rep.error(where, f"missing required field '{field}'")
-        if pack.get("pack_schema_version") != 1:
-            rep.error(where, "pack_schema_version must be 1 for v1")
+        if pack.get("pack_schema_version") != 2:
+            rep.error(where, "pack_schema_version must be 2 for v2")
         if not pack.get("license"):
             rep.warn(where, "no 'license' field on pack")
 
@@ -264,7 +263,20 @@ def check_packs(packs, artifacts, rep: Report):
             schema_validate(pack, where, rep)
 
         # Referential integrity: rules and extends must resolve.
-        for rule_id in pack.get("rules", []) or []:
+        rules_dict = pack.get("rules") or {}
+        rule_ids_to_check = []
+        if isinstance(rules_dict, list):
+            rule_ids_to_check = rules_dict
+        elif isinstance(rules_dict, dict):
+            for key in ("has", "includes", "excludes"):
+                sub = rules_dict.get(key) or {}
+                if isinstance(sub, dict):
+                    for cat in ("sigma", "yara", "ioc"):
+                        rule_ids_to_check.extend(sub.get(cat) or [])
+                elif isinstance(sub, list):
+                    rule_ids_to_check.extend(sub)
+
+        for rule_id in rule_ids_to_check:
             if rule_id not in artifact_index:
                 rep.error(where, f"references unknown artifact id '{rule_id}'")
         try:

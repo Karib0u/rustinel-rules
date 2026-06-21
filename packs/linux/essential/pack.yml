@@ -3,7 +3,7 @@ id: linux-essential
 description: Low-noise, high-confidence Linux detections for Rustinel. Safe default pack.
 os: linux
 level: essential
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: true
 expected_false_positive_level: low
@@ -25,13 +25,18 @@ telemetry_requirements:
   - file_scan
 test_status: none
 sources:
-  - https://attack.mitre.org/
+    manual:
+      - https://attack.mitre.org/
 rules:
-  - 0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40   # Dynamic Linker Hijacking via ld.so.preload (sigma)
-  - 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51   # SSH authorized_keys Created or Replaced (sigma)
-  - 2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62   # Sudoers Configuration Tampering (sigma)
-  - a3c5c821-004a-4e52-8684-0f7f9ea0404c   # Linux Reverse Shell via /dev/tcp (sigma)
-  - 8fd4d1d9-38cf-4704-8009-00e41a009c98   # Linux Web Server Spawning Interactive Shell (sigma)
-  - 9ac8732e-1818-4cda-89ac-01ca08a7b836   # SSH Daemon Configuration Tampering (sigma)
-  - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
-  - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)
+    has:
+        sigma:
+          - 0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40   # Dynamic Linker Hijacking via ld.so.preload (sigma)
+          - 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51   # SSH authorized_keys Created or Replaced (sigma)
+          - 2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62   # Sudoers Configuration Tampering (sigma)
+          - a3c5c821-004a-4e52-8684-0f7f9ea0404c   # Linux Reverse Shell via /dev/tcp (sigma)
+          - 8fd4d1d9-38cf-4704-8009-00e41a009c98   # Linux Web Server Spawning Interactive Shell (sigma)
+          - 9ac8732e-1818-4cda-89ac-01ca08a7b836   # SSH Daemon Configuration Tampering (sigma)
+        yara:
+          - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
+        ioc:
+          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

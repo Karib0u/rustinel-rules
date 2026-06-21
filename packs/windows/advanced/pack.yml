@@ -1,11 +1,11 @@
 name: Windows Advanced
 id: windows-advanced
 description: >
-  Windows Essential plus broader production detections. More false positives may
-  occur than in Essential; tune per environment before relying on by default.
+    Windows Essential plus broader production detections. More false positives may
+    occur than in Essential; tune per environment before relying on by default.
 os: windows
 level: advanced
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: medium
@@ -30,13 +30,16 @@ telemetry_requirements:
   - service_creation
 test_status: manual
 sources:
-  - https://attack.mitre.org/
-  - https://lolbas-project.github.io/
+    manual:
+      - https://attack.mitre.org/
+      - https://lolbas-project.github.io/
 rules:
-  - 9c8b7a6e-1d2f-4a3b-9c0d-2e3f4a5b6c71   # Rundll32 Execution Without Standard Arguments
-  - 6f0d2a91-3b7c-4e58-9a16-8c4e1d7b2a09   # Local Account Created or Added to Administrators
-  - a1b2c3d4-7e8f-4012-9a3b-4c5d6e7f0a10   # Registry Run Key Persistence
-  - c3d4e5f6-9012-4234-9c5d-6e7f8a901a12   # PowerShell Download-and-Execute Cradle
-  - d4e5f6a7-0123-4345-9d6e-7f8a9b012a13   # Suspicious Service Binary Path
-  - 4a596825-4674-4db3-b360-842435edf11a   # Scheduled Task Creation via Schtasks
-  - 2a3c3182-80b8-42d4-bd39-83c55582ef70   # WMI Process Execution via WMIC
+    has:
+        sigma:
+          - 9c8b7a6e-1d2f-4a3b-9c0d-2e3f4a5b6c71   # Rundll32 Execution Without Standard Arguments
+          - 6f0d2a91-3b7c-4e58-9a16-8c4e1d7b2a09   # Local Account Created or Added to Administrators
+          - a1b2c3d4-7e8f-4012-9a3b-4c5d6e7f0a10   # Registry Run Key Persistence
+          - c3d4e5f6-9012-4234-9c5d-6e7f8a901a12   # PowerShell Download-and-Execute Cradle
+          - d4e5f6a7-0123-4345-9d6e-7f8a9b012a13   # Suspicious Service Binary Path
+          - 4a596825-4674-4db3-b360-842435edf11a   # Scheduled Task Creation via Schtasks
+          - 2a3c3182-80b8-42d4-bd39-83c55582ef70   # WMI Process Execution via WMIC
