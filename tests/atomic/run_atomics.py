@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Atomic firing tests for rustinel-rules.
 
-Verifies, on real Windows + Linux, that each rule actually fires: it performs a
-small safe atomic action (the behaviour the rule is meant to catch) and checks
-the rustinel engine wrote a matching alert.
+Verifies, on real Windows, Linux + macOS, that each rule actually fires: it
+performs a small safe atomic action (the behaviour the rule is meant to catch)
+and checks the rustinel engine wrote a matching alert.
 
 What it does, in one privileged pass:
 
@@ -12,7 +12,7 @@ What it does, in one privileged pass:
   2. Writes a config.toml that points the engine's Sigma / YARA / IOC paths at
      that pack and its alert output at <engine-dir>/logs/alerts.json.<date>.
   3. Starts `rustinel run` (must be privileged: Linux eBPF -> root,
-     Windows ETW -> admin).
+     Windows ETW -> admin, macOS EndpointSecurity -> root).
   4. Runs each atomic action for this platform. A test "fires" when a new alert
      appears whose join key matches the rule:
         - sigma / yara : alert "rule.name" == the rule's title (looked up by id)
