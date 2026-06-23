@@ -4,12 +4,12 @@
 For each pack manifest this produces, under dist/:
   - dist/<pack-id>/                 flat materialized pack folder == what the
        pack.yml                     Rustinel engine loads directly:
-       rules/sigma/<file>.yml         -> scanner.sigma_rules_path
-       rules/yara/<file>.yar          -> scanner.yara_rules_path
-       rules/ioc/hashes.txt           -> [ioc].hashes_path
-       rules/ioc/ips.txt              -> [ioc].ips_path
-       rules/ioc/domains.txt          -> [ioc].domains_path
-       rules/ioc/paths_regex.txt      -> [ioc].paths_regex_path
+       sigma/<file>.yml         -> scanner.sigma_rules_path
+       yara/<file>.yar          -> scanner.yara_rules_path
+       ioc/hashes.txt           -> [ioc].hashes_path
+       ioc/ips.txt              -> [ioc].ips_path
+       ioc/domains.txt          -> [ioc].domains_path
+       ioc/paths_regex.txt      -> [ioc].paths_regex_path
   - dist/<pack-id>-<version>.zip    zipped pack (one folder = one pack = one zip)
   - dist/index.json                 catalog of all packs + checksums + engine paths
 
@@ -34,7 +34,7 @@ import yaml
 
 import lib
 
-DEFAULT_VERSION = "0.1.0"
+DEFAULT_VERSION = "0.2.0"
 
 # Per-type IOC output: type -> (filename, human title, format note).
 IOC_FILES = {
@@ -77,8 +77,9 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
     out_dir = lib.DIST_DIR / pack_id
     if out_dir.exists():
         shutil.rmtree(out_dir)
-    (out_dir / "rules" / "sigma").mkdir(parents=True, exist_ok=True)
-    (out_dir / "rules" / "yara").mkdir(parents=True, exist_ok=True)
+    (out_dir / "sigma").mkdir(parents=True, exist_ok=True)
+    (out_dir / "yara").mkdir(parents=True, exist_ok=True)
+    (out_dir / "ioc").mkdir(parents=True, exist_ok=True)
 
     resolved_ids = lib.resolve_pack_rules(pack, by_id)
     copied = []
@@ -91,11 +92,10 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
                 f"[build] pack '{pack_id}' references unknown artifact '{artifact_id}'"
             )
 
-        if art.kind in ("sigma", "yara"):
-            dest = out_dir / "rules" / art.kind / art.path.name
-            shutil.copy2(art.path, dest)
-            copied.append({"id": artifact_id, "kind": art.kind, "file": art.path.name})
-        elif art.kind == "ioc":
+        dest = out_dir / art.kind / art.path.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(art.path, dest)
+        if art.kind == "ioc":
             count = 0
             for ioc_type, entries in art.indicators.items():
                 for value, comment in entries:
@@ -103,9 +103,13 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
                     full = f"[{art.id}] {comment}" if comment else f"[{art.id}]"
                     ioc_acc[ioc_type].append((value, full))
                     count += 1
-            copied.append({"id": artifact_id, "kind": "ioc", "indicators": count})
+            copied.append(
+                {"id": artifact_id, "kind": "ioc", "file": art.path.name, "indicators": count}
+            )
+        else:
+            copied.append({"id": artifact_id, "kind": art.kind, "file": art.path.name})
 
-    ioc_counts = write_ioc_files(out_dir / "rules" / "ioc", ioc_acc)
+    ioc_counts = write_ioc_files(out_dir / "ioc", ioc_acc)
 
     # Write a clean manifest (drop internal __path__) plus build metadata.
     manifest = {k: v for k, v in pack.items() if not k.startswith("__")}
@@ -134,6 +138,7 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         "version": version,
         "default": manifest.get("default", False),
         "requires_rustinel": manifest.get("requires_rustinel"),
+        "schema": manifest.get("schema"),
         "pack_schema_version": manifest.get("pack_schema_version"),
         "status": manifest.get("status"),
         "expected_false_positive_level": manifest.get("expected_false_positive_level"),
@@ -146,12 +151,12 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         "sha256": sha256_file(zip_path),
         # Drop-in paths for Rustinel config.toml (relative to dist/).
         "engine": {
-            "sigma_rules_path": f"{pack_id}/rules/sigma",
-            "yara_rules_path": f"{pack_id}/rules/yara",
-            "hashes_path": f"{pack_id}/rules/ioc/hashes.txt",
-            "ips_path": f"{pack_id}/rules/ioc/ips.txt",
-            "domains_path": f"{pack_id}/rules/ioc/domains.txt",
-            "paths_regex_path": f"{pack_id}/rules/ioc/paths_regex.txt",
+            "sigma_rules_path": f"{pack_id}/sigma",
+            "yara_rules_path": f"{pack_id}/yara",
+            "hashes_path": f"{pack_id}/ioc/hashes.txt",
+            "ips_path": f"{pack_id}/ioc/ips.txt",
+            "domains_path": f"{pack_id}/ioc/domains.txt",
+            "paths_regex_path": f"{pack_id}/ioc/paths_regex.txt",
         },
     }
 

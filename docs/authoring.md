@@ -93,7 +93,9 @@ Then add the `id` to a pack, e.g. `packs/windows/essential/pack.yml`:
 
 ```yaml
 rules:
-  - 7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60   # Suspicious Encoded PowerShell Command Line
+  has:
+    sigma:
+      - 7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60   # Suspicious Encoded PowerShell Command Line
 ```
 
 ---
