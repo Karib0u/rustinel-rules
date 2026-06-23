@@ -122,6 +122,7 @@ rustinel-rules/
 ├── packs/            # Pack manifests — reference artifacts by id, never copy
 ├── schemas/          # JSON Schema for pack.yml and IOC sets (v1)
 ├── tools/            # Build + validation tooling
+├── tests/atomic/     # Atomic firing tests — run the engine on real Linux/Windows/macOS runners
 └── dist/             # Build output (gitignored): packs + zips + index.json
 ```
 

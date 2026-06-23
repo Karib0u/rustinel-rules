@@ -238,6 +238,79 @@
       "script": "windows/eicar_ioc.ps1",
       "allow_failure": true,
       "expect": { "field": "rule.description", "contains": "EICAR" }
+    },
+    {
+      "id": "be06a6b0-fa9f-4df4-9d4a-9f8794037508",
+      "name": "macos_reverse_shell_dev_tcp",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/reverse_shell_dev_tcp.sh"
+    },
+    {
+      "id": "7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01",
+      "name": "macos_keychain_dump_security",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/keychain_dump_security.sh"
+    },
+    {
+      "id": "6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012",
+      "name": "macos_osascript_admin_prompt",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/osascript_admin_prompt.sh"
+    },
+    {
+      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "name": "macos_gatekeeper_bypass",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_bypass.sh"
+    },
+    {
+      "id": "4d4f5162-7e80-4193-9da3-4e5f60712304",
+      "name": "macos_launch_persistence",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launch_persistence.sh"
+    },
+    {
+      "id": "3e506273-8f91-42a4-8eb4-5f6071823405",
+      "name": "macos_download_execute_cradle",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/download_execute_cradle.sh"
+    },
+    {
+      "id": "2f617384-9012-43b5-9fc5-60718293a416",
+      "name": "macos_local_admin_account",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/local_admin_account.sh"
+    },
+    {
+      "id": "1a728495-a123-44c6-8ad6-718293a4b527",
+      "name": "macos_exec_from_world_writable",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/exec_from_world_writable.sh"
+    },
+    {
+      "id": "yara-macos-coinminer-strings",
+      "name": "macos_coinminer_yara_fixture",
+      "platform": "macos",
+      "engine": "yara",
+      "script": "macos/coinminer_yara_fixture.sh",
+      "allow_failure": true
+    },
+    {
+      "id": "ioc-eicar-test",
+      "name": "macos_eicar_ioc",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/eicar_ioc.sh",
+      "allow_failure": true,
+      "expect": { "field": "rule.description", "contains": "EICAR" }
     }
   ]
 }

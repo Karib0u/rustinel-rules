@@ -11,7 +11,7 @@ rule macos_susp_coinminer_strings
         os = "macos"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "none"
+        test_status = "atomic"
 
     strings:
         $s1 = "stratum+tcp://" ascii nocase

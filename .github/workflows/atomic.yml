@@ -1,8 +1,9 @@
 name: atomic
 
-# Firing tests: install the rustinel engine on real Windows + Linux runners,
-# perform an atomic action for each rule, and check the rule produced an alert.
-# Installs published engine releases (>= v1.1.0) via the official install scripts.
+# Firing tests: install the rustinel engine on real Windows, Linux + macOS
+# runners, perform an atomic action for each rule, and check the rule produced
+# an alert. Installs published engine releases (>= v1.1.0) via the official
+# install scripts.
 on:
   workflow_dispatch:
     inputs:
@@ -31,8 +32,15 @@ jobs:
             platform: linux
           - os: windows-latest
             platform: windows
+          # macOS is experimental: the engine needs an Endpoint Security
+          # entitlement and root, and whether ES initializes on a hosted runner
+          # is unproven. This leg reports but does not gate (continue-on-error).
+          - os: macos-latest
+            platform: macos
+            experimental: true
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.platform }}
+    continue-on-error: ${{ matrix.experimental || false }}
     steps:
       - uses: actions/checkout@v7
 
@@ -99,6 +107,21 @@ jobs:
           if (-not $ok) { exit 1 }
         shell: pwsh
 
+      - name: Install rustinel engine (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          for attempt in 1 2 3; do
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
+              exit 0
+            fi
+            echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
+            sleep "$((attempt * 10))"
+          done
+          echo "engine install failed after 3 attempts" >&2
+          exit 1
+        shell: bash
+
       - name: Exclude workspace from Defender (Windows, for EICAR)
         if: matrix.platform == 'windows'
         run: Add-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE" -ErrorAction SilentlyContinue
@@ -123,6 +146,18 @@ jobs:
             --pack "${{ github.event.inputs.pack || 'auto' }}" `
             --filter "${{ github.event.inputs.filter }}"
         shell: pwsh
+
+      # macOS EndpointSecurity needs root; -E preserves the resolved engine
+      # version + workspace env into the sudo'd process.
+      - name: Run atomic tests (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          sudo -E python3 tests/atomic/run_atomics.py \
+            --platform macos \
+            --engine-dir "$GITHUB_WORKSPACE/tests/atomic/.engine" \
+            --pack "${{ github.event.inputs.pack || 'auto' }}" \
+            --filter "${{ github.event.inputs.filter }}"
+        shell: bash
 
       - name: Upload report + engine logs
         if: always()
