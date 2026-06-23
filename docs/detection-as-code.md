@@ -40,7 +40,7 @@ the structural stub with `rustinel compile <pack>` to get a true Sigma load/comp
 
 Added incrementally as the project matures:
 
-- Selected Atomic tests (see [Dynamic testing policy](#dynamic-testing-policy))
+- Atomic firing tests — **implemented** (see [Firing tests](#firing-tests))
 - Detection coverage reports
 - Performance smoke tests
 - Field mapping coverage
@@ -58,6 +58,32 @@ We do **not** require one full dynamic / end-to-end test per rule in v1. Dynamic
 | Hunting     | No dynamic test requirement                     |
 
 Priority: prove that the most important **Essential** detections work end to end.
+
+## Firing tests
+
+Beyond static validation, the repo ships **atomic firing tests** that prove a rule
+actually fires against the real engine. The harness ([`tests/atomic/`](../tests/atomic/),
+orchestrated by `run_atomics.py`) installs a released Rustinel engine on a real
+runner, performs a small **safe** atomic action for each rule — the behaviour the
+rule is meant to catch — and checks the engine wrote a matching alert.
+
+```text
+atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
+```
+
+Run by [`.github/workflows/atomic.yml`](../.github/workflows/atomic.yml) on every
+pull request:
+
+| Platform | Sensor            | Gates CI?                                              |
+| -------- | ----------------- | ----------------------------------------------------- |
+| Linux    | eBPF              | yes                                                    |
+| Windows  | ETW               | yes                                                    |
+| macOS    | Endpoint Security | no — experimental, reports only (`continue-on-error`) |
+
+The same workflow runs `run_atomics.py --check-coverage --strict-essential`, which
+flags any rule marked `test_status: atomic` that lacks a test, plus Essential rules
+still left untested. See [`tests/atomic/README.md`](../tests/atomic/README.md) for
+how a test is judged and how to add one.
 
 ## TTP / Atomic / CTI strategy
 
