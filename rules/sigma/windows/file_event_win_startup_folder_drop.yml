@@ -1,0 +1,40 @@
+title: File Dropped in Startup Folder
+id: 59bbd501-1c61-45c9-940d-9465cabd36c4
+status: experimental
+description: >
+  Detects a file being written into a Start Menu Startup folder, the file-based
+  half of autorun persistence (the registry Run-key half is covered separately).
+  This accounts for roughly half of commodity-malware persistence.
+references:
+  - https://attack.mitre.org/techniques/T1547/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.t1547.001
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection:
+    TargetFilename|contains: '\Start Menu\Programs\StartUp\'
+  filter_ini:
+    TargetFilename|endswith: '.ini'
+  filter_installer:
+    Image|endswith:
+      - '\msiexec.exe'
+      - '\TrustedInstaller.exe'
+  condition: selection and not (filter_ini or filter_installer)
+falsepositives:
+  - Legitimate installers register startup entries; the installer image filter is
+    the tuning surface.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Windows file_event firing is not yet exercised by the atomic harness (no
+    Windows file rule has a fixture); validated manually with Atomic Red Team
+    T1547.001.

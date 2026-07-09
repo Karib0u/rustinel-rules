@@ -1,0 +1,52 @@
+title: Outbound Network Connection from Shell Binary
+id: d0c6216e-881c-408f-8e72-0a466522306b
+status: experimental
+description: >
+  Detects a public-internet outbound connection whose owning process is a shell
+  binary (bash, sh, dash, zsh). This is the enrichment-race safety net: a reverse
+  shell whose /proc/<pid>/cmdline read loses the race is invisible to the
+  command-line reverse-shell rules, but its socket is not. Add legitimate public
+  endpoints to the private-network filter as tuning.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+  - https://attack.mitre.org/techniques/T1071/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.command-and-control
+  - attack.execution
+  - attack.t1059.004
+  - attack.t1071
+logsource:
+  category: network_connection
+  product: linux
+detection:
+  selection:
+    Image|endswith:
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+  filter_private:
+    DestinationIp|cidr:
+      - '10.0.0.0/8'
+      - '172.16.0.0/12'
+      - '192.168.0.0/16'
+      - '127.0.0.0/8'
+      - '169.254.0.0/16'
+      - '::1/128'
+      - 'fe80::/10'
+  condition: selection and not filter_private
+falsepositives:
+  - Provisioning scripts that use /dev/tcp health checks against public
+    endpoints; the CIDR filter is the tuning surface.
+level: medium
+rustinel:
+  telemetry:
+    - network_connection
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    The network_connection channel is not yet exercised by the atomic harness;
+    validated manually with a /dev/tcp connection from a shell to a lab public IP.

@@ -1,0 +1,47 @@
+title: Unmanaged PowerShell via Automation DLL in Foreign Host
+id: 86c19f1a-add5-4553-9c24-f76e7fe3da9d
+status: experimental
+description: >
+  Detects System.Management.Automation.dll being loaded by a process other than
+  a known PowerShell host. Cobalt Strike powerpick, Empire psinject and most
+  modern loaders run PowerShell without powershell.exe precisely to evade
+  command-line rules; this catches the runtime instead of the command line.
+  The host allowlist is the intended tuning surface.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: image_load
+  product: windows
+detection:
+  selection:
+    ImageLoaded|endswith:
+      - '\System.Management.Automation.dll'
+      - '\System.Management.Automation.ni.dll'
+  filter_hosts:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\powershell_ise.exe'
+      - '\pwsh.exe'
+      - '\wsmprovhost.exe'
+      - '\sdiagnhost.exe'
+      - '\mscorsvw.exe'
+      - '\dsac.exe'
+  condition: selection and not filter_hosts
+falsepositives:
+  - Administration and backup tools that embed the PowerShell runtime; add them
+    to the host filter.
+level: high
+rustinel:
+  telemetry:
+    - image_load
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Reliable image-load firing depends on a runspace-hosting binary that the
+    disposable atomic runners do not ship; validated manually with a
+    PowerShell-runspace host loading the automation DLL.

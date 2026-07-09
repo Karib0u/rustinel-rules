@@ -1,0 +1,41 @@
+title: Unsigned DLL Loaded from User-Writable Path (Hunting)
+id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
+status: experimental
+description: >
+  Hunting signal for DLL side-loading: an unsigned DLL loaded from a
+  user-writable directory (Users, Temp, ProgramData, AppData). Side-loading is
+  the dominant execution technique of current APT tooling (PlugX / ShadowPad
+  lineage) and many stealers. Noisy — unsigned software is everywhere — so this
+  is hunting-tier pivot data, never a standing alert.
+references:
+  - https://attack.mitre.org/techniques/T1574/002/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.t1574.002
+logsource:
+  category: image_load
+  product: windows
+detection:
+  selection:
+    Signed: 'false'
+    ImageLoaded|contains:
+      - '\Users\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\AppData\'
+  condition: selection
+falsepositives:
+  - Substantial; unsigned third-party software loads DLLs from these paths
+    routinely. Hunting only.
+level: low
+rustinel:
+  telemetry:
+    - image_load
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    Hunting-tier signal on the image_load channel, which the atomic harness does
+    not exercise; validated manually by loading an unsigned DLL from %TEMP%.

@@ -1,0 +1,44 @@
+title: LSASS Memory Dump via Procdump
+id: 04d66f93-97ae-4674-96a8-1bb524a1da60
+status: experimental
+description: >
+  Detects Sysinternals Procdump being used to dump the memory of LSASS for
+  offline credential extraction, including when the binary has been renamed. The
+  tool is identified by its original file name, by its image name, or by the
+  characteristic full-dump flags, and every path is constrained to an LSASS
+  target to stay high-signal. Procdump is the most common real-world LSASS dump
+  method because it is Microsoft-signed and allowlist-friendly.
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+  - https://lolbas-project.github.io/lolbas/OtherMSBinaries/Procdump/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.credential-access
+  - attack.t1003.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_lsass:
+    CommandLine|contains: 'lsass'
+  selection_name:
+    OriginalFileName: 'procdump'
+  selection_image:
+    Image|endswith:
+      - '\procdump.exe'
+      - '\procdump64.exe'
+  selection_flags:
+    CommandLine|contains|windash:
+      - ' -ma '
+      - ' -mm '
+  condition: selection_lsass and (selection_name or selection_image or selection_flags)
+falsepositives:
+  - Security teams that intentionally dump LSASS for forensic capture; add a
+    host-level exception for those hosts rather than weakening the rule.
+level: critical
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

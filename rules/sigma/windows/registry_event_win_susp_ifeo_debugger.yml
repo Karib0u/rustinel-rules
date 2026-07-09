@@ -1,0 +1,53 @@
+title: IFEO Debugger or SilentProcessExit Hijack
+id: cda4a133-fe67-4aa6-815d-f8c69ff16828
+status: experimental
+description: >
+  Detects registry changes that attach a Debugger to an Image File Execution
+  Options entry, set an IFEO GlobalFlag, or register a SilentProcessExit
+  MonitorProcess. The sticky-keys / accessibility-feature variant of this yields
+  a SYSTEM shell at the lock screen with no malware on disk and is still
+  routinely found in incident response.
+  Note: Rustinel exposes the registry key path in TargetObject and the value name
+  in Details, so the watched value names are matched in either field.
+references:
+  - https://attack.mitre.org/techniques/T1546/008/
+  - https://attack.mitre.org/techniques/T1546/012/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.008
+  - attack.t1546.012
+logsource:
+  category: registry_event
+  product: windows
+detection:
+  selection_ifeo_path:
+    TargetObject|contains: '\Image File Execution Options\'
+  ifeo_value_in_keyname:
+    TargetObject|contains:
+      - 'Debugger'
+      - 'GlobalFlag'
+  ifeo_value_in_details:
+    Details|contains:
+      - 'Debugger'
+      - 'GlobalFlag'
+  selection_spe_path:
+    TargetObject|contains: '\SilentProcessExit\'
+  spe_value_in_keyname:
+    TargetObject|contains: 'MonitorProcess'
+  spe_value_in_details:
+    Details|contains: 'MonitorProcess'
+  condition: >
+    (selection_ifeo_path and (ifeo_value_in_keyname or ifeo_value_in_details))
+    or (selection_spe_path and (spe_value_in_keyname or spe_value_in_details))
+falsepositives:
+  - Developer tooling that attaches a debugger on launch (WinDbg, gflags) on dev
+    workstations; filter those hosts rather than weakening the rule.
+level: high
+rustinel:
+  telemetry:
+    - registry_event
+  expected_false_positive_level: low
+  test_status: atomic

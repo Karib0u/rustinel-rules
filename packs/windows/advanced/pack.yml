@@ -22,12 +22,24 @@ attack_coverage:
   - T1543.003
   - T1053.005
   - T1047
+  - T1547.004
+  - T1562.001
+  - T1059.001
+  - T1090.001
+  - T1197
+  - T1071
+  - T1218
+  - T1219
 telemetry_requirements:
   - process_creation
   - registry_event
   - task_creation
   - ps_script
   - service_creation
+  - image_load
+  - network_connection
+  - file_event
+  - file_scan
 test_status: manual
 sources:
     manual:
@@ -43,3 +55,14 @@ rules:
           - d4e5f6a7-0123-4345-9d6e-7f8a9b012a13   # Suspicious Service Binary Path
           - 4a596825-4674-4db3-b360-842435edf11a   # Scheduled Task Creation via Schtasks
           - 2a3c3182-80b8-42d4-bd39-83c55582ef70   # WMI Process Execution via WMIC
+          - 52b94494-756b-40d7-af01-8d0c7d54a6cc   # Winlogon Helper DLL or Shell Modification (sigma)
+          - 43c59081-d5ec-4153-9e26-04e66e07461a   # Security Service Stop or Disable via sc or net (sigma)
+          - 31ddbaff-1a32-4eb6-b7ce-647b59aeb901   # AMSI Bypass Pattern in PowerShell ScriptBlock (sigma)
+          - 86c19f1a-add5-4553-9c24-f76e7fe3da9d   # Unmanaged PowerShell via Automation DLL in Foreign Host (sigma)
+          - 6c46cc68-2e66-4834-b058-0a2cfd115409   # Netsh Port-Proxy Tunnel Configuration (sigma)
+          - d97177dd-c74f-465e-96c1-194cc1dd681d   # BITS Job Download via bitsadmin (sigma)
+          - 59bbd501-1c61-45c9-940d-9465cabd36c4   # File Dropped in Startup Folder (sigma)
+          - 717396f6-aff0-49b0-b8f3-53568e276d5c   # Outbound Connection from Script or LOLBin Host (sigma)
+        yara:
+          - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
+          - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

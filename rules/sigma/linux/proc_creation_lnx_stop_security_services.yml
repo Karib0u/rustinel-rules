@@ -1,0 +1,50 @@
+title: Security Service Stop (auditd / AppArmor / SELinux / EDR)
+id: 0cb59840-b420-4332-b7d1-2c3d4343901f
+status: experimental
+description: >
+  Detects stopping, disabling or masking of a Linux security service via
+  systemctl (auditd, apparmor, and common EDR agents), or disabling SELinux
+  enforcement via setenforce 0. This is the first move of TeamTNT-style cloud and
+  cryptomining intrusions. The service list is the tuning surface, mirroring the
+  Windows security-service-stop rule.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_systemctl:
+    Image|endswith: '/systemctl'
+    CommandLine|contains:
+      - 'stop'
+      - 'disable'
+      - 'mask'
+  systemctl_service:
+    CommandLine|contains:
+      - 'auditd'
+      - 'apparmor'
+      - 'falcon-sensor'
+      - 'falcon'
+      - 'mdatp'
+      - 'sysmon'
+      - 'osqueryd'
+      - 'wazuh'
+  selection_setenforce:
+    Image|endswith: '/setenforce'
+    CommandLine|contains:
+      - ' 0'
+      - 'Permissive'
+  condition: (selection_systemctl and systemctl_service) or selection_setenforce
+falsepositives:
+  - Administrator maintenance windows; the service list is the tuning surface.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

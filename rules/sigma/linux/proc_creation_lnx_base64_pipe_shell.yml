@@ -1,0 +1,44 @@
+title: Base64-Decode Piped to Shell
+id: d24c4943-3e22-481f-99ee-ca631b8a77af
+status: experimental
+description: >
+  Detects a command line that base64-decodes content and pipes the result
+  straight into a shell, the standard obfuscation wrapper of cryptominer droppers
+  and botnet installers (Kinsing, TeamTNT lineage). Complements the
+  download-pipe-shell rule.
+references:
+  - https://attack.mitre.org/techniques/T1027/
+  - https://attack.mitre.org/techniques/T1059/004/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.execution
+  - attack.t1027
+  - attack.t1059.004
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_b64:
+    CommandLine|contains: 'base64'
+  selection_decode:
+    CommandLine|contains:
+      - ' -d '
+      - ' --decode'
+      - ' -d|'
+  selection_pipe:
+    CommandLine|contains:
+      - '| sh'
+      - '|sh'
+      - '| bash'
+      - '|bash'
+  condition: selection_b64 and selection_decode and selection_pipe
+falsepositives:
+  - CI systems occasionally decode and run build steps this way.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

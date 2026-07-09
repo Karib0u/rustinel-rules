@@ -1,0 +1,49 @@
+title: Boot Recovery Tampering via bcdedit or wbadmin
+id: e86de5fe-3908-4a95-b4e8-930a93bf4555
+status: experimental
+description: >
+  Detects disabling of Windows automatic boot recovery via bcdedit, or deletion
+  of backup catalogs / system-state backups via wbadmin. These steps fire in
+  virtually every human-operated ransomware chain, usually within seconds of the
+  already-covered vssadmin shadow-copy deletion, and precede encryption.
+references:
+  - https://attack.mitre.org/techniques/T1490/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.impact
+  - attack.t1490
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_bcdedit:
+    Image|endswith: '\bcdedit.exe'
+    CommandLine|contains:
+      - 'recoveryenabled no'
+      - 'recoveryenabled off'
+      - 'bootstatuspolicy ignoreallfailures'
+  selection_wbadmin_catalog:
+    Image|endswith: '\wbadmin.exe'
+    CommandLine|contains|all:
+      - 'delete'
+      - 'catalog'
+  selection_wbadmin_systemstate:
+    Image|endswith: '\wbadmin.exe'
+    CommandLine|contains|all:
+      - 'delete'
+      - 'systemstatebackup'
+  selection_wbadmin_backup:
+    Image|endswith: '\wbadmin.exe'
+    CommandLine|contains|all:
+      - 'delete'
+      - 'backup'
+  condition: selection_bcdedit or selection_wbadmin_catalog or selection_wbadmin_systemstate or selection_wbadmin_backup
+falsepositives:
+  - Essentially none; no routine administrative workflow disables boot recovery.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

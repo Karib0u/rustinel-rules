@@ -1,0 +1,47 @@
+title: Webshell Written by Web-Server Process
+id: e96a9b85-26f6-4251-a26b-361d4b6761ef
+status: experimental
+description: >
+  Detects a web-server or application-server process (nginx, apache, httpd,
+  php-fpm, php, tomcat, java) writing a server-side script file (.php, .jsp, .war
+  and friends). Webshells remain the number-one Linux initial-access persistence
+  after an exploited web application; this is drop-time detection complementing
+  the use-time "web server spawns shell" rule.
+references:
+  - https://attack.mitre.org/techniques/T1505/003/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.t1505.003
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection:
+    Image|endswith:
+      - '/nginx'
+      - '/apache2'
+      - '/httpd'
+      - '/php-fpm'
+      - '/php'
+      - '/java'
+    TargetFilename|endswith:
+      - '.php'
+      - '.php5'
+      - '.phtml'
+      - '.jsp'
+      - '.jspx'
+      - '.war'
+      - '.asp'
+      - '.aspx'
+  condition: selection
+falsepositives:
+  - CMS plugin installs and cache writers (WordPress); document webroot cache-path
+    filters per environment.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: atomic

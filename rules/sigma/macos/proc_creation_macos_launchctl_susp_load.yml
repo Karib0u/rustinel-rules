@@ -1,0 +1,42 @@
+title: launchctl Load from User-Writable Path
+id: 578195d3-de1a-4c46-84c8-b246a060474c
+status: experimental
+description: >
+  Detects launchctl loading or bootstrapping a launch item from a world-writable
+  or temporary path (/tmp, /private/tmp, /Users/Shared, /var/tmp). This is the
+  execution-side complement to the LaunchAgents/LaunchDaemons plist-creation rule:
+  it catches activation of the agent even when the plist write happened earlier.
+references:
+  - https://attack.mitre.org/techniques/T1543/001/
+  - https://attack.mitre.org/techniques/T1543/004/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1543.001
+  - attack.t1543.004
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_tool:
+    Image|endswith: '/launchctl'
+    CommandLine|contains:
+      - 'load'
+      - 'bootstrap'
+  selection_path:
+    CommandLine|contains:
+      - '/tmp/'
+      - '/private/tmp/'
+      - '/Users/Shared/'
+      - '/var/tmp/'
+  condition: selection_tool and selection_path
+falsepositives:
+  - Some developer tooling loads agents from a temporary path during install.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: none

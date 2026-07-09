@@ -1,0 +1,46 @@
+title: Reconnaissance Command Burst (Hunting)
+id: 4aae4b03-4807-428a-ac89-5c5f3cda65e4
+status: experimental
+description: >
+  Hunting signal for the built-in discovery commands that open nearly every
+  hands-on-keyboard intrusion — privilege, group and domain-trust enumeration.
+  These strings are consistently top-ranked in Red Canary and DFIR Report data.
+  Wrong for alerting (administrators and scripts run them too), ideal for triage
+  context and pivoting.
+references:
+  - https://attack.mitre.org/techniques/T1033/
+  - https://attack.mitre.org/techniques/T1482/
+  - https://attack.mitre.org/techniques/T1069/002/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.discovery
+  - attack.t1033
+  - attack.t1482
+  - attack.t1069.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    CommandLine|contains:
+      - 'whoami /priv'
+      - 'whoami /groups'
+      - 'nltest /domain_trusts'
+      - 'nltest /dclist'
+      - 'net group "domain admins"'
+      - 'net localgroup administrators'
+  condition: selection
+falsepositives:
+  - Administrators and provisioning scripts run these routinely. Hunting only,
+    never promote to a standing alert.
+level: low
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    Hunting-tier keyword content whose exact command-line substrings are
+    environment-dependent to reproduce faithfully; validated manually with
+    Atomic Red Team T1033 / T1482.

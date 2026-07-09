@@ -1,0 +1,43 @@
+title: BITS Job Download via bitsadmin
+id: d97177dd-c74f-465e-96c1-194cc1dd681d
+status: experimental
+description: >
+  Detects bitsadmin.exe creating a background transfer that downloads a remote
+  URL. BITS is a long-lived ingress-tool-transfer LOLBin that survives reboots
+  and runs outside the requesting process; pairs with the certutil hunting rule
+  to cover the two most common download LOLBins.
+references:
+  - https://attack.mitre.org/techniques/T1197/
+  - https://attack.mitre.org/techniques/T1105/
+  - https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.command-and-control
+  - attack.t1197
+  - attack.t1105
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tool:
+    Image|endswith: '\bitsadmin.exe'
+  selection_transfer:
+    CommandLine|contains|windash:
+      - '/transfer'
+      - '/create'
+      - '/addfile'
+  selection_url:
+    CommandLine|contains:
+      - 'http'
+      - 'ftp'
+  condition: selection_tool and selection_transfer and selection_url
+falsepositives:
+  - Some legacy deployment scripts still use bitsadmin for downloads.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

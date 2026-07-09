@@ -1,0 +1,41 @@
+title: AMSI Bypass Pattern in PowerShell ScriptBlock
+id: 31ddbaff-1a32-4eb6-b7ce-647b59aeb901
+status: experimental
+description: >
+  Detects PowerShell ScriptBlock content that references the internal AMSI
+  objects and fields used by nearly every published AMSI bypass (patching
+  amsiInitFailed, reflecting into AmsiUtils, or targeting AmsiScanBuffer /
+  AmsiOpenSession). Almost every PowerShell offensive framework disables AMSI
+  first, so catching the bypass catches the family rather than the sample.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: ps_script
+  product: windows
+detection:
+  selection:
+    ScriptBlockText|contains:
+      - 'amsiInitFailed'
+      - 'AmsiUtils'
+      - 'AmsiScanBuffer'
+      - 'amsiContext'
+      - 'AmsiOpenSession'
+  condition: selection
+falsepositives:
+  - Security tooling and red-team frameworks; content-wise near zero, but
+    ScriptBlock volume argues for Advanced until burn-in.
+level: high
+rustinel:
+  telemetry:
+    - ps_script
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Requires PowerShell ScriptBlock logging to be enabled on the host, which the
+    atomic firing runners do not configure; validated manually with Atomic Red
+    Team T1562.001 AMSI bypass atomics.

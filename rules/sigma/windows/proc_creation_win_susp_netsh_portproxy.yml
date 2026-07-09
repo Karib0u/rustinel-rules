@@ -1,0 +1,35 @@
+title: Netsh Port-Proxy Tunnel Configuration
+id: 6c46cc68-2e66-4834-b058-0a2cfd115409
+status: experimental
+description: >
+  Detects configuration of a netsh interface portproxy rule, a built-in
+  port-forwarding / pivot mechanism used for lateral movement and to expose
+  internal services. Documented against domain controllers in numerous
+  intrusions, including Volt Typhoon-style living-off-the-land tradecraft.
+references:
+  - https://attack.mitre.org/techniques/T1090/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.command-and-control
+  - attack.lateral-movement
+  - attack.t1090.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\netsh.exe'
+    CommandLine|contains|all:
+      - 'interface'
+      - 'portproxy'
+      - 'add'
+  condition: selection
+falsepositives:
+  - Rare legitimate port-forwarding setups by administrators.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

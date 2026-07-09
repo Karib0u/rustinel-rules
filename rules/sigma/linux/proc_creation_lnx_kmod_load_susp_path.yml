@@ -1,0 +1,40 @@
+title: Kernel Module Load from Suspicious Path
+id: 3f32d825-006a-45e9-b5a9-6e7edeeff13c
+status: experimental
+description: >
+  Detects insmod or modprobe loading a kernel module from a world-writable or
+  user-owned path (/tmp, /dev/shm, /var/tmp, /home). This is the highest-impact
+  Linux persistence — rootkit installation (Diamorphine descendants, cryptomining
+  rootkits) — with a cheap, low-false-positive signal on servers.
+references:
+  - https://attack.mitre.org/techniques/T1547/006/
+  - https://attack.mitre.org/techniques/T1014/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.defense-evasion
+  - attack.t1547.006
+  - attack.t1014
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    Image|endswith:
+      - '/insmod'
+      - '/modprobe'
+    CommandLine|contains:
+      - '/tmp/'
+      - '/dev/shm/'
+      - '/var/tmp/'
+      - '/home/'
+  condition: selection
+falsepositives:
+  - Kernel developers building modules on workstations; near zero on servers.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

@@ -16,8 +16,13 @@ extends:
   - windows-advanced
 attack_coverage:
   - T1105
+  - T1574.002
+  - T1033
+  - T1482
+  - T1069.002
 telemetry_requirements:
   - process_creation
+  - image_load
 test_status: none
 sources:
     manual:
@@ -27,3 +32,5 @@ rules:
     has:
         sigma:
           - 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10   # Certutil Used to Download Remote Content (Hunting)
+          - 3248cbd6-6c77-4b5c-ab44-655e7fd75667   # Unsigned DLL Loaded from User-Writable Path (Hunting)
+          - 4aae4b03-4807-428a-ac89-5c5f3cda65e4   # Reconnaissance Command Burst (Hunting)
