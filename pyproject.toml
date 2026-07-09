@@ -1,19 +1,20 @@
 [project]
 name = "rustinel-rules-tools"
-version = "0.1.0"
+version = "0.2.0"
 description = "Validation and build tooling for rustinel-rules detection content."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.0",
-    "yara-x>=1.0",
+    "yara-x>=1.19.0",
+    "ruamel.yaml>=0.18.0",
 ]
 
 [dependency-groups]
 dev = [
-    "ruff>=0.15.16",
-    "ty>=0.0.45",
+    "ruff>=0.15.20",
+    "ty>=0.0.56",
 ]
 
 # This repo ships detection content plus helper scripts under tools/; it is not a
@@ -21,6 +22,7 @@ dev = [
 # backend, no install of this project itself).
 [tool.uv]
 package = false
+exclude-newer = "3 days"  # Prevent supply-chain attacks by excluding recently published versions of dependencies.
 
 [tool.ruff]
 line-length = 100

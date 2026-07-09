@@ -1,13 +1,13 @@
 name: macOS Essential
 id: macos-essential
 description: >
-  Low-noise, high-confidence macOS detections for Rustinel, focused on the
-  dominant macOS threats: infostealers, keychain theft, Gatekeeper bypass and
-  cryptominers. Experimental and post-v1 — macOS packs are not yet
-  production-ready, so this pack is disabled by default.
+    Low-noise, high-confidence macOS detections for Rustinel, focused on the
+    dominant macOS threats: infostealers, keychain theft, Gatekeeper bypass and
+    cryptominers. Experimental and post-v1 — macOS packs are not yet
+    production-ready, so this pack is disabled by default.
 os: macos
 level: essential
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: low
@@ -31,13 +31,18 @@ telemetry_requirements:
   - file_scan
 test_status: none
 sources:
-  - https://attack.mitre.org/
+    manual:
+      - https://attack.mitre.org/
 rules:
-  - 7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01   # Keychain Credential Dump via security (sigma)
-  - 6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012   # osascript Credential Prompt or Suspicious Admin Shell (sigma)
-  - 5c3e4051-6d7f-4082-8c92-3d4e5f601203   # Gatekeeper or Quarantine Protection Disabled (sigma)
-  - be06a6b0-fa9f-4df4-9d4a-9f8794037508   # macOS Reverse Shell via /dev/tcp (sigma)
-  - 829cee70-a60f-4e8a-8b2f-38e1fff83e61   # TCC Database Access (sigma)
-  - db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8   # Browser Credential Store Access (sigma)
-  - yara-macos-coinminer-strings           # Cryptominer Mach-O strings (yara)
-  - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)
+    has:
+        sigma:
+          - 7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01   # Keychain Credential Dump via security (sigma)
+          - 6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012   # osascript Credential Prompt or Suspicious Admin Shell (sigma)
+          - 5c3e4051-6d7f-4082-8c92-3d4e5f601203   # Gatekeeper or Quarantine Protection Disabled (sigma)
+          - be06a6b0-fa9f-4df4-9d4a-9f8794037508   # macOS Reverse Shell via /dev/tcp (sigma)
+          - 829cee70-a60f-4e8a-8b2f-38e1fff83e61   # TCC Database Access (sigma)
+          - db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8   # Browser Credential Store Access (sigma)
+        yara:
+          - yara-macos-coinminer-strings           # Cryptominer Mach-O strings (yara)
+        ioc:
+          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

@@ -18,7 +18,7 @@ Essential  ⊂  Advanced  ⊂  Hunting
 | [macOS Essential](#macos-essential) | essential | ❌ | low | experimental |
 | [macOS Advanced](#macos-advanced) | advanced | ❌ | medium | experimental |
 
-> All packs declare `requires_rustinel: ">=1.0.2"`, `pack_schema_version: 1`, and license
+> All packs declare `pack_schema_version: 2`, `requires_rustinel: ">=1.0.2"`, and license
 > `DRL-1.1`. `status: experimental` reflects the early state of v1 content — expect curation to
 > tighten as coverage grows.
 

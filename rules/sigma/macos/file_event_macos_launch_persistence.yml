@@ -34,4 +34,4 @@ rustinel:
   telemetry:
     - file_event
   expected_false_positive_level: medium
-  test_status: none
+  test_status: atomic

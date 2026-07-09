@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 
 import lib
 
-DEFAULT_VERSION = "0.1.0"
+DEFAULT_VERSION = "0.2.0"
 SOURCE_REPO = "https://github.com/Karib0u/rustinel-rules"
 GITHUB_BLOB = f"{SOURCE_REPO}/blob/main"
 ATTACK_MAP_PATH = lib.REPO_ROOT / "tools" / "attack_techniques.json"

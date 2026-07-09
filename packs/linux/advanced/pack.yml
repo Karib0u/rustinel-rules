@@ -1,12 +1,12 @@
 name: Linux Advanced
 id: linux-advanced
 description: >
-  Linux Essential plus broader production detections. More false positives may
-  occur than in Essential (notably from package installs); tune per environment
-  before relying on by default.
+    Linux Essential plus broader production detections. More false positives may
+    occur than in Essential (notably from package installs); tune per environment
+    before relying on by default.
 os: linux
 level: advanced
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: medium
@@ -37,19 +37,23 @@ telemetry_requirements:
   - file_scan
 test_status: none
 sources:
-  - https://attack.mitre.org/
+    manual:
+      - https://attack.mitre.org/
 rules:
-  - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
-  - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
-  - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
-  - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
-  - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
-  - d0c6216e-881c-408f-8e72-0a466522306b   # Outbound Network Connection from Shell Binary (sigma)
-  - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Tampering (sigma)
-  - 6b124b53-1d4b-48a2-86b7-4df9bf43de61   # System Log Clearing (journal and /var/log) (sigma)
-  - 7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3   # SUID/SGID Bit Added via chmod (sigma)
-  - 1bb5e9e4-f17e-476e-8e77-aaa1858f12f7   # udev Rules Persistence (sigma)
-  - e96a9b85-26f6-4251-a26b-361d4b6761ef   # Webshell Written by Web-Server Process (sigma)
-  - d24c4943-3e22-481f-99ee-ca631b8a77af   # Base64-Decode Piped to Shell (sigma)
-  - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
-  - yara-lnx-sliver-implant                 # Sliver C2 implant artifacts in Linux ELF (yara)
+    has:
+        sigma:
+          - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
+          - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
+          - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
+          - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
+          - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
+          - d0c6216e-881c-408f-8e72-0a466522306b   # Outbound Network Connection from Shell Binary (sigma)
+          - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Tampering (sigma)
+          - 6b124b53-1d4b-48a2-86b7-4df9bf43de61   # System Log Clearing (journal and /var/log) (sigma)
+          - 7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3   # SUID/SGID Bit Added via chmod (sigma)
+          - 1bb5e9e4-f17e-476e-8e77-aaa1858f12f7   # udev Rules Persistence (sigma)
+          - e96a9b85-26f6-4251-a26b-361d4b6761ef   # Webshell Written by Web-Server Process (sigma)
+          - d24c4943-3e22-481f-99ee-ca631b8a77af   # Base64-Decode Piped to Shell (sigma)
+          - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
+        yara:
+          - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)

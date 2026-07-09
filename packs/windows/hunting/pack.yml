@@ -1,12 +1,12 @@
 name: Windows Hunting
 id: windows-hunting
 description: >
-  Windows Advanced plus broad, noisier hunting content intended for analyst-driven
-  investigation. Not enabled by default and not suitable as a standing alert source
-  without tuning.
+    Windows Advanced plus broad, noisier hunting content intended for analyst-driven
+    investigation. Not enabled by default and not suitable as a standing alert source
+    without tuning.
 os: windows
 level: hunting
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: high
@@ -25,9 +25,12 @@ telemetry_requirements:
   - image_load
 test_status: none
 sources:
-  - https://attack.mitre.org/
-  - https://lolbas-project.github.io/
+    manual:
+      - https://attack.mitre.org/
+      - https://lolbas-project.github.io/
 rules:
-  - 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10   # Certutil Used to Download Remote Content (Hunting)
-  - 3248cbd6-6c77-4b5c-ab44-655e7fd75667   # Unsigned DLL Loaded from User-Writable Path (Hunting)
-  - 4aae4b03-4807-428a-ac89-5c5f3cda65e4   # Reconnaissance Command Burst (Hunting)
+    has:
+        sigma:
+          - 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10   # Certutil Used to Download Remote Content (Hunting)
+          - 3248cbd6-6c77-4b5c-ab44-655e7fd75667   # Unsigned DLL Loaded from User-Writable Path (Hunting)
+          - 4aae4b03-4807-428a-ac89-5c5f3cda65e4   # Reconnaissance Command Burst (Hunting)

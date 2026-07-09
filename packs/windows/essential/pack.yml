@@ -3,7 +3,7 @@ id: windows-essential
 description: Low-noise, high-confidence Windows detections for Rustinel. Safe default pack.
 os: windows
 level: essential
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: true
 expected_false_positive_level: low
@@ -39,27 +39,32 @@ telemetry_requirements:
   - file_scan
 test_status: mixed
 sources:
-  - https://attack.mitre.org/
-  - https://lolbas-project.github.io/
+    manual:
+      - https://attack.mitre.org/
+      - https://lolbas-project.github.io/
 rules:
-  - 7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60   # Suspicious Encoded PowerShell Command Line (sigma)
-  - 7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05   # LSASS Memory Dump via comsvcs.dll MiniDump (sigma)
-  - 1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04   # Volume Shadow Copy Deletion (sigma)
-  - 9a0c3e75-6d8b-4f12-bc34-1e7a5d9c0b06   # Regsvr32 Remote Scriptlet Execution / Squiblydoo (sigma)
-  - 3c6f9b22-7e1a-4d85-9c0b-2a8d4e6f1b07   # Mshta Remote or Inline Script Execution (sigma)
-  - c4a7f2e9-5d3b-4810-a6c1-9e0f3b7d2a03   # Office Application Spawning a Command Shell (sigma)
-  - 5e8b1d44-9c2a-4f67-8d03-7b1a6e3c9d08   # Windows Event Log Cleared via Command Line (sigma)
-  - b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11   # Microsoft Defender Tampering via Registry (sigma)
-  - e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20   # Registry Hive Dump via reg.exe save (sigma)
-  - f2b8c4d1-6e90-4a27-9d3b-5a1c2e7f8b21   # UAC Bypass via Auto-Elevating LOLBin (sigma)
-  - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction (sigma)
-  - b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23   # WDigest Cleartext Credential Caching Enabled (sigma)
-  - 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99   # Scheduled Task Created With Suspicious Action (sigma)
-  - d6adbfee-548b-4def-9e49-8e6940251957   # WMI Event Subscription Persistence (sigma)
-  - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering via bcdedit or wbadmin (sigma)
-  - 596b49d3-561e-49d7-9538-f3115c1c8cfd   # USN Journal Deletion via fsutil (sigma)
-  - 04d66f93-97ae-4674-96a8-1bb524a1da60   # LSASS Memory Dump via Procdump (sigma)
-  - cda4a133-fe67-4aa6-815d-f8c69ff16828   # IFEO Debugger or SilentProcessExit Hijack (sigma)
-  - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
-  - yara-win-xmrig-coinminer               # XMRig / coinminer strings in Windows PE binaries (yara)
-  - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)
+    has:
+        sigma:
+          - 7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60   # Suspicious Encoded PowerShell Command Line (sigma)   # Suspicious Encoded PowerShell Command Line
+          - 7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05   # LSASS Memory Dump via comsvcs.dll MiniDump (sigma)
+          - 1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04   # Volume Shadow Copy Deletion (sigma)
+          - 9a0c3e75-6d8b-4f12-bc34-1e7a5d9c0b06   # Regsvr32 Remote Scriptlet Execution / Squiblydoo (sigma)
+          - 3c6f9b22-7e1a-4d85-9c0b-2a8d4e6f1b07   # Mshta Remote or Inline Script Execution (sigma)
+          - c4a7f2e9-5d3b-4810-a6c1-9e0f3b7d2a03   # Office Application Spawning a Command Shell (sigma)
+          - 5e8b1d44-9c2a-4f67-8d03-7b1a6e3c9d08   # Windows Event Log Cleared via Command Line (sigma)
+          - b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11   # Microsoft Defender Tampering via Registry (sigma)
+          - e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20   # Registry Hive Dump via reg.exe save (sigma)
+          - f2b8c4d1-6e90-4a27-9d3b-5a1c2e7f8b21   # UAC Bypass via Auto-Elevating LOLBin (sigma)
+          - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction (sigma)
+          - b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23   # WDigest Cleartext Credential Caching Enabled (sigma)
+          - 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99   # Scheduled Task Created With Suspicious Action (sigma)
+          - d6adbfee-548b-4def-9e49-8e6940251957   # WMI Event Subscription Persistence (sigma)
+          - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering via bcdedit or wbadmin (sigma)
+          - 596b49d3-561e-49d7-9538-f3115c1c8cfd   # USN Journal Deletion via fsutil (sigma)
+          - 04d66f93-97ae-4674-96a8-1bb524a1da60   # LSASS Memory Dump via Procdump (sigma)
+          - cda4a133-fe67-4aa6-815d-f8c69ff16828   # IFEO Debugger or SilentProcessExit Hijack (sigma)
+        yara:
+          - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
+          - yara-win-xmrig-coinminer   # XMRig / coinminer strings in Windows PE binaries (yara)
+        ioc:
+          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

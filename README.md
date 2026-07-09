@@ -42,21 +42,21 @@ Each detection lives **once** in `rules/`, carries a stable `id`, and is referen
 **1. Download** the pack for your OS plus `index.json` from the [latest release](https://github.com/Karib0u/rustinel-rules/releases/latest), and unzip it:
 
 ```bash
-unzip windows-essential-0.1.0.zip
+unzip windows-essential-0.2.0.zip
 ```
 
 **2. Point** `config.toml` at the unzipped pack — a pack folder *is* the directory Rustinel loads:
 
 ```toml
 [scanner]
-sigma_rules_path = "windows-essential/rules/sigma"
-yara_rules_path  = "windows-essential/rules/yara"
+sigma_rules_path = "windows-essential/sigma"
+yara_rules_path  = "windows-essential/yara"
 
 [ioc]
-hashes_path      = "windows-essential/rules/ioc/hashes.txt"
-ips_path         = "windows-essential/rules/ioc/ips.txt"
-domains_path     = "windows-essential/rules/ioc/domains.txt"
-paths_regex_path = "windows-essential/rules/ioc/paths_regex.txt"
+hashes_path      = "windows-essential/ioc/hashes.txt"
+ips_path         = "windows-essential/ioc/ips.txt"
+domains_path     = "windows-essential/ioc/domains.txt"
+paths_regex_path = "windows-essential/ioc/paths_regex.txt"
 ```
 
 **3. Confirm it works.** The Essential packs ship the **EICAR** test IOC set — drop a standard EICAR test file on disk and Rustinel raises an IOC alert in `logs/alerts.json.<date>`.
@@ -94,7 +94,7 @@ Full catalog and per-pack rule inventory: **[docs/packs.md](docs/packs.md)**.
 `rustinel-rules` is versioned **independently** from the engine — detection content evolves faster. Each pack manifest declares the engine version it needs:
 
 ```yaml
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 ```
 
@@ -122,6 +122,7 @@ rustinel-rules/
 ├── packs/            # Pack manifests — reference artifacts by id, never copy
 ├── schemas/          # JSON Schema for pack.yml and IOC sets (v1)
 ├── tools/            # Build + validation tooling
+├── tests/atomic/     # Atomic firing tests — run the engine on real Linux/Windows/macOS runners
 └── dist/             # Build output (gitignored): packs + zips + index.json
 ```
 

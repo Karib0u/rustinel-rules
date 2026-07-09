@@ -1,14 +1,14 @@
 name: macOS Advanced
 id: macos-advanced
 description: >
-  macOS Essential plus broader detections: launch-item persistence, shell
-  download cradles, privileged account creation and execution from temporary
-  paths. More false positives may occur — notably from application installers —
-  so tune per environment before relying on by default. Experimental and
-  post-v1; disabled by default.
+    macOS Essential plus broader detections: launch-item persistence, shell
+    download cradles, privileged account creation and execution from temporary
+    paths. More false positives may occur — notably from application installers —
+    so tune per environment before relying on by default. Experimental and
+    post-v1; disabled by default.
 os: macos
 level: advanced
-pack_schema_version: 1
+pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 default: false
 expected_false_positive_level: medium
@@ -31,12 +31,15 @@ telemetry_requirements:
   - file_event
 test_status: none
 sources:
-  - https://attack.mitre.org/
+    manual:
+      - https://attack.mitre.org/
 rules:
-  - 4d4f5162-7e80-4193-9da3-4e5f60712304   # Launch Agent or Daemon Persistence Plist Created (sigma)
-  - 3e506273-8f91-42a4-8eb4-5f6071823405   # Shell Download-and-Execute Pipe Cradle (sigma)
-  - 2f617384-9012-43b5-9fc5-60718293a416   # Local Admin Account Created via Directory Services (sigma)
-  - 1a728495-a123-44c6-8ad6-718293a4b527   # Execution from World-Writable or Temporary Directory (sigma)
-  - c92540cf-466d-4959-ab25-1c456bedf9d5   # SSH authorized_keys Created or Replaced (macOS) (sigma)
-  - 578195d3-de1a-4c46-84c8-b246a060474c   # launchctl Load from User-Writable Path (sigma)
-  - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Tampering (macOS) (sigma)
+    has:
+        sigma:
+          - 4d4f5162-7e80-4193-9da3-4e5f60712304   # Launch Agent or Daemon Persistence Plist Created (sigma)
+          - 3e506273-8f91-42a4-8eb4-5f6071823405   # Shell Download-and-Execute Pipe Cradle (sigma)
+          - 2f617384-9012-43b5-9fc5-60718293a416   # Local Admin Account Created via Directory Services (sigma)
+          - 1a728495-a123-44c6-8ad6-718293a4b527   # Execution from World-Writable or Temporary Directory (sigma)
+          - c92540cf-466d-4959-ab25-1c456bedf9d5   # SSH authorized_keys Created or Replaced (macOS) (sigma)
+          - 578195d3-de1a-4c46-84c8-b246a060474c   # launchctl Load from User-Writable Path (sigma)
+          - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Tampering (macOS) (sigma)
