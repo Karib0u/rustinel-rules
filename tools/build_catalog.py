@@ -309,7 +309,7 @@ def main() -> int:
     lib.DIST_DIR.mkdir(parents=True, exist_ok=True)
     catalog = build_catalog(args.version)
     out_path = lib.DIST_DIR / "catalog.json"
-    catalog_text = json.dumps(catalog, indent=2).replace("\u2014", "-")
+    catalog_text = json.dumps(catalog, indent=2, ensure_ascii=False).replace("\u2014", "-")
     out_path.write_text(catalog_text + "\n", encoding="utf-8")
 
     c = catalog["counts"]
