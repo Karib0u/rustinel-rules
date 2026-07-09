@@ -8,7 +8,10 @@
 # its insmod Image and args), so it lives ~1s as insmod for /proc enrichment;
 # no module is loaded.
 set -u
-DIR=/tmp/rustinel_atomic_insmod.d
+# Stage OUTSIDE /tmp: the engine emits one Sigma alert per event (first match
+# wins), so a /tmp path would be shadowed by the broad "Execution from
+# World-Writable / Temporary Directory" rule. /opt is not world-writable.
+DIR=/opt/rustinel_atomic_insmod.d
 BIN="$DIR/insmod"
 mkdir -p "$DIR" 2>/dev/null || true
 cp /bin/sh "$BIN" 2>/dev/null || cp /usr/bin/sh "$BIN" 2>/dev/null || true

@@ -8,7 +8,11 @@
 # and args), so it lives ~1s as nc for /proc command-line enrichment; the
 # -e /bin/sh tokens are the exact shape the rule keys on. Nothing connects.
 set -u
-DIR=/tmp/rustinel_atomic_nc.d
+# Stage the renamed copy OUTSIDE /tmp: the engine emits one Sigma alert per
+# process event (first match wins), so a /tmp path would be shadowed by the
+# broad "Execution from World-Writable / Temporary Directory" rule before this
+# rule is reached. /opt is not world-writable, so this rule is the sole match.
+DIR=/opt/rustinel_atomic_nc.d
 BIN="$DIR/nc"
 mkdir -p "$DIR" 2>/dev/null || true
 cp /bin/sh "$BIN" 2>/dev/null || cp /usr/bin/sh "$BIN" 2>/dev/null || true
