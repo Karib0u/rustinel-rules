@@ -66,5 +66,6 @@ rules:
         yara:
           - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
           - yara-win-xmrig-coinminer   # XMRig / coinminer strings in Windows PE binaries (yara)
+          - yara-win-msfvenom-stager   # Metasploit / Meterpreter stager markers in Windows PE (yara)
         ioc:
           - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)
