@@ -238,6 +238,146 @@
       "script": "windows/eicar_ioc.ps1",
       "allow_failure": true,
       "expect": { "field": "rule.description", "contains": "EICAR" }
+    },
+    {
+      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
+      "name": "linux_nc_exec_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/nc_exec_reverse_shell.sh"
+    },
+    {
+      "id": "3f32d825-006a-45e9-b5a9-6e7edeeff13c",
+      "name": "linux_kmod_load_susp_path",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/kmod_load_susp_path.sh"
+    },
+    {
+      "id": "66fd4673-d86b-41d1-ba33-60d7c66dc962",
+      "name": "linux_backdoor_account",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/backdoor_account.sh"
+    },
+    {
+      "id": "6b124b53-1d4b-48a2-86b7-4df9bf43de61",
+      "name": "linux_log_clear",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/log_clear.sh"
+    },
+    {
+      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
+      "name": "linux_chmod_suid",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chmod_suid.sh"
+    },
+    {
+      "id": "1bb5e9e4-f17e-476e-8e77-aaa1858f12f7",
+      "name": "linux_udev_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/udev_persistence.sh"
+    },
+    {
+      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
+      "name": "linux_webshell_write",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webshell_write.sh"
+    },
+    {
+      "id": "d24c4943-3e22-481f-99ee-ca631b8a77af",
+      "name": "linux_base64_pipe_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/base64_pipe_shell.sh"
+    },
+    {
+      "id": "0cb59840-b420-4332-b7d1-2c3d4343901f",
+      "name": "linux_stop_security_services",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/stop_security_services.sh"
+    },
+    {
+      "id": "yara-lnx-msfvenom-stager",
+      "name": "linux_msfvenom_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/msfvenom_yara_fixture.sh"
+    },
+    {
+      "id": "e86de5fe-3908-4a95-b4e8-930a93bf4555",
+      "name": "windows_bcdedit_recovery_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/bcdedit_recovery_tamper.ps1"
+    },
+    {
+      "id": "596b49d3-561e-49d7-9538-f3115c1c8cfd",
+      "name": "windows_fsutil_usn_delete",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/fsutil_usn_delete.ps1"
+    },
+    {
+      "id": "04d66f93-97ae-4674-96a8-1bb524a1da60",
+      "name": "windows_procdump_lsass",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/procdump_lsass.ps1"
+    },
+    {
+      "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
+      "name": "windows_ifeo_debugger",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ifeo_debugger.ps1"
+    },
+    {
+      "id": "52b94494-756b-40d7-af01-8d0c7d54a6cc",
+      "name": "windows_winlogon_helper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/winlogon_helper.ps1"
+    },
+    {
+      "id": "43c59081-d5ec-4153-9e26-04e66e07461a",
+      "name": "windows_sc_stop_security",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/sc_stop_security.ps1"
+    },
+    {
+      "id": "6c46cc68-2e66-4834-b058-0a2cfd115409",
+      "name": "windows_netsh_portproxy",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/netsh_portproxy.ps1"
+    },
+    {
+      "id": "d97177dd-c74f-465e-96c1-194cc1dd681d",
+      "name": "windows_bitsadmin_download",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/bitsadmin_download.ps1"
+    },
+    {
+      "id": "yara-win-xmrig-coinminer",
+      "name": "windows_xmrig_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/xmrig_yara_fixture.ps1"
+    },
+    {
+      "id": "yara-win-msfvenom-stager",
+      "name": "windows_msfvenom_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/msfvenom_yara_fixture.ps1"
     }
   ]
 }

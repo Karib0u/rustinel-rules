@@ -1,0 +1,32 @@
+title: Shell History File Tampering (macOS)
+id: ffd3b3b3-9fd4-4fd2-9988-fe837e062181
+status: experimental
+description: >
+  Detects deletion or replacement of a shell history file on macOS (.zsh_history
+  is the primary target on modern macOS, .bash_history on older setups). macOS
+  port of the Linux history-tampering rule; a cheap post-compromise tripwire.
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: file_event
+  product: macos
+detection:
+  selection:
+    TargetFilename|endswith:
+      - '.zsh_history'
+      - '.bash_history'
+      - '.sh_history'
+  condition: selection
+falsepositives:
+  - Users rotating dotfiles or shell-history cleanup.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: none

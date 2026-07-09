@@ -1,0 +1,44 @@
+title: udev Rules Persistence
+id: 1bb5e9e4-f17e-476e-8e77-aaa1858f12f7
+status: experimental
+description: >
+  Detects creation or modification of a udev rules file, a persistence mechanism
+  that can run an attacker binary on device events. udev is the notable gap in
+  Linux persistence coverage (cron, systemd, ld.so.preload, ssh keys and shell
+  profiles are already covered) and is actively used by recent Linux malware such
+  as sedexp.
+references:
+  - https://attack.mitre.org/techniques/T1547/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1547
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection:
+    TargetFilename|startswith:
+      - '/etc/udev/rules.d/'
+      - '/lib/udev/rules.d/'
+      - '/usr/lib/udev/rules.d/'
+  filter_pkg:
+    Image|endswith:
+      - '/dpkg'
+      - '/rpm'
+      - '/dnf'
+      - '/apt'
+      - '/apt-get'
+      - '/yum'
+  condition: selection and not filter_pkg
+falsepositives:
+  - Driver and package installs write udev rules; the package-manager image filter
+    handles the bulk.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: atomic

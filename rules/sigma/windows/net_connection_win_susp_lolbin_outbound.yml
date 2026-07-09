@@ -1,0 +1,54 @@
+title: Outbound Connection from Script or LOLBin Host
+id: 717396f6-aff0-49b0-b8f3-53568e276d5c
+status: experimental
+description: >
+  Detects a public-internet outbound connection made by a scripting or LOLBin
+  host (rundll32, mshta, regsvr32, certutil, wscript, cscript). This behavioral
+  net catches C2 from these binaries regardless of command line, complementing
+  the process-creation rules for the same tools and defeating command-line
+  obfuscation. Add internal proxy CIDRs to the private-network filter as needed.
+references:
+  - https://attack.mitre.org/techniques/T1071/
+  - https://attack.mitre.org/techniques/T1218/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.command-and-control
+  - attack.defense-evasion
+  - attack.t1071
+  - attack.t1218
+logsource:
+  category: network_connection
+  product: windows
+detection:
+  selection:
+    Image|endswith:
+      - '\rundll32.exe'
+      - '\mshta.exe'
+      - '\regsvr32.exe'
+      - '\certutil.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+  filter_private:
+    DestinationIp|cidr:
+      - '10.0.0.0/8'
+      - '172.16.0.0/12'
+      - '192.168.0.0/16'
+      - '127.0.0.0/8'
+      - '169.254.0.0/16'
+      - '::1/128'
+      - 'fe80::/10'
+  condition: selection and not filter_private
+falsepositives:
+  - Environments where these binaries reach an internet-facing internal proxy;
+    add the proxy CIDR to the filter.
+level: medium
+rustinel:
+  telemetry:
+    - network_connection
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Windows network_connection firing is not yet exercised by the atomic harness
+    (no Windows network rule has a fixture); validated manually with a rundll32
+    beacon to a lab endpoint.

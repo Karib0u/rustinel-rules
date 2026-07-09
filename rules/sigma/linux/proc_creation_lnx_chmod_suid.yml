@@ -1,0 +1,42 @@
+title: SUID/SGID Bit Added via chmod
+id: 7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3
+status: experimental
+description: >
+  Detects chmod setting the setuid or setgid bit, a standard privilege-escalation
+  persistence step after initial access (for example chmod u+s /bin/bash to keep
+  a root-capable shell).
+references:
+  - https://attack.mitre.org/techniques/T1548/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.privilege-escalation
+  - attack.persistence
+  - attack.t1548.001
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    Image|endswith: '/chmod'
+    CommandLine|contains:
+      - 'u+s'
+      - 'g+s'
+      - '4755'
+      - '4777'
+      - '6755'
+      - '2755'
+  filter_pkg:
+    ParentImage|endswith:
+      - '/dpkg'
+      - '/rpm'
+  condition: selection and not filter_pkg
+falsepositives:
+  - Package post-install scripts occasionally set setuid bits; the package-manager
+    parent filter handles the bulk (best-effort parent field on Linux).
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

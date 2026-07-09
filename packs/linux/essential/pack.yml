@@ -19,6 +19,10 @@ attack_coverage:
   - T1505.003
   - T1562.001
   - T1496
+  - T1071
+  - T1547.006
+  - T1014
+  - T1136.001
 telemetry_requirements:
   - process_creation
   - file_event
@@ -33,5 +37,9 @@ rules:
   - a3c5c821-004a-4e52-8684-0f7f9ea0404c   # Linux Reverse Shell via /dev/tcp (sigma)
   - 8fd4d1d9-38cf-4704-8009-00e41a009c98   # Linux Web Server Spawning Interactive Shell (sigma)
   - 9ac8732e-1818-4cda-89ac-01ca08a7b836   # SSH Daemon Configuration Tampering (sigma)
+  - 1adaaaca-bfcf-46fe-9bd1-4b475d7bc827   # Netcat or Socat Reverse Shell Execution (sigma)
+  - 3f32d825-006a-45e9-b5a9-6e7edeeff13c   # Kernel Module Load from Suspicious Path (sigma)
+  - 66fd4673-d86b-41d1-ba33-60d7c66dc962   # Backdoor Account Creation (Duplicate UID 0) (sigma)
   - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
+  - yara-lnx-msfvenom-stager                # Metasploit / Mettle stager markers in ELF binaries (yara)
   - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)

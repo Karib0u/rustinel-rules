@@ -1,0 +1,44 @@
+title: WMI Event Subscription Persistence
+id: d6adbfee-548b-4def-9e49-8e6940251957
+status: experimental
+description: >
+  Detects creation of a WMI event subscription — an __EventFilter, a
+  CommandLineEventConsumer / ActiveScriptEventConsumer, or the
+  __FilterToConsumerBinding that ties them together. This is a classic fileless
+  persistence mechanism that survives reboot and is invisible to file- and
+  registry-focused rules.
+  Note: Rustinel surfaces the WMI operation and touched class in the Operation
+  field, so the rule keys on the persistence-related consumer/filter classes
+  there rather than on a specific EventType shape.
+references:
+  - https://attack.mitre.org/techniques/T1546/003/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.003
+logsource:
+  category: wmi_event
+  product: windows
+detection:
+  selection:
+    Operation|contains:
+      - 'CommandLineEventConsumer'
+      - 'ActiveScriptEventConsumer'
+      - '__EventFilter'
+      - '__FilterToConsumerBinding'
+  condition: selection
+falsepositives:
+  - SCCM and some enterprise monitoring agents create legitimate subscriptions;
+    filter Operation values for the known-good consumer names on those hosts.
+level: high
+rustinel:
+  telemetry:
+    - wmi_event
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    Firing requires registering a persistent WMI CommandLineEventConsumer, which
+    the disposable-runner atomic harness deliberately avoids; validated manually
+    with Atomic Red Team T1546.003.

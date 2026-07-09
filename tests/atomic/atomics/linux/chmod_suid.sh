@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Atomic test - rule 7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3
+#   "SUID/SGID Bit Added via chmod"  (process_creation)
+#
+# Copies /bin/sh to a file whose basename is exactly chmod and runs it with a
+# u+s command line. The copied shell runs a harmless 'sleep 1' so it lives long
+# enough for /proc enrichment; no permission bits are actually changed.
+set -u
+DIR=/tmp/rustinel_atomic_chmod.d
+BIN="$DIR/chmod"
+mkdir -p "$DIR" 2>/dev/null || true
+cp /bin/sh "$BIN" 2>/dev/null || cp /usr/bin/sh "$BIN" 2>/dev/null || true
+chmod 0755 "$BIN" 2>/dev/null || true
+timeout 3 "$BIN" -c 'sleep 1' u+s /tmp/rustinel_atomic_target >/dev/null 2>&1 || true
+rm -rf "$DIR" 2>/dev/null || true
+exit 0

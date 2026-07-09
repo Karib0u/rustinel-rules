@@ -1,0 +1,36 @@
+title: System Log Clearing (journal and /var/log)
+id: 6b124b53-1d4b-48a2-86b7-4df9bf43de61
+status: experimental
+description: >
+  Detects clearing of system logs — vacuuming the systemd journal, or removing /
+  truncating / shredding files under /var/log. A standard step in cryptominer and
+  botnet installs to erase evidence of the intrusion.
+references:
+  - https://attack.mitre.org/techniques/T1070/002/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1070.002
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_journal:
+    Image|endswith: '/journalctl'
+    CommandLine|contains: '--vacuum'
+  selection_varlog:
+    Image|endswith:
+      - '/rm'
+      - '/truncate'
+      - '/shred'
+    CommandLine|contains: '/var/log'
+  condition: selection_journal or selection_varlog
+falsepositives:
+  - Disk-space cleanup jobs that vacuum journals; filter known cron parent images.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

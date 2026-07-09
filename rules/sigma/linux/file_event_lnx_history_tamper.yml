@@ -1,0 +1,42 @@
+title: Shell History File Tampering
+id: 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb
+status: experimental
+description: >
+  Detects deletion or replacement of a shell history file (.bash_history,
+  .zsh_history and friends), an almost-universal attacker hygiene step and a
+  cheap post-compromise tripwire.
+  Note: `history -c` and `unset HISTFILE` are shell builtins that never produce a
+  process event, which is exactly why this is a file rule. Rustinel's Linux file
+  telemetry observes creation and rename, so this catches a history file being
+  replaced or rewritten rather than an in-place truncate.
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection:
+    TargetFilename|endswith:
+      - '.bash_history'
+      - '.zsh_history'
+      - '.sh_history'
+      - '.ash_history'
+      - '.history'
+  condition: selection
+falsepositives:
+  - Users rotating dotfiles or logrotate-style cleanup of history files.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Targets history-file delete/replace events, which the Linux atomic harness
+    does not yet reliably reproduce; validated manually with Atomic Red Team
+    T1070.003.

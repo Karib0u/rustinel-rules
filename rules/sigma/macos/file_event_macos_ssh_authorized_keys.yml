@@ -1,0 +1,32 @@
+title: SSH authorized_keys Created or Replaced (macOS)
+id: c92540cf-466d-4959-ab25-1c456bedf9d5
+status: experimental
+description: >
+  Detects creation or replacement of an SSH authorized_keys file on macOS, a
+  platform-agnostic persistence and remote-access technique that lets an attacker
+  log in with their own key. macOS port of the Linux authorized_keys rule.
+references:
+  - https://attack.mitre.org/techniques/T1098/004/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.persistence
+  - attack.lateral-movement
+  - attack.t1098.004
+logsource:
+  category: file_event
+  product: macos
+detection:
+  selection:
+    TargetFilename|endswith:
+      - '/authorized_keys'
+      - '/authorized_keys2'
+  condition: selection
+falsepositives:
+  - Legitimate key provisioning via ssh-copy-id or configuration management.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: low
+  test_status: none

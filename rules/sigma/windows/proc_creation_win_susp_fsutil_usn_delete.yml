@@ -1,0 +1,32 @@
+title: USN Journal Deletion via fsutil
+id: 596b49d3-561e-49d7-9538-f3115c1c8cfd
+status: experimental
+description: >
+  Detects deletion of the NTFS USN change journal via fsutil, an anti-forensics
+  step common to ransomware (LockBit and others) and hands-on-keyboard
+  intrusions that removes a record of recent file-system activity.
+references:
+  - https://attack.mitre.org/techniques/T1070/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1070
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\fsutil.exe'
+    CommandLine|contains|all:
+      - 'usn'
+      - 'deletejournal'
+  condition: selection
+falsepositives:
+  - Near zero; occasionally disk-repair or imaging scripts.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

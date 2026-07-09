@@ -26,10 +26,16 @@ attack_coverage:
   - T1548.002
   - T1053.005
   - T1105
+  - T1546.003
+  - T1070
+  - T1546.008
+  - T1546.012
+  - T1496
 telemetry_requirements:
   - process_creation
   - registry_event
   - task_creation
+  - wmi_event
   - file_scan
 test_status: mixed
 sources:
@@ -49,5 +55,11 @@ rules:
   - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction (sigma)
   - b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23   # WDigest Cleartext Credential Caching Enabled (sigma)
   - 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99   # Scheduled Task Created With Suspicious Action (sigma)
+  - d6adbfee-548b-4def-9e49-8e6940251957   # WMI Event Subscription Persistence (sigma)
+  - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering via bcdedit or wbadmin (sigma)
+  - 596b49d3-561e-49d7-9538-f3115c1c8cfd   # USN Journal Deletion via fsutil (sigma)
+  - 04d66f93-97ae-4674-96a8-1bb524a1da60   # LSASS Memory Dump via Procdump (sigma)
+  - cda4a133-fe67-4aa6-815d-f8c69ff16828   # IFEO Debugger or SilentProcessExit Hijack (sigma)
   - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
+  - yara-win-xmrig-coinminer               # XMRig / coinminer strings in Windows PE binaries (yara)
   - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)

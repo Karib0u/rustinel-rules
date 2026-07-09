@@ -1,0 +1,53 @@
+title: Netcat or Socat Reverse Shell Execution
+id: 1adaaaca-bfcf-46fe-9bd1-4b475d7bc827
+status: experimental
+description: >
+  Detects netcat or socat invoked with an execute flag, the classic pattern for
+  a reverse or bind shell (nc -e / --exec, socat EXEC: / SYSTEM:). Together with
+  the existing /dev/tcp rule this closes the two dominant Linux reverse-shell
+  primitives after initial access.
+  Note: on Linux CommandLine is best-effort /proc enrichment; the execute-flag
+  selections below require it, so a very short-lived nc/socat may instead be
+  caught only by its network-channel counterpart rule.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+  - https://attack.mitre.org/techniques/T1071/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.execution
+  - attack.command-and-control
+  - attack.t1059.004
+  - attack.t1071
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_nc:
+    Image|endswith:
+      - '/nc'
+      - '/ncat'
+      - '/netcat'
+    CommandLine|contains:
+      - ' -e '
+      - ' -c '
+      - '--exec'
+      - '--sh-exec'
+      - '--lua-exec'
+  selection_socat:
+    Image|endswith: '/socat'
+    CommandLine|contains:
+      - 'exec:'
+      - 'EXEC:'
+      - 'system:'
+      - 'SYSTEM:'
+  condition: selection_nc or selection_socat
+falsepositives:
+  - Rare container entrypoints that use socat exec; add a parent-image filter if
+    needed.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

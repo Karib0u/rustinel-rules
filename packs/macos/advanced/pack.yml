@@ -24,6 +24,8 @@ attack_coverage:
   - T1036
   - T1136.001
   - T1098
+  - T1098.004
+  - T1070.003
 telemetry_requirements:
   - process_creation
   - file_event
@@ -35,3 +37,6 @@ rules:
   - 3e506273-8f91-42a4-8eb4-5f6071823405   # Shell Download-and-Execute Pipe Cradle (sigma)
   - 2f617384-9012-43b5-9fc5-60718293a416   # Local Admin Account Created via Directory Services (sigma)
   - 1a728495-a123-44c6-8ad6-718293a4b527   # Execution from World-Writable or Temporary Directory (sigma)
+  - c92540cf-466d-4959-ab25-1c456bedf9d5   # SSH authorized_keys Created or Replaced (macOS) (sigma)
+  - 578195d3-de1a-4c46-84c8-b246a060474c   # launchctl Load from User-Writable Path (sigma)
+  - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Tampering (macOS) (sigma)

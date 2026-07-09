@@ -1,0 +1,33 @@
+title: TCC Database Access
+id: 829cee70-a60f-4e8a-8b2f-38e1fff83e61
+status: experimental
+description: >
+  Detects a process reading or copying the TCC privacy database (TCC.db), the
+  permission-bypass step of essentially every documented macOS stealer and
+  implant (AMOS and XCSSET lineage). Reading or patching TCC lets malware grant
+  itself access to protected resources.
+references:
+  - https://attack.mitre.org/techniques/T1005/
+  - https://attack.mitre.org/techniques/T1548/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.collection
+  - attack.privilege-escalation
+  - attack.t1005
+  - attack.t1548
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection:
+    CommandLine|contains: 'TCC.db'
+  condition: selection
+falsepositives:
+  - MDM and fleet-management tooling querying TCC state; document vendor filters.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: none

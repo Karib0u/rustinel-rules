@@ -1,0 +1,54 @@
+title: Security Service Stop or Disable via sc or net
+id: 43c59081-d5ec-4153-9e26-04e66e07461a
+status: experimental
+description: >
+  Detects use of sc.exe or net.exe to stop, disable or delete a security service
+  (Microsoft Defender, Defender for Endpoint, the Windows Security Center,
+  Sysmon, or a common third-party EDR). This precedes payload deployment in most
+  ransomware playbooks and covers the service-control route the Defender registry
+  rule does not see. The service list is the intended tuning surface.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+author: rustinel-rules
+date: 2026-07-09
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tool:
+    Image|endswith:
+      - '\sc.exe'
+      - '\net.exe'
+      - '\net1.exe'
+    CommandLine|contains:
+      - 'stop'
+      - 'config'
+      - 'delete'
+      - 'disabled'
+  selection_service:
+    CommandLine|contains:
+      - 'WinDefend'
+      - 'Sense'
+      - 'wscsvc'
+      - 'SecurityHealthService'
+      - 'WdNisSvc'
+      - 'Sysmon'
+      - 'Sysmon64'
+      - 'CSFalconService'
+      - 'SentinelAgent'
+      - 'xagt'
+      - 'MsSecFlt'
+      - 'MDCoreSvc'
+  condition: selection_tool and selection_service
+falsepositives:
+  - Authorized AV migration or uninstall maintenance; the service list is the
+    tuning surface.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
