@@ -159,6 +159,17 @@ jobs:
             --filter "${{ github.event.inputs.filter }}"
         shell: bash
 
+      # The engine runs as root on Unix and restricts its log directory to the
+      # owner. Hand ownership back to the runner after the engine exits so the
+      # artifact action can read the logs without weakening their permissions.
+      - name: Prepare engine logs for upload (Unix)
+        if: always() && matrix.platform != 'windows'
+        run: |
+          if [ -d tests/atomic/.engine/logs ]; then
+            sudo chown -R "$(id -u):$(id -g)" tests/atomic/.engine/logs
+          fi
+        shell: bash
+
       - name: Upload report + engine logs
         if: always()
         uses: actions/upload-artifact@v7
