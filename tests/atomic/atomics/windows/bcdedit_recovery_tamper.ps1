@@ -8,6 +8,6 @@ $dir = Join-Path $env:TEMP 'rustinel-bcdedit-atomic'
 $bin = Join-Path $dir 'bcdedit.exe'
 New-Item -ItemType Directory -Path $dir -Force | Out-Null
 Copy-Item "$env:SystemRoot\System32\cmd.exe" $bin -Force
-& $bin /c echo recoveryenabled no | Out-Null
+& $bin /c echo recoveryenabled off | Out-Null
 Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
 exit 0
