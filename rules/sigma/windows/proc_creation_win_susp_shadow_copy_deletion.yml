@@ -2,10 +2,10 @@ title: Volume Shadow Copy Deletion
 id: 1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04
 status: experimental
 description: >
-  Detects deletion of volume shadow copies, backup catalogs and boot-time
-  recovery settings via vssadmin, wmic, bcdedit or wbadmin. This is a common
-  anti-recovery step performed by ransomware immediately before or during
-  encryption.
+  Detects deletion of volume shadow copies via vssadmin or WMI. This is a
+  common anti-recovery step performed by ransomware immediately before or
+  during encryption. Boot recovery and backup-catalog tampering through
+  bcdedit or wbadmin is covered by the dedicated recovery-tampering rule.
 references:
   - https://attack.mitre.org/techniques/T1490/
 author: rustinel-rules
@@ -27,22 +27,7 @@ detection:
     CommandLine|contains|all:
       - 'shadowcopy'
       - 'delete'
-  selection_bcdedit:
-    Image|endswith: '\bcdedit.exe'
-    CommandLine|contains:
-      - 'recoveryenabled no'
-      - 'bootstatuspolicy ignoreallfailures'
-  selection_wbadmin_catalog:
-    Image|endswith: '\wbadmin.exe'
-    CommandLine|contains|all:
-      - 'delete'
-      - 'catalog'
-  selection_wbadmin_systemstate:
-    Image|endswith: '\wbadmin.exe'
-    CommandLine|contains|all:
-      - 'delete'
-      - 'systemstatebackup'
-  condition: selection_vss or selection_wmic or selection_bcdedit or selection_wbadmin_catalog or selection_wbadmin_systemstate
+  condition: selection_vss or selection_wmic
 falsepositives:
   - Backup software maintenance during scheduled windows.
 level: high
