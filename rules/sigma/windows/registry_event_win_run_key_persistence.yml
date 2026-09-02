@@ -16,7 +16,7 @@ tags:
   - attack.persistence
   - attack.t1547.001
 logsource:
-  category: registry_event
+  category: registry_set
   product: windows
 detection:
   selection:
@@ -31,6 +31,6 @@ falsepositives:
 level: medium
 rustinel:
   telemetry:
-    - registry_event
+    - registry_set
   expected_false_positive_level: medium
   test_status: atomic
