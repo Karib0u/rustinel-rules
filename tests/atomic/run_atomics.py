@@ -325,18 +325,30 @@ def make_predicate(test: dict, rules: dict[str, dict]):
     """Return (predicate, human_description). predicate(alert_dict) -> bool."""
     exp = test.get("expect")
     if exp:
-        field = exp["field"]
-        if "equals" in exp:
-            target, mode = exp["equals"], "equals"
-        else:
-            target, mode = exp["contains"], "contains"
+        expectations = exp if isinstance(exp, list) else [exp]
+        conditions = []
+        descriptions = []
+        for expectation in expectations:
+            field = expectation["field"]
+            mode = next(key for key in ("equals", "contains", "endswith") if key in expectation)
+            target = expectation[mode]
+            conditions.append((field, mode, target))
+            descriptions.append(f'{field} {mode} "{target}"')
 
         def pred(alert):
-            v = alert.get(field)
-            return isinstance(v, str) and (v == target if mode == "equals" else target in v)
+            for field, mode, target in conditions:
+                value = alert.get(field)
+                if not isinstance(value, str):
+                    return False
+                if mode == "equals" and value != target:
+                    return False
+                if mode == "contains" and target not in value:
+                    return False
+                if mode == "endswith" and not value.endswith(target):
+                    return False
+            return True
 
-        sign = "==" if mode == "equals" else "~"
-        return pred, f'{field} {sign} "{target}"'
+        return pred, " and ".join(descriptions)
 
     title = rules.get(test["id"], {}).get("title")
     if not title:

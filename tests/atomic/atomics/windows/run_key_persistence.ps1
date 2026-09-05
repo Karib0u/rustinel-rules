@@ -1,12 +1,21 @@
 # Atomic test - rule a1b2c3d4-7e8f-4012-9a3b-4c5d6e7f0a10
-#   "Registry Run Key Persistence"  (registry_set)
-#
-# Creates then deletes an autorun value under HKCU ...\CurrentVersion\Run, the
-# key path the rule watches. HKCU only, value points at notepad.exe, removed
-# immediately. Nothing is actually scheduled to run.
-$ErrorActionPreference = 'SilentlyContinue'
+# Creates a harmless HKCU autorun value, verifies the write, then removes it.
+$ErrorActionPreference = 'Stop'
 $key = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-New-ItemProperty -Path $key -Name 'RustinelAtomicTest' -Value 'notepad.exe' -PropertyType String -Force | Out-Null
-Start-Sleep -Seconds 1
-Remove-ItemProperty -Path $key -Name 'RustinelAtomicTest' -ErrorAction SilentlyContinue
-exit 0
+$name = 'RustinelAtomicTest'
+
+# Fresh runner profiles may not have a Run key. Do not overwrite an existing key.
+if (-not (Test-Path -LiteralPath $key)) {
+    New-Item -Path $key -Force | Out-Null
+}
+
+try {
+    New-ItemProperty -LiteralPath $key -Name $name -Value 'notepad.exe' -PropertyType String -Force | Out-Null
+    $value = Get-ItemPropertyValue -LiteralPath $key -Name $name
+    if ($value -ne 'notepad.exe') {
+        throw "Run key write verification failed: expected notepad.exe, got '$value'"
+    }
+    Start-Sleep -Seconds 1
+} finally {
+    Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue
+}

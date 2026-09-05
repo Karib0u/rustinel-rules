@@ -130,6 +130,11 @@ python3 tests/atomic/run_atomics.py --filter eicar --platform linux
 2. Add an entry to `manifest.json` with the rule `id`, `name`, `platform`,
    `engine`, `script`. For Sigma/YARA the title resolves automatically; for IOC
    or anything else, add `expect: {field, contains}`.
+   `expect` also accepts a list of conditions that must all match the same alert.
+   Each condition uses `field` and one of `equals`, `contains`, or `endswith`.
+   The Run key atomic requires both the rule name and a registry path ending in
+   `\CurrentVersion\Run\RustinelAtomicTest`, so background registry activity
+   cannot satisfy it.
 3. `python3 tests/atomic/run_atomics.py --list` to confirm the join key resolves.
 4. Flip that artifact's `test_status` to `atomic`.
    `--check-coverage` reports platform-specific manifest gaps and Essential

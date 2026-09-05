@@ -33,6 +33,9 @@ jobs:
       - name: Type check (ty)
         run: uv run ty check
 
+      - name: Test atomic alert matching
+        run: uv run python -m unittest discover -s tests/atomic -p 'test_*.py'
+
       - name: Validate rules and pack manifests
         working-directory: tools
         run: uv run python validate.py

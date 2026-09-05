@@ -207,7 +207,11 @@
       "name": "windows_run_key_persistence",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/run_key_persistence.ps1"
+      "script": "windows/run_key_persistence.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "Registry Run Key Persistence"},
+        {"field": "registry.path", "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"}
+      ]
     },
     {
       "id": "4a596825-4674-4db3-b360-842435edf11a",
