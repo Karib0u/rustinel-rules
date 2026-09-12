@@ -402,7 +402,7 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         # with an engine that cannot populate the fields its rules select on, so
         # the rules load and silently never match.
         declared_floor = lib.constraint_floor(pack.get("requires_rustinel"))
-        derived, drivers = lib.pack_min_engine(resolved, artifact_index)
+        derived, drivers = lib.pack_min_engine(resolved, artifact_index, pack.get("os"))
         if declared_floor is None:
             rep.warn(
                 where,

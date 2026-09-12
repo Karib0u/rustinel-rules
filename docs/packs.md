@@ -15,12 +15,13 @@ Essential  ⊂  Advanced  ⊂  Hunting
 | [Windows Hunting](#windows-hunting) | hunting | ❌ | high | experimental | `>=1.4.1` |
 | [Linux Essential](#linux-essential) | essential | ✅ | low | experimental | `>=1.0.2` |
 | [Linux Advanced](#linux-advanced) | advanced | ❌ | medium | experimental | `>=1.0.2` |
-| [macOS Essential](#macos-essential) | essential | ❌ | low | experimental | `>=1.0.2` |
-| [macOS Advanced](#macos-advanced) | advanced | ❌ | medium | experimental | `>=1.0.2` |
+| [macOS Essential](#macos-essential) | essential | ❌ | low | experimental | `>=1.1.0` |
+| [macOS Advanced](#macos-advanced) | advanced | ❌ | medium | experimental | `>=1.1.0` |
 
-> All packs declare `pack_schema_version: 2`, `requires_rustinel: ">=1.0.2"`, and license
-> `DRL-1.1`. `status: experimental` reflects the early state of v1 content — expect curation to
-> tighten as coverage grows.
+> All packs declare `pack_schema_version: 2` and license `DRL-1.1`. Their
+> `requires_rustinel` floors are derived from platform and content requirements.
+> `status: experimental` reflects the early state of v1 content — expect curation to tighten as
+> coverage grows.
 
 ---
 
@@ -205,8 +206,9 @@ Each pack's `requires_rustinel` is **derived from its own content**, not declare
 the dangerous direction — `rustinel doctor` would report the pack as compatible with an engine that
 cannot populate the fields its rules select on, so the rules load and silently never match.
 
-Today only Windows content raises the floor: registry value data (`Details`, v1.4.0) and
-`service_creation` `ImagePath` (v1.4.1). Linux and macOS content runs on the v1.0.2 baseline.
+Windows content raises the floor through registry value data (`Details`, v1.4.0) and
+`service_creation` `ImagePath` (v1.4.1). Linux runs on the v1.0.2 baseline. macOS has a v1.1.0
+baseline because that release introduced its process, file, network and DNS collectors.
 
 ---
 

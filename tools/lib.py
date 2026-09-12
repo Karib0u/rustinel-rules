@@ -211,10 +211,19 @@ def artifact_attack_techniques(artifact: Artifact) -> set:
 # Engine version requirements
 # --------------------------------------------------------------------------- #
 
-# The oldest engine any pack claims to support. Rules that use nothing newer sit
-# here; a pack's floor is raised only by a capability with a known landing
-# release.
+# The oldest engine any pack claims to support. Platform baselines raise this
+# when the platform itself landed later; individual capabilities may raise it
+# again below.
 BASELINE_ENGINE = "1.0.2"
+
+PLATFORM_BASELINE_ENGINES: dict[str, tuple[str, str]] = {
+    "windows": (BASELINE_ENGINE, "Windows support is present at the v1.0.2 baseline"),
+    "linux": (BASELINE_ENGINE, "Linux support is present at the v1.0.2 baseline"),
+    "macos": (
+        "1.1.0",
+        "macOS process, file, network and DNS collection was introduced in v1.1.0",
+    ),
+}
 
 # Capability -> the release that first provides it, as (platform, category,
 # field, version, why).
@@ -226,9 +235,9 @@ BASELINE_ENGINE = "1.0.2"
 # same way before adding it, and prefer leaving a capability out to guessing —
 # an over-claimed floor locks out engines that would have run the pack fine.
 #
-# Deliberately absent: file_delete / file_rename routing, which was checked
-# against src/engine/logsource.rs at v1.1.4 through v1.6.0 and is present on all
-# three platforms throughout, so it does not raise any floor.
+# Deliberately absent: file_delete / file_rename routing. It is present from the
+# platform baseline onward (v1.0.2 on Linux, v1.1.0 on macOS), so it does not
+# raise either platform's floor.
 ENGINE_REQUIREMENTS: tuple[tuple[str, str, str, str, str], ...] = (
     (
         "windows",
@@ -303,6 +312,14 @@ def constraint_floor(constraint: str) -> str | None:
     return text[2:].strip().lstrip("v") or None
 
 
+def platform_baseline_engine(platform: str) -> tuple[str, str | None]:
+    """Return the first engine release supporting a platform and the reason."""
+    requirement = PLATFORM_BASELINE_ENGINES.get(str(platform or "").lower())
+    if requirement is None:
+        return BASELINE_ENGINE, None
+    return requirement
+
+
 def detection_fields(detection: dict) -> set[str]:
     """Every field name a Sigma rule's selections reference, modifiers stripped."""
     fields: set[str] = set()
@@ -336,6 +353,11 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
     if artifact.kind == "sigma" and isinstance(artifact.meta, dict):
         logsource = artifact.meta.get("logsource") or {}
         product = str(logsource.get("product") or "").lower()
+        platform_minimum, platform_reason = platform_baseline_engine(product)
+        if parse_version(platform_minimum) > parse_version(minimum):
+            minimum = platform_minimum
+            if platform_reason:
+                reasons.append(platform_reason)
         category = str(logsource.get("category") or "").lower()
         category = _CATEGORY_PARENTS.get(category, category)
         used = detection_fields(artifact.meta.get("detection") or {})
@@ -355,9 +377,11 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
     return minimum, reasons
 
 
-def pack_min_engine(resolved_ids, artifact_index) -> tuple[str, dict[str, list[str]]]:
+def pack_min_engine(
+    resolved_ids, artifact_index, platform: str | None = None
+) -> tuple[str, dict[str, list[str]]]:
     """A pack's floor: the newest engine any of its members needs."""
-    minimum = BASELINE_ENGINE
+    minimum, _ = platform_baseline_engine(platform or "")
     drivers: dict[str, list[str]] = {}
     for artifact_id in resolved_ids:
         artifact = artifact_index.get(artifact_id)
