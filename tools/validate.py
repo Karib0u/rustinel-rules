@@ -416,7 +416,7 @@ def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_y
     """
     register = lib.load_preview_register()
     schema_validate = load_schema_validator(lib.PREVIEW_SCHEMA_PATH)
-    where_register = str(lib.PREVIEW_REGISTER_PATH.relative_to(lib.REPO_ROOT))
+    where_register = lib.PREVIEW_REGISTER_PATH.relative_to(lib.REPO_ROOT).as_posix()
 
     if schema_validate is not None and register:
         schema_validate(register, where_register, rep)
@@ -438,9 +438,11 @@ def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_y
                 f"declaring its state, reason and blocker",
             )
 
-    known_paths = {str(a.path.relative_to(lib.PREVIEW_DIR)) for a in preview_artifacts}
+    # Registered paths are written POSIX-style; compare on that spelling so the
+    # check behaves the same on a Windows checkout.
+    known_paths = {a.path.relative_to(lib.PREVIEW_DIR).as_posix() for a in preview_artifacts}
     for entry in entries:
-        path = str(entry.get("path") or "")
+        path = str(entry.get("path") or "").replace("\\", "/")
         if path not in known_paths:
             rep.error(
                 where_register,

@@ -101,7 +101,6 @@
       "platform": "linux",
       "engine": "ioc",
       "script": "linux/canary_ioc.sh",
-      "allow_failure": true,
       "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
     },
     {
@@ -453,7 +452,6 @@
       "platform": "macos",
       "engine": "ioc",
       "script": "macos/canary_ioc.sh",
-      "allow_failure": true,
       "expect": { "field": "rule.description", "contains": "canary-exec-path" }
     },
     {
