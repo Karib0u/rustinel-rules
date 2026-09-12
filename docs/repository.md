@@ -28,6 +28,42 @@ There are three detection kinds, and they share one model. Each is an **artifact
 > **Rules are never manually duplicated across packs.** A rule appears in exactly one file; packs
 > include it by listing its id. This is enforced by the unique-id check in `validate.py`.
 
+## Non-production content (`preview/`)
+
+Not every useful detection can ship. Some select on a field the certified engine never populates, so
+they can never match; some are shaped for a different sensor and need rewriting; some exist only to
+give the atomic harness something to trip. All three live under `preview/`, which mirrors the
+`rules/` layout but is **not** a source of pack membership — `load_all_artifacts()` indexes `rules/`
+alone, so `build_packs.py` physically cannot package anything from it, and `validate.py` turns a
+pack reference to a preview id into a hard error rather than an "unknown id".
+
+| State | Meaning | Exit condition |
+| ----- | ------- | -------------- |
+| *(none — it's under `rules/`)* | Active. In a pack, counted in coverage. | — |
+| `telemetry-blocked` | Correct logic; a required field is `never` populated, so it can never match. | The blocking engine issue lands. |
+| `rewrite-required` | The telemetry exists, but the detection is shaped for a different sensor. | Rewritten against fields Rustinel emits. |
+| `test-only` | Harness fixture. Never a detection. | Never promoted. |
+
+[`preview/preview.yml`](../preview/preview.yml) is the register: one entry per file, declaring the
+state, the missing fields where relevant, the reason, and the blocker issue. Keeping that metadata
+out of the Sigma document means the rule itself stays canonical and keeps its `id`, so promoting it
+is a `git mv` back into `rules/` plus a pack reference — nothing keyed on the id breaks.
+
+Preview artifacts are validated like production ones (they must parse, carry full metadata and
+declare supported telemetry) and are excluded from pack membership, coverage counts and
+`catalog.json`.
+
+**The guard that catches this class of defect.** `validate.py` carries the engine's
+never-populated-field contract (`NEVER_POPULATED_FIELDS`) and fails any rule under `rules/` that
+selects on one. Two rules had shipped in packs for months without ever being able to produce an
+alert — one on `task_creation.TaskContent`, one on `image_load.Signed` — because nothing compared
+their fields against what the sensor actually emits.
+
+**Test-only fixtures and the harness.** `build_packs.py` flattens `test-only` IOC sets into
+`build/fixtures/ioc/`, outside `dist/` so no release artifact carries them.
+`tests/atomic/run_atomics.py` overlays that directory onto its throwaway copy of the pack under
+test; `--no-fixtures` runs against production content only.
+
 An **IOC set** is a typed collection — a campaign or tool yields many indicators (hashes, IPs,
 domains, path regexes) grouped into one set. The build flattens every referenced set into the
 per-type flat files the engine consumes.

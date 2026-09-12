@@ -249,7 +249,7 @@ from your typed IOC sets):
 
 | Type | File | What it matches | Format details |
 | ---- | ---- | --------------- | -------------- |
-| **Hashes** | `hashes.txt` | File hash on process-start scan | MD5 (32), SHA1 (40), SHA256 (64) hex; case-insensitive. |
+| **Hashes** | `hashes.txt` | Hash of the image of a **process that starts** — a file that is written but never executed is never hashed | MD5 (32), SHA1 (40), SHA256 (64) hex; case-insensitive. |
 | **IPs** | `ips.txt` | Network connection IPs | Single IP **or** CIDR range. |
 | **Domains** | `domains.txt` | DNS `QueryName` (Win/Linux/macOS) and hostnames | Exact, or prefix with `.` / `*.` to match subdomains. |
 | **Path regex** | `paths_regex.txt` | Process / file paths | Regular expression, matched **case-insensitively**. |
@@ -260,7 +260,7 @@ The engine reads one indicator per line as `VALUE;COMMENT`:
 
 ```text
 # Lines starting with # or // are comments and are ignored.
-44d88612fea8a8f36de82e1278abb02f;[ioc-eicar-test] EICAR test file (MD5)
+0c2674c3a97c53082187d930efb645c2;[ioc-example-campaign] dropper sample (MD5)
 198.51.100.7;suspicious C2
 198.51.100.0/24
 *.evil.example;phishing infra

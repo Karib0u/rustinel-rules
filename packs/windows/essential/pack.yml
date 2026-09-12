@@ -24,7 +24,6 @@ attack_coverage:
   - T1003.002
   - T1003.003
   - T1548.002
-  - T1053.005
   - T1105
   - T1546.003
   - T1070
@@ -34,7 +33,6 @@ attack_coverage:
 telemetry_requirements:
   - process_creation
   - registry_event
-  - task_creation
   - wmi_event
   - file_scan
 test_status: mixed
@@ -57,7 +55,6 @@ rules:
           - f2b8c4d1-6e90-4a27-9d3b-5a1c2e7f8b21   # UAC Bypass via Auto-Elevating LOLBin (sigma)
           - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction (sigma)
           - b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23   # WDigest Cleartext Credential Caching Enabled (sigma)
-          - 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99   # Scheduled Task Created With Suspicious Action (sigma)
           - d6adbfee-548b-4def-9e49-8e6940251957   # WMI Event Subscription Persistence (sigma)
           - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering via bcdedit or wbadmin (sigma)
           - 596b49d3-561e-49d7-9538-f3115c1c8cfd   # USN Journal Deletion via fsutil (sigma)
@@ -67,5 +64,3 @@ rules:
           - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
           - yara-win-xmrig-coinminer   # XMRig / coinminer strings in Windows PE binaries (yara)
           - yara-win-msfvenom-stager   # Metasploit / Meterpreter stager markers in Windows PE (yara)
-        ioc:
-          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

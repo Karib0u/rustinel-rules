@@ -24,6 +24,8 @@ These run in CI on every push and pull request (`tools/validate.py`, then `tools
 | Rustinel telemetry compatibility   | `validate.py`        |
 | Pack manifest validation (schema)  | `validate.py`        |
 | Rule reference / extends integrity | `validate.py`        |
+| Engine field availability (no rule selects on a field the sensor never populates) | `validate.py` |
+| Preview / test-only content registered, and referenced by no pack | `validate.py` |
 | Sigma load/compile validation      | `validate.py` (stub) †|
 | Engine-ready packs + zip artifacts | `build_packs.py`     |
 | Flattened IOC files (per type)     | `build_packs.py`     |

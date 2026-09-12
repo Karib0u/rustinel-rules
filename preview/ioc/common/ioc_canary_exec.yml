@@ -1,0 +1,42 @@
+# Canary indicators for the atomic harness — TEST-ONLY, never a production pack.
+#
+# Replaces ioc-eicar-test as the end-to-end IOC wiring check. Rustinel computes
+# hash IOCs from the resolved image path of a *process start*, so a wiring test
+# has to launch a file whose bytes are fixed in advance:
+#
+#   hashes       SHA-256 of the deterministic canary executables emitted by
+#                tests/atomic/canary/make_canary.py. The Linux and Windows
+#                atomics write those exact bytes and execute them, so a match
+#                proves the hash-IOC path end to end.
+#   paths_regex  the launch path the macOS atomic uses. arm64 macOS refuses to
+#                execute an unsigned image and an ad-hoc signature is not
+#                byte-stable across toolchains, so a Mach-O canary cannot have a
+#                hash known at authoring time; the path indicator exercises the
+#                same IOC pipeline on the same event instead.
+#
+# Regenerate the hashes with:  uv run python tests/atomic/canary/make_canary.py
+id: ioc-canary-exec
+description: >
+  Test-only canary indicators used by the atomic harness to prove the IOC
+  pipeline fires on process start. The indicators describe throwaway files the
+  tests create themselves and carry no threat-intelligence value.
+os:
+  - common
+severity: low
+test_status: atomic
+test_reason: >
+  Exercised by the linux/windows canary_ioc atomics (hash) and the macOS
+  canary_ioc atomic (path regex).
+references:
+  - https://github.com/Karib0u/rustinel-rules/issues/32
+indicators:
+  hashes:
+    - value: 01ef1a23477699039a0b1b85a1d6a84e9dff810ba457e6a5198b2e6e3c8f333e
+      comment: canary-exec-hash linux x86_64 static ELF (129 bytes, exit 0)
+    - value: fcfd946a460a4120eaf33582564bd8d619eedfe5dd90d2e55277bb0ce6f6ebe1
+      comment: canary-exec-hash linux aarch64 static ELF (132 bytes, exit 0)
+    - value: 7a016626502086c5f22653946a8a346dd78f64054785a853a026eb77ee59600e
+      comment: canary-exec-hash windows x86_64 PE (1024 bytes, exit 0)
+  paths_regex:
+    - value: '[\\/]rustinel-canary-exec[\\/]canary-[a-z0-9_.-]+$'
+      comment: canary-exec-path launch path used by the macOS canary atomic

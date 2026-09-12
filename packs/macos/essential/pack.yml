@@ -44,5 +44,3 @@ rules:
           - db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8   # Browser Credential Store Access (sigma)
         yara:
           - yara-macos-coinminer-strings           # Cryptominer Mach-O strings (yara)
-        ioc:
-          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

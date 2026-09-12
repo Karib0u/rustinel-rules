@@ -37,8 +37,10 @@ rustinel:
   telemetry:
     - wmi_event
   expected_false_positive_level: low
-  test_status: manual
+  test_status: atomic
   test_reason: >
-    Firing requires registering a persistent WMI CommandLineEventConsumer, which
-    the disposable-runner atomic harness deliberately avoids; validated manually
-    with Atomic Red Team T1546.003.
+    The atomic registers and removes a complete, inert subscription. It runs
+    allow_failure until a CI run shows the WMI-Activity trace events the engine
+    subscribes to actually carry the consumer class name in Operation; if they do
+    not, this rule moves to preview/ as rewrite-required behind
+    Karib0u/rustinel#481 (collect WMI-Activity 5857-5861).

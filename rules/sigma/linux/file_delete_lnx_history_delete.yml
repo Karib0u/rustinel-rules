@@ -1,0 +1,46 @@
+title: Shell History File Deleted
+id: 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb
+status: experimental
+description: >
+  Detects deletion of a shell history file (.bash_history, .zsh_history and
+  friends) — an almost-universal attacker hygiene step and a cheap
+  post-compromise tripwire.
+  This rule is deliberately scoped to `file_delete`. Rustinel reports an
+  O_APPEND/O_TRUNC open as a Modify on the generic `file_event` channel, which
+  every interactive shell produces when it saves history on exit, so a
+  `file_event` rule on the same filenames fires on normal shell use and says
+  nothing about tampering. A delete is not a member of `file_event`, which is why
+  the previous shape of this rule could never see the behaviour it named.
+  Companion rules cover the two other ways a history file goes away without a
+  delete: renaming it out of place (55e6e499-c8d5-4d12-8e03-dd56f113d2a0) and
+  destroying its contents in place (d16b52ef-8048-4edd-aafc-50a5a5c3c889).
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-07-09
+modified: 2026-09-12
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: file_delete
+  product: linux
+detection:
+  selection:
+    TargetFilename|endswith:
+      - '.bash_history'
+      - '.zsh_history'
+      - '.sh_history'
+      - '.ash_history'
+      - '.ksh_history'
+      - '/.history'
+  condition: selection
+falsepositives:
+  - Dotfile managers and provisioning tools that replace a home directory wholesale.
+  - Container image builds that strip history files as a cleanup step.
+level: medium
+rustinel:
+  telemetry:
+    - file_delete
+  expected_false_positive_level: low
+  test_status: atomic

@@ -1,0 +1,40 @@
+title: Shell History File Renamed Away
+id: 55e6e499-c8d5-4d12-8e03-dd56f113d2a0
+status: experimental
+description: >
+  Detects a shell history file being renamed out of place — `mv ~/.bash_history
+  /tmp/x`, or moving it aside before dropping a sanitized replacement. Matching is
+  on `SourceFilename`, the pre-rename name, so this fires only when a history file
+  is the thing being moved.
+  The direction matters: zsh with HIST_SAVE_BY_COPY (the default) saves history by
+  writing a temporary file and renaming it *onto* .zsh_history on every shell exit.
+  That rename has a temporary as its source, so it does not match here — which is
+  exactly the normal-use case the previous `file_event` rule alerted on.
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-09-12
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: file_rename
+  product: linux
+detection:
+  selection:
+    SourceFilename|endswith:
+      - '.bash_history'
+      - '.zsh_history'
+      - '.sh_history'
+      - '.ash_history'
+      - '.ksh_history'
+      - '/.history'
+  condition: selection
+falsepositives:
+  - Backup or dotfile tooling that rotates history files by renaming them.
+level: medium
+rustinel:
+  telemetry:
+    - file_rename
+  expected_false_positive_level: low
+  test_status: atomic
