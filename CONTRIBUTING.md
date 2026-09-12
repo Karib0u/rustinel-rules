@@ -12,6 +12,9 @@ adversary behavior.
 - **CTI prioritizes, it does not import.** Threat intel helps decide *what to build next*, not to
   bulk-import noisy feed content.
 - **No duplicated rules.** Each rule lives once in `rules/`; packs reference it by `id`.
+- **A rule that cannot fire does not ship.** If a selection needs a field Rustinel never
+  populates, the rule goes under `preview/` with an entry in `preview/preview.yml` saying why
+  and what would unblock it — see [authoring](docs/authoring.md#when-a-rule-cant-ship-preview).
 - **Quality is visible in CI.** If it isn't validated, it isn't trusted.
 
 ## Local setup

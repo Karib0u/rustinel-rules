@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/rustinel-rules/schemas/preview.schema.json",
+  "title": "Rustinel preview register (v1)",
+  "description": "Schema for preview/preview.yml, the register of non-production detection content. Every file under preview/ must have exactly one entry here, and no production pack may reference an id listed in it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "entries"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "rustinel-rules/preview@1"
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "path", "state", "reason"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The artifact's own id — unchanged by the move, so promotion keeps the identity.",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["sigma", "yara", "ioc"]
+        },
+        "path": {
+          "type": "string",
+          "description": "Path to the artifact, relative to preview/.",
+          "minLength": 1
+        },
+        "state": {
+          "type": "string",
+          "description": "telemetry-blocked = a required field is never populated; rewrite-required = shaped for a different sensor; test-only = harness fixture, never a detection.",
+          "enum": ["telemetry-blocked", "rewrite-required", "test-only"]
+        },
+        "missing_fields": {
+          "type": "array",
+          "description": "For telemetry-blocked entries: the '<category>.<Field>' entries that are never populated.",
+          "items": { "type": "string", "pattern": "^[a-z_]+\\.[A-Za-z0-9_]+$" },
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "blocker": {
+          "type": "string",
+          "description": "Issue URL that would unblock promotion, when one exists.",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "telemetry-blocked" } } },
+          "then": { "required": ["missing_fields"] }
+        }
+      ]
+    }
+  }
+}

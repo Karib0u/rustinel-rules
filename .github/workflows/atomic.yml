@@ -122,7 +122,10 @@ jobs:
           exit 1
         shell: bash
 
-      - name: Exclude workspace from Defender (Windows, for EICAR)
+      # The canary atomic writes a tiny unsigned PE into the workspace and runs it
+      # so the engine can hash a process image whose SHA-256 is known in advance.
+      # Without the exclusion, real-time protection can quarantine it first.
+      - name: Exclude workspace from Defender (Windows, for the IOC canary)
         if: matrix.platform == 'windows'
         run: Add-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE" -ErrorAction SilentlyContinue
         shell: pwsh

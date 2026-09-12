@@ -175,6 +175,34 @@ The build flattens every referenced set into `hashes.txt` / `ips.txt` / `domains
 
 ---
 
+## When a rule can't ship: `preview/`
+
+Before adding a rule, check every field it selects on against the
+[supported fields](rustinel-support.md#3-supported-sigma-fields-per-category) **and** against
+`NEVER_POPULATED_FIELDS` in [the validator](../tools/validate.py). A field the engine never
+populates is missing on every event, so a selection on it is never true — and if it is the only
+selection, the rule can never fire. Validation rejects such a rule under `rules/`.
+
+A rule like that is not deleted. Move it to `preview/` (same layout, `preview/sigma/<os>/…`) and add
+an entry to [`preview/preview.yml`](../preview/preview.yml):
+
+```yaml
+  - id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
+    kind: sigma
+    path: sigma/windows/image_load_win_hunting_unsigned_dll_userwritable.yml
+    state: telemetry-blocked      # or rewrite-required | test-only
+    missing_fields:
+      - image_load.Signed
+    reason: >
+      Why it cannot ship today, in enough detail that the next reader does not
+      have to re-derive it.
+    blocker: https://github.com/Karib0u/rustinel/issues/320
+```
+
+The rule keeps its `id` and stays fully validated, so promoting it later is a `git mv` back into
+`rules/` plus a pack reference. Packs may not reference preview ids; `validate.py` fails the build if
+one does. See [the repository model](repository.md#non-production-content-preview) for the states.
+
 ## Choosing a pack level
 
 | Level | Bar for inclusion |

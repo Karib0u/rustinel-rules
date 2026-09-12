@@ -1,0 +1,83 @@
+# Non-production detection content.
+#
+# Everything under preview/ is deliberately outside the canonical rules/ tree, so
+# tools/lib.py never offers it to a pack and tools/build_packs.py can never
+# package it. This file is the machine-readable register of *why* each entry is
+# here: the canonical Sigma / IOC documents stay clean and keep their ids.
+#
+# States:
+#   telemetry-blocked  the logic is correct, but a required field is never
+#                      populated by the certified engine, so the rule can never
+#                      match. Promote when the blocking issue lands.
+#   rewrite-required   the telemetry exists but the detection is shaped for a
+#                      different sensor and must be rewritten before it ships.
+#   test-only          fixture content that exists to exercise the pipeline in
+#                      tests/atomic. Never a production detection.
+#
+# Promotion: move the file back under rules/, drop its entry here, add the id to
+# a pack, and give it a real test. `tools/validate.py` fails if a production pack
+# references anything listed below.
+schema: rustinel-rules/preview@1
+entries:
+  - id: 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99
+    kind: sigma
+    path: sigma/windows/task_creation_win_susp_scheduled_task_action.yml
+    state: telemetry-blocked
+    missing_fields:
+      - task_creation.TaskContent
+    reason: >
+      Every selection requires TaskContent. TaskScheduler event 106 — the only
+      task_creation source the engine collects — does not carry the task XML
+      definition, so the field is `never` in the engine field-availability
+      contract and the rule cannot match any event. Was shipped in Windows
+      Essential, where it contributed nothing.
+    blocker: https://github.com/Karib0u/rustinel/issues/479
+    notes: >
+      Promotion needs Security event 4698 (task created, carries the XML) or
+      task-file enrichment on 106. The TaskName / UserName branch is a separate,
+      shippable rule and is tracked in Karib0u/rustinel-rules#41.
+
+  - id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
+    kind: sigma
+    path: sigma/windows/image_load_win_hunting_unsigned_dll_userwritable.yml
+    state: telemetry-blocked
+    missing_fields:
+      - image_load.Signed
+    reason: >
+      The single selection requires `Signed: 'false'`. Kernel-Process image-load
+      events carry no Authenticode result, so `Signed` is `never` in the engine
+      field-availability contract and the rule cannot match any event. Was
+      shipped in Windows Hunting.
+    blocker: https://github.com/Karib0u/rustinel/issues/320
+    notes: >
+      Needs Authenticode enrichment (rustinel#320), which in turn needs the async
+      enrichment contract (rustinel#427). Without #427 a rule on `Signed` still
+      evaluates before enrichment and still never matches.
+
+  - id: ioc-eicar-test
+    kind: ioc
+    path: ioc/common/ioc_eicar_test.yml
+    state: test-only
+    reason: >
+      Hash IOCs are computed only from the resolved image path of a process
+      start. EICAR is a 16-bit DOS .COM that can never become a process image on
+      a supported platform, so these hashes can never match — the set cannot do
+      the end-to-end wiring check its description claimed. Kept as a fixture for
+      scanner-integration work; ioc-canary-exec replaces it as the wiring test.
+    blocker: https://github.com/Karib0u/rustinel-rules/issues/32
+    notes: >
+      On-write hashing (rustinel#324) would make a dropped-file match possible;
+      until then no dropped-but-never-executed file is hashed at all.
+
+  - id: ioc-canary-exec
+    kind: ioc
+    path: ioc/common/ioc_canary_exec.yml
+    state: test-only
+    reason: >
+      Deterministic hash- and path-IOC canaries for the atomic harness. The
+      indicators describe throwaway files the tests create themselves; they have
+      no threat-intelligence value and must never ship in a production pack.
+    notes: >
+      Loaded into the atomic run by tools/build_packs.py --fixtures, which
+      flattens test-only IOC sets into build/fixtures/ioc/ for
+      tests/atomic/run_atomics.py to overlay onto the staged pack.

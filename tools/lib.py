@@ -14,6 +14,11 @@ Rustinel engine loads:
     ioc/hashes.txt  ips.txt  domains.txt  paths_regex.txt
                                                     -> [ioc].*_path
 
+Non-production content lives under `preview/` with the same layout and is loaded
+only on request (``load_preview_artifacts``). Because pack resolution indexes the
+`rules/` tree alone, a preview or test-only artifact can never end up in a built
+pack; ``validate.py`` turns an attempted reference into a hard error.
+
 Requires PyYAML (see tools/requirements.txt).
 """
 
@@ -26,11 +31,18 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RULES_DIR = REPO_ROOT / "rules"
+PREVIEW_DIR = REPO_ROOT / "preview"
+PREVIEW_REGISTER_PATH = PREVIEW_DIR / "preview.yml"
 PACKS_DIR = REPO_ROOT / "packs"
 SCHEMA_DIR = REPO_ROOT / "schemas"
 PACK_SCHEMA_PATH = SCHEMA_DIR / "pack.schema.json"
 IOC_SCHEMA_PATH = SCHEMA_DIR / "ioc.schema.json"
+PREVIEW_SCHEMA_PATH = SCHEMA_DIR / "preview.schema.json"
 DIST_DIR = REPO_ROOT / "dist"
+# Test-only content is flattened here, deliberately outside dist/ so no release
+# artifact can carry it. tests/atomic/run_atomics.py overlays it onto the staged
+# pack at run time.
+FIXTURES_DIR = REPO_ROOT / "build" / "fixtures"
 
 # Canonical source globs, one per artifact kind.
 SIGMA_GLOB = "sigma/**/*.yml"
@@ -71,9 +83,9 @@ class Artifact:
 # --------------------------------------------------------------------------- #
 
 
-def load_sigma_rules() -> list[Artifact]:
+def load_sigma_rules(root: Path | None = None) -> list[Artifact]:
     artifacts: list[Artifact] = []
-    for path in sorted(RULES_DIR.glob(SIGMA_GLOB)):
+    for path in sorted((root or RULES_DIR).glob(SIGMA_GLOB)):
         raw = path.read_text(encoding="utf-8")
         doc = yaml.safe_load(raw) or {}
         rule_id = str(doc.get("id", "")).strip()
@@ -86,9 +98,9 @@ _YARA_META_ID_RE = re.compile(r'\bid\s*=\s*"([^"]+)"')
 _YARA_META_ATTACK_RE = re.compile(r'\battack\s*=\s*"([^"]+)"')
 
 
-def load_yara_rules() -> list[Artifact]:
+def load_yara_rules(root: Path | None = None) -> list[Artifact]:
     artifacts: list[Artifact] = []
-    for path in sorted(RULES_DIR.glob(YARA_GLOB)):
+    for path in sorted((root or RULES_DIR).glob(YARA_GLOB)):
         raw = path.read_text(encoding="utf-8")
         meta_id = _YARA_META_ID_RE.search(raw)
         name = _YARA_RULE_RE.search(raw)
@@ -98,9 +110,9 @@ def load_yara_rules() -> list[Artifact]:
     return artifacts
 
 
-def load_ioc_sets() -> list[Artifact]:
+def load_ioc_sets(root: Path | None = None) -> list[Artifact]:
     artifacts: list[Artifact] = []
-    for path in sorted(RULES_DIR.glob(IOC_GLOB)):
+    for path in sorted((root or RULES_DIR).glob(IOC_GLOB)):
         raw = path.read_text(encoding="utf-8")
         doc = yaml.safe_load(raw) or {}
         set_id = str(doc.get("id", "")).strip()
@@ -108,8 +120,33 @@ def load_ioc_sets() -> list[Artifact]:
     return artifacts
 
 
-def load_all_artifacts() -> list[Artifact]:
-    return load_sigma_rules() + load_yara_rules() + load_ioc_sets()
+def load_all_artifacts(root: Path | None = None) -> list[Artifact]:
+    """Every canonical artifact under `root` (default: the production rules/ tree).
+
+    Pass PREVIEW_DIR to load non-production content. The two trees are never
+    merged here: packs resolve against production artifacts only, which is what
+    keeps preview and test-only content out of every built pack.
+    """
+    return load_sigma_rules(root) + load_yara_rules(root) + load_ioc_sets(root)
+
+
+def load_preview_artifacts() -> list[Artifact]:
+    return load_all_artifacts(PREVIEW_DIR) if PREVIEW_DIR.is_dir() else []
+
+
+def load_preview_register() -> dict:
+    """The preview/preview.yml register: why each non-production artifact is there."""
+    if not PREVIEW_REGISTER_PATH.is_file():
+        return {"schema": "rustinel-rules/preview@1", "entries": []}
+    return yaml.safe_load(PREVIEW_REGISTER_PATH.read_text(encoding="utf-8")) or {}
+
+
+def preview_entries_by_id() -> dict[str, dict]:
+    return {
+        str(entry.get("id")): entry
+        for entry in (load_preview_register().get("entries") or [])
+        if entry.get("id")
+    }
 
 
 def artifacts_by_id() -> dict[str, Artifact]:

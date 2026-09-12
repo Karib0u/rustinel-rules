@@ -46,5 +46,3 @@ rules:
         yara:
           - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
           - yara-lnx-msfvenom-stager   # Metasploit / Mettle stager markers in ELF binaries (yara)
-        ioc:
-          - ioc-eicar-test                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)                         # EICAR safe end-to-end IOC test set (ioc)

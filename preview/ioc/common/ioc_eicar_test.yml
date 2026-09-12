@@ -1,0 +1,36 @@
+# EICAR anti-malware test file indicators — TEST-ONLY, NOT A WIRING CHECK.
+#
+# This set used to describe itself as a way to confirm the IOC pipeline end to
+# end. It cannot do that. Rustinel computes hash IOCs only from the resolved
+# image path of a *process start*; a file that is written and read but never
+# executed is never hashed. EICAR is a 16-bit DOS .COM and can never become a
+# process image on a supported platform, so these hashes can never match, and an
+# operator who drops an EICAR file and sees nothing learns nothing about their
+# pipeline.
+#
+# Kept as a fixture only. ioc-canary-exec is the set that actually exercises the
+# hash-IOC path. See preview/preview.yml and rustinel-rules#32.
+id: ioc-eicar-test
+description: >
+  EICAR anti-malware test file hashes. Test-only fixture: hash IOCs are computed
+  from process-start images, and EICAR can never be one, so these indicators can
+  never match. Retained for scanner-integration work, not for detection.
+os:
+  - common
+severity: low
+test_status: none
+test_reason: >
+  Unmatchable by construction on the certified engine — hash IOCs come from
+  process-start images only. On-write hashing (rustinel#324) is the earliest
+  point at which a dropped EICAR file could be hashed at all.
+references:
+  - https://www.eicar.org/download-anti-malware-testfile/
+  - https://github.com/Karib0u/rustinel-rules/issues/32
+indicators:
+  hashes:
+    - value: 44d88612fea8a8f36de82e1278abb02f
+      comment: EICAR test file (MD5)
+    - value: 3395856ce81f2b7382dee72602f798b642f14140
+      comment: EICAR test file (SHA1)
+    - value: 275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f
+      comment: EICAR test file (SHA256)

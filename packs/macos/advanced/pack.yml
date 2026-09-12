@@ -29,6 +29,8 @@ attack_coverage:
 telemetry_requirements:
   - process_creation
   - file_event
+  - file_delete
+  - file_rename
 test_status: none
 sources:
     manual:
@@ -42,4 +44,6 @@ rules:
           - 1a728495-a123-44c6-8ad6-718293a4b527   # Execution from World-Writable or Temporary Directory (sigma)
           - c92540cf-466d-4959-ab25-1c456bedf9d5   # SSH authorized_keys Created or Replaced (macOS) (sigma)
           - 578195d3-de1a-4c46-84c8-b246a060474c   # launchctl Load from User-Writable Path (sigma)
-          - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Tampering (macOS) (sigma)
+          - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Deleted (macOS) (sigma)
+          - 457c6ee7-e5d8-4f06-b25e-a7a3d40e354d   # Shell History File Renamed Away (macOS) (sigma)
+          - 40b5bf5b-055e-4db2-90df-bd2968ddad9f   # Shell History Destroyed in Place (macOS) (sigma)

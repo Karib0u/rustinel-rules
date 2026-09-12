@@ -53,11 +53,27 @@ paths_regex_path = "windows-essential/ioc/paths_regex.txt"
 Every config key can also be overridden by an environment variable with the `EDR__` prefix and `__`
 as the separator, e.g. `EDR__SCANNER__SIGMA_RULES_PATH=...`.
 
-## 3. Confirm it works (EICAR)
+## 3. Confirm it works
 
-The default Essential packs ship the EICAR test IOC set. With the pack loaded, drop a standard EICAR
-test file on disk; Rustinel should hash it on access/exec and raise an IOC alert. Alerts are written
-as ECS NDJSON to `logs/alerts.json.<date>`.
+Trigger one rule deliberately and check that an alert appears. Alerts are written as ECS NDJSON to
+`logs/alerts.json.<date>`.
+
+```powershell
+# Windows -> "Suspicious Encoded PowerShell Command Line" (decodes to `Write-Host rustinel`)
+powershell.exe -EncodedCommand VwByAGkAdABlAC0ASABvAHMAdAAgAHIAdQBzAHQAaQBuAGUAbAA=
+```
+
+```bash
+# Linux -> "SSH authorized_keys Created or Replaced"
+mkdir -p /tmp/rustinel-check/.ssh && touch /tmp/rustinel-check/.ssh/authorized_keys
+```
+
+> **Not EICAR.** Dropping an EICAR test file proves nothing about a Rustinel deployment. Hash IOCs
+> are computed from the resolved image path of a **process start**, so a file that is written but
+> never executed is never hashed, and EICAR — a 16-bit DOS `.COM` — can never become a process image
+> on a supported platform. The EICAR set has been moved to test-only content (`preview/`) and is in
+> no pack. The repository's own end-to-end check of the hash-IOC path launches a deterministic
+> canary executable instead; see `tests/atomic/canary/`.
 
 ## 4. Hot reload
 

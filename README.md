@@ -59,7 +59,22 @@ domains_path     = "windows-essential/ioc/domains.txt"
 paths_regex_path = "windows-essential/ioc/paths_regex.txt"
 ```
 
-**3. Confirm it works.** The Essential packs ship the **EICAR** test IOC set — drop a standard EICAR test file on disk and Rustinel raises an IOC alert in `logs/alerts.json.<date>`.
+**3. Confirm it works.** Trigger one rule on purpose and watch for the alert in `logs/alerts.json.<date>`:
+
+```powershell
+# Windows -> "Suspicious Encoded PowerShell Command Line" (this just prints a word)
+powershell.exe -EncodedCommand VwByAGkAdABlAC0ASABvAHMAdAAgAHIAdQBzAHQAaQBuAGUAbAA=
+```
+
+```bash
+# Linux -> "SSH authorized_keys Created or Replaced"
+mkdir -p /tmp/rustinel-check/.ssh && touch /tmp/rustinel-check/.ssh/authorized_keys
+```
+
+> Earlier versions suggested dropping an EICAR file. That never worked: Rustinel hashes an
+> executable when it becomes a **process image**, so a file that is written but never executed
+> is never hashed — and EICAR cannot become a process image at all. The EICAR set is no longer
+> in any pack.
 
 > Packs are **cumulative**, so load **one** pack, not several. The exact paths for every pack are in each pack's `engine` block in `index.json`. Full reference: **[docs/usage.md](docs/usage.md)**.
 

@@ -96,13 +96,12 @@
       "script": "linux/xmrig_yara_fixture.sh"
     },
     {
-      "id": "ioc-eicar-test",
-      "name": "linux_eicar_ioc",
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc",
       "platform": "linux",
       "engine": "ioc",
-      "script": "linux/eicar_ioc.sh",
-      "allow_failure": true,
-      "expect": { "field": "rule.description", "contains": "EICAR" }
+      "script": "linux/canary_ioc.sh",
+      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
     },
     {
       "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
@@ -235,13 +234,12 @@
       "script": "windows/mimikatz_yara_fixture.ps1"
     },
     {
-      "id": "ioc-eicar-test",
-      "name": "windows_eicar_ioc",
+      "id": "ioc-canary-exec",
+      "name": "windows_canary_ioc",
       "platform": "windows",
       "engine": "ioc",
-      "script": "windows/eicar_ioc.ps1",
-      "allow_failure": true,
-      "expect": { "field": "rule.description", "contains": "EICAR" }
+      "script": "windows/canary_ioc.ps1",
+      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
     },
     {
       "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
@@ -448,13 +446,61 @@
       "allow_failure": true
     },
     {
-      "id": "ioc-eicar-test",
-      "name": "macos_eicar_ioc",
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc",
       "platform": "macos",
       "engine": "ioc",
-      "script": "macos/eicar_ioc.sh",
-      "allow_failure": true,
-      "expect": { "field": "rule.description", "contains": "EICAR" }
+      "script": "macos/canary_ioc.sh",
+      "expect": { "field": "rule.description", "contains": "canary-exec-path" }
+    },
+    {
+      "id": "6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb",
+      "name": "linux_history_delete",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_delete.sh"
+    },
+    {
+      "id": "55e6e499-c8d5-4d12-8e03-dd56f113d2a0",
+      "name": "linux_history_rename_away",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_rename_away.sh"
+    },
+    {
+      "id": "d16b52ef-8048-4edd-aafc-50a5a5c3c889",
+      "name": "linux_history_destruction",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_destruction.sh"
+    },
+    {
+      "id": "ffd3b3b3-9fd4-4fd2-9988-fe837e062181",
+      "name": "macos_history_delete",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_delete.sh"
+    },
+    {
+      "id": "457c6ee7-e5d8-4f06-b25e-a7a3d40e354d",
+      "name": "macos_history_rename_away",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_rename_away.sh"
+    },
+    {
+      "id": "40b5bf5b-055e-4db2-90df-bd2968ddad9f",
+      "name": "macos_history_destruction",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_destruction.sh"
+    },
+    {
+      "id": "d6adbfee-548b-4def-9e49-8e6940251957",
+      "name": "windows_wmi_subscription",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmi_subscription.ps1"
     }
   ]
 }

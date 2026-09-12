@@ -11,6 +11,8 @@ Mandatory v1 checks:
   - IOC value sanity (hash/ip/domain/regex well-formed)
   - pack manifest validation (schema + referential integrity)
   - pack attack_coverage drift guard (declared vs. derived)
+  - no production rule selects on a field the engine never populates
+  - preview / test-only content is registered, and no pack references it
 
 Exit code 0 = all checks pass, 1 = one or more failures.
 
@@ -31,9 +33,12 @@ import lib
 #
 # Mirrors the engine's authoritative is_supported_category() in
 # src/engine/logsource.rs (ETW on Windows, eBPF on Linux), plus "file_scan"
-# for YARA / IOC executable hashing on process-start. The registry_*, file_*,
+# for YARA / IOC executable hashing on process-start. The registry_*, image_load,
 # ps_script, wmi_event, service_creation and task_creation families are
-# Windows-only; rules using them must set logsource product: windows.
+# Windows-only; rules using them must set logsource product: windows. The file_*
+# family is collected on all three platforms, but only Windows emits file_change,
+# and only Linux/macOS populate SourceFilename on a rename (see
+# NEVER_POPULATED_FIELDS).
 SUPPORTED_TELEMETRY = {
     "process_creation",
     "network_connection",
@@ -54,6 +59,78 @@ SUPPORTED_TELEMETRY = {
     "task_creation",
     "file_scan",
 }
+
+# Fields the certified engine never populates, keyed by (product, category).
+#
+# Mirrors the `never` rows of the engine field-availability contract
+# (rustinel/compatibility/field-availability.json). A selection on one of these
+# is dead weight at best: the field is missing on every event, so the selection
+# can never be true. When it is the only selection, the rule can never fire at
+# all — which is how the Essential scheduled-task rule (TaskContent) and the
+# unsigned-DLL hunting rule (Signed) shipped without ever producing an alert.
+#
+# Such a rule belongs under preview/ with a `telemetry-blocked` entry naming the
+# engine issue, not in a pack. Add a row here whenever the contract marks a field
+# `never`; drop it when the engine starts populating it.
+NEVER_POPULATED_FIELDS: dict[tuple[str, str], set[str]] = {
+    # TaskScheduler event 106 carries no task XML; needs Security 4698.
+    ("windows", "task_creation"): {"TaskContent"},
+    # Kernel-Process image-load records carry no Authenticode result.
+    ("windows", "image_load"): {"Signed", "Signature"},
+    # No token/logon resolution on the ETW process path yet.
+    ("windows", "process_creation"): {"User", "ParentUser", "LogonId", "LogonGuid"},
+    # Kernel-File gives no pre-rename name, and no creation timestamps.
+    ("windows", "file_event"): {
+        "SourceFilename",
+        "CreationUtcTime",
+        "PreviousCreationUtcTime",
+    },
+    # macOS network comes from /dev/bpf: no direction, user or reverse name.
+    ("macos", "network_connection"): {"Initiated", "User", "DestinationHostname"},
+    # macOS DNS is captured at the packet layer, unattributed to a process.
+    ("macos", "dns_query"): {"Image", "ProcessId"},
+    ("macos", "process_creation"): {"ParentCommandLine"},
+    # Linux DNS parses the query only, not the answer.
+    ("linux", "dns_query"): {"QueryResults", "QueryStatus"},
+}
+
+# The file_* sub-categories share one field contract.
+FILE_CATEGORY_ALIASES = {
+    "file_create",
+    "file_delete",
+    "file_rename",
+    "file_change",
+}
+DNS_CATEGORY_ALIASES = {"dns"}
+
+
+def _contract_category(category: str) -> str:
+    if category in FILE_CATEGORY_ALIASES:
+        return "file_event"
+    if category in DNS_CATEGORY_ALIASES:
+        return "dns_query"
+    return category
+
+
+def _detection_fields(detection: dict) -> set[str]:
+    """Every field name a rule's selections reference, modifiers stripped."""
+    fields: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                fields.add(str(key).split("|", 1)[0])
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for name, selection in (detection or {}).items():
+        if name in ("condition", "timeframe"):
+            continue
+        walk(selection)
+    return fields
+
 
 REQUIRED_SIGMA_FIELDS = [
     "title",
@@ -165,6 +242,27 @@ def check_sigma_rule(art, rep: Report):
         rep.warn(art.rel_path, "missing rustinel.expected_false_positive_level")
 
 
+def check_engine_field_availability(art, rep: Report):
+    """Reject a production rule that selects on a field the engine never populates."""
+    doc = art.meta
+    if not isinstance(doc, dict):
+        return
+    logsource = doc.get("logsource") or {}
+    product = str(logsource.get("product") or "").lower()
+    category = _contract_category(str(logsource.get("category") or "").lower())
+    blocked = NEVER_POPULATED_FIELDS.get((product, category))
+    if not blocked:
+        return
+    used = _detection_fields(doc.get("detection") or {})
+    for field in sorted(blocked & used):
+        rep.error(
+            art.rel_path,
+            f"selects on '{field}', which Rustinel never populates for "
+            f"{product}/{logsource.get('category')} — the rule cannot match. "
+            f"Move it to preview/ with a telemetry-blocked entry, or drop the field.",
+        )
+
+
 def check_yara_rule(art, rep: Report, compile_yara=None):
     raw = art.raw
     if not art.id:
@@ -239,13 +337,14 @@ REQUIRED_PACK_FIELDS = [
 ]
 
 
-def check_packs(packs, artifacts, rep: Report):
+def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
     schema_validate = load_schema_validator(lib.PACK_SCHEMA_PATH)
     if schema_validate is None:
         rep.warn("schema", "jsonschema not installed; using minimal field checks only")
 
     by_id = {p["id"]: p for p in packs if "id" in p}
     artifact_index = {a.id: a for a in artifacts if a.id}
+    preview_by_id = preview_by_id or {}
 
     for pack in packs:
         where = str(Path(pack["__path__"]).relative_to(lib.REPO_ROOT))
@@ -277,7 +376,17 @@ def check_packs(packs, artifacts, rep: Report):
                     rule_ids_to_check.extend(sub)
 
         for rule_id in rule_ids_to_check:
-            if rule_id not in artifact_index:
+            if rule_id in artifact_index:
+                continue
+            entry = preview_by_id.get(rule_id)
+            if entry:
+                rep.error(
+                    where,
+                    f"references '{rule_id}', which is {entry.get('state')} content under "
+                    f"preview/{entry.get('path')}. Production packs may not ship preview or "
+                    f"test-only artifacts.",
+                )
+            else:
                 rep.error(where, f"references unknown artifact id '{rule_id}'")
         try:
             resolved = lib.resolve_pack_rules(pack, by_id)
@@ -298,6 +407,51 @@ def check_packs(packs, artifacts, rep: Report):
             rep.warn(where, f"attack_coverage '{technique}' not found in any member artifact")
 
 
+def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_yara):
+    """The preview tree is validated like production content, plus its register.
+
+    Preview rules must still parse and carry full metadata so promotion is a move
+    rather than a rewrite; they are exempt only from the never-populated-field
+    check, which is the very reason most of them are here.
+    """
+    register = lib.load_preview_register()
+    schema_validate = load_schema_validator(lib.PREVIEW_SCHEMA_PATH)
+    where_register = lib.PREVIEW_REGISTER_PATH.relative_to(lib.REPO_ROOT).as_posix()
+
+    if schema_validate is not None and register:
+        schema_validate(register, where_register, rep)
+
+    entries = register.get("entries") or []
+    by_id = {str(e.get("id")): e for e in entries if e.get("id")}
+
+    for art in preview_artifacts:
+        if art.kind == "sigma":
+            check_sigma_rule(art, rep)
+        elif art.kind == "yara":
+            check_yara_rule(art, rep, compile_yara)
+        elif art.kind == "ioc":
+            check_ioc_set(art, rep, ioc_schema_validate)
+        if art.id and art.id not in by_id:
+            rep.error(
+                art.rel_path,
+                f"not listed in {where_register}; every preview artifact needs an entry "
+                f"declaring its state, reason and blocker",
+            )
+
+    # Registered paths are written POSIX-style; compare on that spelling so the
+    # check behaves the same on a Windows checkout.
+    known_paths = {a.path.relative_to(lib.PREVIEW_DIR).as_posix() for a in preview_artifacts}
+    for entry in entries:
+        path = str(entry.get("path") or "").replace("\\", "/")
+        if path not in known_paths:
+            rep.error(
+                where_register,
+                f"entry '{entry.get('id')}' points at preview/{path}, which does not exist",
+            )
+
+    return by_id
+
+
 def main() -> int:
     rep = Report()
 
@@ -307,23 +461,29 @@ def main() -> int:
     if compile_yara is None:
         rep.warn("yara", "yara-x not installed; using structural YARA checks only")
 
-    check_unique_ids(artifacts, rep)
+    preview_artifacts = lib.load_preview_artifacts()
+
+    check_unique_ids(artifacts + preview_artifacts, rep)
     for art in artifacts:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
+            check_engine_field_availability(art, rep)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":
             check_ioc_set(art, rep, ioc_schema_validate)
 
+    preview_by_id = check_preview(preview_artifacts, rep, ioc_schema_validate, compile_yara)
+
     packs = lib.load_packs()
-    check_packs(packs, artifacts, rep)
+    check_packs(packs, artifacts, rep, preview_by_id)
 
     counts = {k: sum(1 for a in artifacts if a.kind == k) for k in ("sigma", "yara", "ioc")}
     print(
         f"Checked {len(artifacts)} artifacts "
         f"({counts['sigma']} sigma, {counts['yara']} yara, {counts['ioc']} ioc) "
-        f"and {len(packs)} packs."
+        f"and {len(packs)} packs, "
+        f"plus {len(preview_artifacts)} non-production artifact(s) under preview/."
     )
     for line in rep.warnings:
         print(line)

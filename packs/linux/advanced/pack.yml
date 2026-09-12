@@ -32,6 +32,8 @@ attack_coverage:
   - T1219
 telemetry_requirements:
   - file_event
+  - file_delete
+  - file_rename
   - process_creation
   - network_connection
   - file_scan
@@ -48,7 +50,9 @@ rules:
           - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
           - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
           - d0c6216e-881c-408f-8e72-0a466522306b   # Outbound Network Connection from Shell Binary (sigma)
-          - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Tampering (sigma)
+          - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Deleted (sigma)
+          - 55e6e499-c8d5-4d12-8e03-dd56f113d2a0   # Shell History File Renamed Away (sigma)
+          - d16b52ef-8048-4edd-aafc-50a5a5c3c889   # Shell History Destroyed in Place (sigma)
           - 6b124b53-1d4b-48a2-86b7-4df9bf43de61   # System Log Clearing (journal and /var/log) (sigma)
           - 7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3   # SUID/SGID Bit Added via chmod (sigma)
           - 1bb5e9e4-f17e-476e-8e77-aaa1858f12f7   # udev Rules Persistence (sigma)

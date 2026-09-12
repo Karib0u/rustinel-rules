@@ -8,7 +8,9 @@ and checks the rustinel engine wrote a matching alert.
 What it does, in one privileged pass:
 
   1. Picks a built pack from <dist-dir>/index.json and copies it next to the
-     rustinel engine binary.
+     rustinel engine binary, and overlays the test-only IOC fixtures from
+     <fixtures-dir> onto that copy (--no-fixtures to skip). The fixtures never
+     enter a pack; the overlay is how a canary indicator reaches the engine.
   2. Writes a config.toml that points the engine's Sigma / YARA / IOC paths at
      that pack and its alert output at <engine-dir>/logs/alerts.json.<date>.
   3. Starts `rustinel run` (must be privileged: Linux eBPF -> root,
@@ -98,14 +100,23 @@ def _extract_yaml_scalar(text: str, field: str) -> str | None:
 def index_rules(rules_dir: Path) -> dict[str, dict]:
     """Map artifact id to title, status, reason and path by scanning sources.
 
+    Covers the production rules/ tree and the non-production preview/ tree, the
+    latter marked `preview: True`. Preview artifacts are indexed so a test-only
+    fixture the harness runs — the canary IOC set — resolves to a real artifact
+    instead of reading as an unknown id. They belong to no pack, so they are
+    never subject to the Essential checks below.
+
     Deliberately a line scan (not a YAML parse) so the runner stays
     dependency-free; the firing runner has to work under plain sudo python.
     """
     out: dict[str, dict] = {}
-    root = rules_dir / "rules"
-    if not root.is_dir():
-        return out
+    for root, preview in ((rules_dir / "rules", False), (rules_dir / "preview", True)):
+        if root.is_dir():
+            _index_tree(root, rules_dir, preview, out)
+    return out
 
+
+def _index_tree(root: Path, rules_dir: Path, preview: bool, out: dict[str, dict]) -> None:
     for path in (root / "sigma").rglob("*.yml"):
         text = path.read_text(encoding="utf-8", errors="ignore")
         m_id = ID_RE.search(text)
@@ -120,6 +131,7 @@ def index_rules(rules_dir: Path) -> dict[str, dict]:
             "test_status": m_status.group(1).lower() if m_status else None,
             "test_reason": _clean_scalar(m_reason.group(1)) if m_reason else None,
             "file": str(path.relative_to(rules_dir)),
+            "preview": preview,
         }
 
     for path in (root / "yara").rglob("*.yar"):
@@ -136,6 +148,7 @@ def index_rules(rules_dir: Path) -> dict[str, dict]:
             "test_status": m_status.group(1).lower() if m_status else None,
             "test_reason": m_reason.group(1).strip() if m_reason else None,
             "file": str(path.relative_to(rules_dir)),
+            "preview": preview,
         }
 
     for path in (root / "ioc").rglob("*.yml"):
@@ -151,8 +164,8 @@ def index_rules(rules_dir: Path) -> dict[str, dict]:
             "test_status": m_status.group(1).lower() if m_status else None,
             "test_reason": _clean_scalar(m_reason.group(1)) if m_reason else None,
             "file": str(path.relative_to(rules_dir)),
+            "preview": preview,
         }
-    return out
 
 
 def load_source_packs(rules_dir: Path) -> dict[str, dict]:
@@ -211,13 +224,58 @@ def pick_pack(dist_dir: Path, os_name: str, requested: str) -> dict:
 # --------------------------------------------------------------------------- #
 # Engine setup + lifecycle                                                     #
 # --------------------------------------------------------------------------- #
-def setup_engine(engine_dir: Path, dist_dir: Path, pack: dict) -> Path:
+def overlay_ioc_fixtures(pack_dir: Path, fixtures_dir: Path) -> int:
+    """Append the test-only IOC fixtures to the staged pack's flat IOC files.
+
+    tools/build_packs.py writes these from the `test-only` entries in
+    preview/preview.yml, outside dist/ so no release artifact carries them.
+    Appending here — to the throwaway copy, never to the source pack — is what
+    lets the harness prove the IOC path fires without shipping canary
+    indicators to anyone who installs a pack.
+    """
+    ioc_src = fixtures_dir / "ioc"
+    if not ioc_src.is_dir():
+        return 0
+
+    added = 0
+    for src in sorted(ioc_src.glob("*.txt")):
+        lines = [
+            line
+            for line in src.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.startswith("#")
+        ]
+        if not lines:
+            continue
+        dst = pack_dir / "ioc" / src.name
+        existing = dst.read_text(encoding="utf-8") if dst.exists() else ""
+        if existing and not existing.endswith("\n"):
+            existing += "\n"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(
+            existing
+            + "# --- test-only fixtures (rustinel-rules preview/) ---\n"
+            + "\n".join(lines)
+            + "\n",
+            encoding="utf-8",
+        )
+        added += len(lines)
+    return added
+
+
+def setup_engine(engine_dir: Path, dist_dir: Path, pack: dict, fixtures_dir: Path | None) -> Path:
     pack_id = pack["id"]
     src = dist_dir / pack_id
     dst = engine_dir / pack_id
     if dst.exists():
         shutil.rmtree(dst)
     shutil.copytree(src, dst)
+
+    if fixtures_dir is not None:
+        added = overlay_ioc_fixtures(dst, fixtures_dir)
+        if added:
+            print(f"   fixtures: {added} test-only indicator(s) from {fixtures_dir}")
+        else:
+            print(f"   fixtures: none found in {fixtures_dir}")
 
     config = f"""# Generated by run_atomics.py - points the engine at pack '{pack_id}'.
 [scanner]
@@ -447,10 +505,16 @@ def coverage(
             rule = rules.get(rule_id, {})
             print(f"  {platform:<7} {rule_id}  {rule.get('title')}  ({rule.get('file')})")
 
+    fixtures = sorted(key for key in manifest_keys if rules.get(key[1], {}).get("preview"))
+    if fixtures:
+        print("\nTest-only fixtures exercised (not in any pack):")
+        for platform, rule_id in fixtures:
+            print(f"  {platform:<7} {rule_id}  ({rules[rule_id].get('file')})")
+
     print(
         f"\n  {len(tests)} tests in manifest, {len(manifest_keys)} platform/id pairs, "
         f"{len(expected_atomic)} expected atomic pairs, {len(missing_atomic)} missing, "
-        f"{len(unknown)} unknown."
+        f"{len(unknown)} unknown, {len(fixtures)} test-only."
     )
     if strict_essential:
         return 1 if (missing_atomic or unknown or essential_none or manual_without_reason) else 0
@@ -483,6 +547,17 @@ def main() -> int:
     )
     ap.add_argument(
         "--dist-dir", type=Path, default=None, help="built packs dir (default: <rules-dir>/dist)"
+    )
+    ap.add_argument(
+        "--fixtures-dir",
+        type=Path,
+        default=None,
+        help="test-only IOC fixtures to overlay (default: <rules-dir>/build/fixtures)",
+    )
+    ap.add_argument(
+        "--no-fixtures",
+        action="store_true",
+        help="run against production pack content only, with no fixture overlay",
     )
     ap.add_argument("--pack", default="auto", help="pack id, or 'auto' for the most inclusive")
     ap.add_argument("--manifest", type=Path, default=HARNESS_ROOT / "manifest.json")
@@ -537,7 +612,10 @@ def main() -> int:
     print(f"== rustinel atomic firing tests ({os_name}) ==")
     print(f"   pack:   {pack['id']} ({pack.get('rule_count', '?')} rules)")
     print(f"   engine: {engine_dir}")
-    logs_dir = setup_engine(engine_dir, dist_dir, pack)
+    fixtures_dir = None
+    if not args.no_fixtures:
+        fixtures_dir = args.fixtures_dir or (args.rules_dir / "build" / "fixtures")
+    logs_dir = setup_engine(engine_dir, dist_dir, pack, fixtures_dir)
     binary = resolve_binary(engine_dir, os_name, args.engine_bin)
 
     stdout_log = engine_dir / "engine.stdout.log"

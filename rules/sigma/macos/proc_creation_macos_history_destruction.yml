@@ -1,0 +1,64 @@
+title: Shell History Destroyed in Place (macOS)
+id: 40b5bf5b-055e-4db2-90df-bd2968ddad9f
+status: experimental
+description: >
+  Detects a history file being emptied or overwritten in place rather than
+  deleted — `truncate -s 0 ~/.zsh_history`, `cat /dev/null > ~/.zsh_history`, or
+  symlinking the history file at /dev/null so nothing is ever written again.
+  None of these produce a delete or a rename, and the resulting write is
+  indistinguishable from zsh saving its own history, so the command line is the
+  only place this behaviour is visible. Companion to the delete
+  (ffd3b3b3-9fd4-4fd2-9988-fe837e062181) and rename
+  (457c6ee7-e5d8-4f06-b25e-a7a3d40e354d) rules.
+  Note: macOS ships no `shred`; `rm -P` is the local equivalent and leaves a
+  delete event, which the companion delete rule catches. Known gap: the history
+  file has to appear literally on the command line, so indirection through a
+  variable (`truncate -s 0 "$HISTFILE"`) is not matched.
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-09-12
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_history:
+    CommandLine|contains:
+      - '.zsh_history'
+      - '.bash_history'
+      - '.sh_history'
+      - '.ksh_history'
+  selection_truncate_img:
+    Image|endswith:
+      - '/truncate'
+  selection_truncate_flag:
+    CommandLine|contains:
+      - ' -s 0'
+      - ' -s0'
+      - ' --size=0'
+  selection_devnull_img:
+    Image|endswith:
+      - '/ln'
+      - '/cp'
+      - '/dd'
+      - '/install'
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+  selection_devnull_arg:
+    CommandLine|contains:
+      - '/dev/null'
+  condition: selection_history and ((selection_truncate_img and selection_truncate_flag) or (selection_devnull_img and selection_devnull_arg))
+falsepositives:
+  - Hardening or privacy scripts that clear history as a deliberate policy step.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

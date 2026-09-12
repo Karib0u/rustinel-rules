@@ -1,0 +1,68 @@
+title: Shell History Destroyed in Place
+id: d16b52ef-8048-4edd-aafc-50a5a5c3c889
+status: experimental
+description: >
+  Detects a history file being emptied or overwritten in place rather than
+  deleted — `shred ~/.bash_history`, `truncate -s 0 ~/.zsh_history`,
+  `cat /dev/null > ~/.bash_history`, or symlinking the history file at
+  /dev/null so nothing is ever written again.
+  None of these produce a delete or a rename, and the resulting write is
+  indistinguishable from a normal shell saving its history, so the command line
+  is the only place this behaviour is visible. Companion to the delete
+  (6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb) and rename
+  (55e6e499-c8d5-4d12-8e03-dd56f113d2a0) rules.
+  Known gap: the history file has to appear literally on the command line, so
+  indirection through a variable (`truncate -s 0 "$HISTFILE"`) is not matched.
+references:
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-09-12
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_history:
+    CommandLine|contains:
+      - '.bash_history'
+      - '.zsh_history'
+      - '.sh_history'
+      - '.ash_history'
+      - '.ksh_history'
+  selection_shred:
+    Image|endswith:
+      - '/shred'
+  selection_truncate_img:
+    Image|endswith:
+      - '/truncate'
+  selection_truncate_flag:
+    CommandLine|contains:
+      - ' -s 0'
+      - ' -s0'
+      - ' --size=0'
+  selection_devnull_img:
+    Image|endswith:
+      - '/ln'
+      - '/cp'
+      - '/dd'
+      - '/install'
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+  selection_devnull_arg:
+    CommandLine|contains:
+      - '/dev/null'
+  condition: selection_history and (selection_shred or (selection_truncate_img and selection_truncate_flag) or (selection_devnull_img and selection_devnull_arg))
+falsepositives:
+  - Hardening or privacy scripts that clear history as a deliberate policy step.
+  - Container image builds that blank history files during cleanup.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

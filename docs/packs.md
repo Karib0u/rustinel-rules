@@ -28,10 +28,9 @@ Essential  ⊂  Advanced  ⊂  Hunting
 
 ### Windows Essential
 
-Low-noise, high-confidence Windows detections. **Safe default** (`default: true`). The pack also
-ships the **EICAR** IOC set for end-to-end pipeline testing.
+Low-noise, high-confidence Windows detections. **Safe default** (`default: true`).
 
-*Telemetry:* `process_creation`, `registry_event`, `task_creation`, `file_scan`
+*Telemetry:* `process_creation`, `registry_event`, `wmi_event`, `file_scan`
 
 | Rule | Type | Category | ATT&CK |
 | ---- | ---- | -------- | ------ |
@@ -47,9 +46,7 @@ ships the **EICAR** IOC set for end-to-end pipeline testing.
 | UAC Bypass via Auto-Elevating LOLBin | Sigma | process_creation | T1548.002 |
 | Active Directory Database (NTDS.dit) Extraction | Sigma | process_creation | T1003.003 |
 | WDigest Cleartext Credential Caching Enabled | Sigma | registry_event | T1003.001 |
-| Scheduled Task Created With Suspicious Action | Sigma | task_creation | T1053.005, T1059, T1105 |
 | Mimikatz credential-dumping strings | YARA | file_scan | T1003.001 |
-| EICAR safe end-to-end IOC test set | IOC | file_scan | — |
 
 ### Windows Advanced
 
@@ -86,8 +83,7 @@ enabled by default and not suitable as a standing alert source without tuning.
 
 ### Linux Essential
 
-Low-noise, high-confidence Linux detections. **Safe default** (`default: true`). Ships the **EICAR**
-IOC set for end-to-end testing.
+Low-noise, high-confidence Linux detections. **Safe default** (`default: true`).
 
 *Telemetry:* `process_creation`, `file_event`, `file_scan`
 
@@ -100,14 +96,13 @@ IOC set for end-to-end testing.
 | Linux Web Server Spawning Interactive Shell | Sigma | process_creation | T1059.004, T1505.003 |
 | SSH Daemon Configuration Tampering | Sigma | file_event | T1098.004, T1562.001 |
 | XMRig / coinminer strings in Linux ELF binaries | YARA | file_scan | T1496 |
-| EICAR safe end-to-end IOC test set | IOC | file_scan | — |
 
 ### Linux Advanced
 
 Linux Essential **plus** broader detections (notably persistence and execution). More false
 positives may occur — especially from package installs — so tune before relying on by default.
 
-*Adds telemetry:* none
+*Adds telemetry:* `file_delete`, `file_rename`
 
 | Rule (added on top of Essential) | Type | Category | ATT&CK |
 | -------------------------------- | ---- | -------- | ------ |
@@ -116,6 +111,9 @@ positives may occur — especially from package installs — so tune before rely
 | Shell Profile / RC File Persistence | Sigma | file_event | T1546.004 |
 | Execution from World-Writable / Temporary Directory | Sigma | process_creation | T1059.004, T1036 |
 | Linux Download and Execute Piped to Shell | Sigma | process_creation | T1059.004, T1105 |
+| Shell History File Deleted | Sigma | file_delete | T1070.003 |
+| Shell History File Renamed Away | Sigma | file_rename | T1070.003 |
+| Shell History Destroyed in Place | Sigma | process_creation | T1070.003 |
 
 ---
 
@@ -131,8 +129,7 @@ positives may occur — especially from package installs — so tune before rely
 ### macOS Essential
 
 Low-noise, high-confidence macOS detections aimed at the dominant macOS threats (infostealers,
-keychain theft, Gatekeeper bypass, cryptominers). Ships the **EICAR** IOC set for end-to-end
-pipeline testing.
+keychain theft, Gatekeeper bypass, cryptominers).
 
 *Telemetry:* `process_creation`, `file_scan`
 
@@ -143,14 +140,13 @@ pipeline testing.
 | Gatekeeper or Quarantine Protection Disabled | Sigma | process_creation | T1553.001, T1562.001 |
 | macOS Reverse Shell via /dev/tcp | Sigma | process_creation | T1059.004, T1105 |
 | Cryptominer Mach-O strings | YARA | file_scan | T1496 |
-| EICAR safe end-to-end IOC test set | IOC | file_scan | — |
 
 ### macOS Advanced
 
 macOS Essential **plus** broader detections. More false positives may occur — notably from
 application installers — so tune per environment before relying on by default.
 
-*Adds telemetry:* `file_event`
+*Adds telemetry:* `file_event`, `file_delete`, `file_rename`
 
 | Rule (added on top of Essential) | Type | Category | ATT&CK |
 | -------------------------------- | ---- | -------- | ------ |
@@ -158,18 +154,42 @@ application installers — so tune per environment before relying on by default.
 | Shell Download-and-Execute Pipe Cradle | Sigma | process_creation | T1105, T1059.004 |
 | Local Admin Account Created via Directory Services | Sigma | process_creation | T1136.001, T1098 |
 | Execution from World-Writable / Temporary Directory | Sigma | process_creation | T1059.004, T1036 |
+| Shell History File Deleted (macOS) | Sigma | file_delete | T1070.003 |
+| Shell History File Renamed Away (macOS) | Sigma | file_rename | T1070.003 |
+| Shell History Destroyed in Place (macOS) | Sigma | process_creation | T1070.003 |
 
 ---
 
 ## Shared content
 
-### EICAR test IOC set (`ioc-eicar-test`)
+No pack currently ships an IOC set. The packs' `ioc/*.txt` files are still generated (empty) so a
+config pointed at them loads cleanly, and curated indicator sets drop straight in when they arrive.
 
-A safe, standardized [EICAR](https://www.eicar.org/download-anti-malware-testfile/) anti-malware
-test file, included in each Essential pack (`os: common`). Its hashes (MD5/SHA1/SHA256) let you
-confirm the IOC pipeline is wired end to end: build a pack, point Rustinel's `[ioc]` config at it,
-drop an EICAR file on disk, and you should see a hash match. Replace/extend with real curated
-indicators over time.
+### Why there is no EICAR set any more
+
+Every Essential pack used to ship `ioc-eicar-test`, described as a way to confirm the IOC pipeline
+end to end. It could not do that. Rustinel computes hash IOCs from the resolved image path of a
+**process start**; a file that is written and read but never executed is never hashed, and EICAR is
+a 16-bit DOS `.COM` that cannot become a process image on a supported platform. An operator
+following the stated instructions would drop an EICAR file, see nothing, and conclude — wrongly —
+that their pipeline was broken.
+
+The set now lives under `preview/` as `test-only` content. See
+[usage](usage.md#3-confirm-it-works) for a check that does work, and
+[repository](repository.md#non-production-content-preview) for the lifecycle.
+
+## Non-production content
+
+Two detections are parked under `preview/` because the certified engine never populates a field
+they require, so they can never match:
+
+| Rule | Was in | Missing field | Blocker |
+| ---- | ------ | ------------- | ------- |
+| Scheduled Task Created With Suspicious Action | Windows Essential | `task_creation.TaskContent` | [rustinel#479](https://github.com/Karib0u/rustinel/issues/479) |
+| Unsigned DLL Loaded from User-Writable Path (Hunting) | Windows Hunting | `image_load.Signed` | [rustinel#320](https://github.com/Karib0u/rustinel/issues/320) |
+
+`tools/validate.py` fails the build if a pack references either one, or any other preview or
+test-only artifact.
 
 ---
 
