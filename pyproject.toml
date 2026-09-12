@@ -1,6 +1,10 @@
 [project]
 name = "rustinel-rules-tools"
-version = "0.2.0"
+# The detection-content release version, and the only place it is written down.
+# tools/lib.py reads it; the build stamps it into pack manifests, archive names,
+# index.json and catalog.json, and validate.py refuses a tagged build whose tag
+# disagrees with it. Bump it in the release PR, before tagging.
+version = "0.3.0"
 description = "Validation and build tooling for rustinel-rules detection content."
 readme = "README.md"
 requires-python = ">=3.12"

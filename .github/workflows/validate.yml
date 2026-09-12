@@ -36,6 +36,9 @@ jobs:
       - name: Test atomic alert matching
         run: uv run python -m unittest discover -s tests/atomic -p 'test_*.py'
 
+      - name: Test tooling (version propagation)
+        run: uv run python -m unittest discover -s tests/tools -p 'test_*.py'
+
       - name: Validate rules and pack manifests
         working-directory: tools
         run: uv run python validate.py

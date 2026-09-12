@@ -42,7 +42,7 @@ Each detection lives **once** in `rules/`, carries a stable `id`, and is referen
 **1. Download** the pack for your OS plus `index.json` from the [latest release](https://github.com/Karib0u/rustinel-rules/releases/latest), and unzip it:
 
 ```bash
-unzip windows-essential-0.2.0.zip
+unzip windows-essential-0.3.0.zip
 ```
 
 **2. Point** `config.toml` at the unzipped pack — a pack folder *is* the directory Rustinel loads:

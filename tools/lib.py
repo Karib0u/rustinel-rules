@@ -25,6 +25,8 @@ Requires PyYAML (see tools/requirements.txt).
 from __future__ import annotations
 
 import re
+import tomllib
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -39,10 +41,33 @@ PACK_SCHEMA_PATH = SCHEMA_DIR / "pack.schema.json"
 IOC_SCHEMA_PATH = SCHEMA_DIR / "ioc.schema.json"
 PREVIEW_SCHEMA_PATH = SCHEMA_DIR / "preview.schema.json"
 DIST_DIR = REPO_ROOT / "dist"
+PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 # Test-only content is flattened here, deliberately outside dist/ so no release
 # artifact can carry it. tests/atomic/run_atomics.py overlays it onto the staged
 # pack at run time.
 FIXTURES_DIR = REPO_ROOT / "build" / "fixtures"
+
+_SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.\-]+)?$")
+
+
+@lru_cache(maxsize=1)
+def release_version() -> str:
+    """The detection-content release version, from pyproject.toml.
+
+    One source, read everywhere. Pack manifests, archive names, index.json and
+    catalog.json all derive from this, so a build cannot emit two versions; the
+    previous hard-coded defaults in the build and catalog scripts had drifted a
+    full release behind the last published tag.
+    """
+    data = tomllib.loads(PYPROJECT_PATH.read_text(encoding="utf-8"))
+    version = str((data.get("project") or {}).get("version") or "").strip()
+    if not _SEMVER_RE.match(version):
+        raise SystemExit(
+            f"[lib] pyproject.toml [project].version is {version!r}, "
+            f"which is not a MAJOR.MINOR.PATCH version"
+        )
+    return version
+
 
 # Canonical source globs, one per artifact kind.
 SIGMA_GLOB = "sigma/**/*.yml"

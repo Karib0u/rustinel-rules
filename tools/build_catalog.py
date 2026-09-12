@@ -32,7 +32,6 @@ from datetime import UTC, datetime
 
 import lib
 
-DEFAULT_VERSION = "0.2.0"
 SOURCE_REPO = "https://github.com/Karib0u/rustinel-rules"
 GITHUB_BLOB = f"{SOURCE_REPO}/blob/main"
 ATTACK_MAP_PATH = lib.REPO_ROOT / "tools" / "attack_techniques.json"
@@ -302,7 +301,9 @@ def build_catalog(version: str) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the rustinel-rules website catalog.")
     parser.add_argument(
-        "--version", default=DEFAULT_VERSION, help="Release version (default %(default)s)"
+        "--version",
+        default=lib.release_version(),
+        help="Release version (default: [project].version in pyproject.toml)",
     )
     args = parser.parse_args()
 

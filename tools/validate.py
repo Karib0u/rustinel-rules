@@ -14,6 +14,7 @@ Mandatory v1 checks:
   - no production rule selects on a field the engine never populates
   - each pack's requires_rustinel covers what its own content needs
   - preview / test-only content is registered, and no pack references it
+  - on a tagged build, the tag agrees with the declared release version
 
 Exit code 0 = all checks pass, 1 = one or more failures.
 
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -476,6 +478,26 @@ def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_y
     return by_id
 
 
+def check_release_version(rep: Report):
+    """On a tag build, the tag and the declared release version must agree.
+
+    Without this the mismatch only shows up as archives named after the wrong
+    release, after they have been published. GitHub Actions sets
+    GITHUB_REF_TYPE/GITHUB_REF_NAME; off a tag there is nothing to compare and
+    the check is a no-op.
+    """
+    version = lib.release_version()
+    if os.environ.get("GITHUB_REF_TYPE") != "tag":
+        return
+    tag = (os.environ.get("GITHUB_REF_NAME") or "").strip()
+    if tag.lstrip("v") != version:
+        rep.error(
+            "pyproject.toml",
+            f"building tag {tag!r} but [project].version is {version!r} — bump the "
+            f"version in the release PR before tagging, or retag",
+        )
+
+
 def main() -> int:
     rep = Report()
 
@@ -498,6 +520,7 @@ def main() -> int:
             check_ioc_set(art, rep, ioc_schema_validate)
 
     preview_by_id = check_preview(preview_artifacts, rep, ioc_schema_validate, compile_yara)
+    check_release_version(rep)
 
     packs = lib.load_packs()
     check_packs(packs, artifacts, rep, preview_by_id)
@@ -507,7 +530,8 @@ def main() -> int:
         f"Checked {len(artifacts)} artifacts "
         f"({counts['sigma']} sigma, {counts['yara']} yara, {counts['ioc']} ioc) "
         f"and {len(packs)} packs, "
-        f"plus {len(preview_artifacts)} non-production artifact(s) under preview/."
+        f"plus {len(preview_artifacts)} non-production artifact(s) under preview/. "
+        f"Release version {lib.release_version()}."
     )
     for line in rep.warnings:
         print(line)
