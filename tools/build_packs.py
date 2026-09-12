@@ -40,8 +40,6 @@ import yaml
 
 import lib
 
-DEFAULT_VERSION = "0.2.0"
-
 # Per-type IOC output: type -> (filename, human title, format note).
 IOC_FILES = {
     "hashes": ("hashes.txt", "Hashes", "Supports MD5, SHA1, and SHA256."),
@@ -207,7 +205,9 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build rustinel-rules pack artifacts.")
     parser.add_argument(
-        "--version", default=DEFAULT_VERSION, help="Release version (default %(default)s)"
+        "--version",
+        default=lib.release_version(),
+        help="Release version (default: [project].version in pyproject.toml)",
     )
     args = parser.parse_args()
 

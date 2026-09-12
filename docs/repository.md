@@ -136,6 +136,18 @@ What the build does for each pack:
 4. **Writes** a cleaned `pack.yml` with build metadata and zips the folder.
 5. **Records** a catalog entry in `index.json` with engine paths and a `sha256`.
 
+## Release version
+
+`[project].version` in [`pyproject.toml`](../pyproject.toml) is the **only** place the
+detection-content release version is written. `tools/lib.py` reads it, and the build stamps it into
+every pack manifest, archive name, `index.json` and `catalog.json`, so one build cannot emit two
+versions. Bump it in the release PR, before tagging.
+
+On a tag build, `validate.py` fails when the tag and that version disagree — the mismatch would
+otherwise only surface as archives named after the wrong release, after publication. Both build
+scripts previously carried their own hard-coded default, which is how artifacts kept being labelled
+`0.2.0` for a full cycle after `v0.3.0` shipped.
+
 ## Website catalog
 
 `tools/build_catalog.py` produces `dist/catalog.json`, a richer catalog for the Rustinel website.
@@ -161,12 +173,12 @@ automatically:
 ```json
 {
   "id": "windows-essential",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "default": true,
   "rule_count": 14,
   "ioc_count": 3,
   "sha256": "…",
-  "artifact": "windows-essential-0.2.0.zip",
+  "artifact": "windows-essential-0.3.0.zip",
   "engine": {
     "sigma_rules_path": "windows-essential/sigma",
     "yara_rules_path": "windows-essential/yara",

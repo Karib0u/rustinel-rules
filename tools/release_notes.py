@@ -1,7 +1,7 @@
 """Generate release notes from repository metadata and merged pull requests.
 
 Run:
-  uv run python tools/release_notes.py --version 0.2.0 --previous-tag v0.1.0
+  uv run python tools/release_notes.py --version 0.3.0 --previous-tag v0.2.0
 
 The PR changelog uses the GitHub CLI when available. Pass --repo OWNER/NAME to
 avoid relying on the local remote name.
