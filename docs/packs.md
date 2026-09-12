@@ -8,15 +8,15 @@ the resolved pack also includes everything from the levels it extends.
 Essential  ⊂  Advanced  ⊂  Hunting
 ```
 
-| Pack | Level | Default | Expected FP | Status |
-| ---- | ----- | :-----: | ----------- | ------ |
-| [Windows Essential](#windows-essential) | essential | ✅ | low | experimental |
-| [Windows Advanced](#windows-advanced) | advanced | ❌ | medium | experimental |
-| [Windows Hunting](#windows-hunting) | hunting | ❌ | high | experimental |
-| [Linux Essential](#linux-essential) | essential | ✅ | low | experimental |
-| [Linux Advanced](#linux-advanced) | advanced | ❌ | medium | experimental |
-| [macOS Essential](#macos-essential) | essential | ❌ | low | experimental |
-| [macOS Advanced](#macos-advanced) | advanced | ❌ | medium | experimental |
+| Pack | Level | Default | Expected FP | Status | Min engine |
+| ---- | ----- | :-----: | ----------- | ------ | ---------- |
+| [Windows Essential](#windows-essential) | essential | ✅ | low | experimental | `>=1.4.0` |
+| [Windows Advanced](#windows-advanced) | advanced | ❌ | medium | experimental | `>=1.4.1` |
+| [Windows Hunting](#windows-hunting) | hunting | ❌ | high | experimental | `>=1.4.1` |
+| [Linux Essential](#linux-essential) | essential | ✅ | low | experimental | `>=1.0.2` |
+| [Linux Advanced](#linux-advanced) | advanced | ❌ | medium | experimental | `>=1.0.2` |
+| [macOS Essential](#macos-essential) | essential | ❌ | low | experimental | `>=1.0.2` |
+| [macOS Advanced](#macos-advanced) | advanced | ❌ | medium | experimental | `>=1.0.2` |
 
 > All packs declare `pack_schema_version: 2`, `requires_rustinel: ">=1.0.2"`, and license
 > `DRL-1.1`. `status: experimental` reflects the early state of v1 content — expect curation to
@@ -121,10 +121,14 @@ positives may occur — especially from package installs — so tune before rely
 
 > macOS packs are **experimental and post-v1** — not yet production-ready — so both are
 > `default: false`. Content is built on Apple's EndpointSecurity sensor (process, file, network,
-> DNS). The process exec event carries full `CommandLine` (argv) natively, but **code-signing
-> fields are not yet exposed**, which caps how low the false-positive rate can go. Exposing
-> code-signing telemetry is a planned engine enhancement that would let several Advanced rules
-> graduate to Essential.
+> DNS). The process exec event carries full `CommandLine` (argv) natively, and engine v1.6.0 added
+> the code-signing fields (`Signed`, `TeamId`, `IsPlatformBinary`, …) that cap how low the
+> false-positive rate can go; no current rule uses them yet, which is the main headroom for letting
+> Advanced rules graduate to Essential.
+>
+> The macOS atomic leg **gates CI** as of this release. Endpoint Security was expected to need an
+> entitled runner; it initialises under `sudo` on hosted `macos-latest`, and every macOS rule now
+> has a passing atomic test.
 
 ### macOS Essential
 
@@ -139,6 +143,7 @@ keychain theft, Gatekeeper bypass, cryptominers).
 | osascript Credential Prompt or Suspicious Admin Shell | Sigma | process_creation | T1059.002, T1056.002 |
 | Gatekeeper or Quarantine Protection Disabled | Sigma | process_creation | T1553.001, T1562.001 |
 | macOS Reverse Shell via /dev/tcp | Sigma | process_creation | T1059.004, T1105 |
+| Browser Credential Store Targeted on a Command Line | Sigma | process_creation | T1555.003 |
 | Cryptominer Mach-O strings | YARA | file_scan | T1496 |
 
 ### macOS Advanced
@@ -157,6 +162,7 @@ application installers — so tune per environment before relying on by default.
 | Shell History File Deleted (macOS) | Sigma | file_delete | T1070.003 |
 | Shell History File Renamed Away (macOS) | Sigma | file_rename | T1070.003 |
 | Shell History Destroyed in Place (macOS) | Sigma | process_creation | T1070.003 |
+| TCC Privacy Database Targeted on a Command Line | Sigma | process_creation | T1005, T1548 |
 
 ---
 
@@ -190,6 +196,17 @@ they require, so they can never match:
 
 `tools/validate.py` fails the build if a pack references either one, or any other preview or
 test-only artifact.
+
+## Engine requirements
+
+Each pack's `requires_rustinel` is **derived from its own content**, not declared by hand:
+`tools/lib.py` maps the capabilities a rule depends on to the release that first provides them, and
+`validate.py` fails a pack whose declared floor is lower than what its rules need. Under-claiming is
+the dangerous direction — `rustinel doctor` would report the pack as compatible with an engine that
+cannot populate the fields its rules select on, so the rules load and silently never match.
+
+Today only Windows content raises the floor: registry value data (`Details`, v1.4.0) and
+`service_creation` `ImagePath` (v1.4.1). Linux and macOS content runs on the v1.0.2 baseline.
 
 ---
 

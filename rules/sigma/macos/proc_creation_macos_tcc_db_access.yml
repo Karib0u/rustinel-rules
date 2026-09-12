@@ -1,16 +1,25 @@
-title: TCC Database Access
+title: TCC Privacy Database Targeted on a Command Line
 id: 829cee70-a60f-4e8a-8b2f-38e1fff83e61
 status: experimental
 description: >
-  Detects a process reading or copying the TCC privacy database (TCC.db), the
-  permission-bypass step of essentially every documented macOS stealer and
-  implant (AMOS and XCSSET lineage). Reading or patching TCC lets malware grant
-  itself access to protected resources.
+  Detects a database, copy or dump utility invoked against the TCC privacy
+  database (TCC.db). Reading or patching TCC is the permission-bypass step of
+  essentially every documented macOS stealer and implant (AMOS and XCSSET
+  lineage), because it lets malware grant itself access to protected resources.
+  Scope, precisely: this is command-line evidence, not file access. Rustinel sees
+  the argv of the process that was launched — it does not observe the read, so a
+  program that opens TCC.db through its own code is invisible here, and a command
+  that names the path without reading it still matches. The earlier version of
+  this rule matched any command line containing 'TCC.db' with no tool gating at
+  all, which alerted on `grep TCC.db`, on an administrator listing the file, and
+  on security tooling auditing TCC state — it was shipping at level `high` in the
+  Essential pack. It is tier Advanced now, and the title says what is observed.
 references:
   - https://attack.mitre.org/techniques/T1005/
   - https://attack.mitre.org/techniques/T1548/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-09-12
 tags:
   - attack.collection
   - attack.privilege-escalation
@@ -20,14 +29,25 @@ logsource:
   category: process_creation
   product: macos
 detection:
-  selection:
+  selection_tool:
+    Image|endswith:
+      - '/sqlite3'
+      - '/cp'
+      - '/ditto'
+      - '/rsync'
+      - '/dd'
+      - '/strings'
+      - '/plutil'
+      - '/tccutil'
+  selection_target:
     CommandLine|contains: 'TCC.db'
-  condition: selection
+  condition: selection_tool and selection_target
 falsepositives:
   - MDM and fleet-management tooling querying TCC state; document vendor filters.
-level: high
+  - Backup tooling copying a whole Application Support tree by path.
+level: medium
 rustinel:
   telemetry:
     - process_creation
-  expected_false_positive_level: low
-  test_status: none
+  expected_false_positive_level: medium
+  test_status: atomic

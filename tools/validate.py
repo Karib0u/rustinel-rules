@@ -12,6 +12,7 @@ Mandatory v1 checks:
   - pack manifest validation (schema + referential integrity)
   - pack attack_coverage drift guard (declared vs. derived)
   - no production rule selects on a field the engine never populates
+  - each pack's requires_rustinel covers what its own content needs
   - preview / test-only content is registered, and no pack references it
 
 Exit code 0 = all checks pass, 1 = one or more failures.
@@ -395,6 +396,29 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         except ValueError as exc:
             rep.error(where, str(exc))
             continue
+
+        # A pack that under-claims its engine requirement is worse than one that
+        # does not declare it: `rustinel doctor` reports the pack as compatible
+        # with an engine that cannot populate the fields its rules select on, so
+        # the rules load and silently never match.
+        declared_floor = lib.constraint_floor(pack.get("requires_rustinel"))
+        derived, drivers = lib.pack_min_engine(resolved, artifact_index)
+        if declared_floor is None:
+            rep.warn(
+                where,
+                f"requires_rustinel {pack.get('requires_rustinel')!r} is not a '>=X.Y.Z' "
+                f"constraint, so its floor cannot be checked (content needs >={derived})",
+            )
+        elif lib.parse_version(declared_floor) < lib.parse_version(derived):
+            why = "; ".join(
+                f"{artifact_index[rule_id].meta.get('title', rule_id)} ({reasons[0]})"
+                for rule_id, reasons in list(drivers.items())[:2]
+            )
+            rep.error(
+                where,
+                f"requires_rustinel is >={declared_floor} but the pack's content needs "
+                f">={derived} — {why}",
+            )
 
         # Drift guard: declared attack_coverage should be backed by member content.
         declared = {str(t).upper() for t in pack.get("attack_coverage") or []}

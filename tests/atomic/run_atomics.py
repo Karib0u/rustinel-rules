@@ -447,8 +447,6 @@ def coverage(
 
     for pack in packs.values():
         os_name = pack.get("os")
-        if os_name == "macos":
-            continue
         for rule_id in resolve_source_pack_rules(pack["id"], packs):
             platforms_by_rule.setdefault(rule_id, set()).add(os_name)
             if pack.get("level") == "essential":

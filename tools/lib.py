@@ -208,6 +208,170 @@ def artifact_attack_techniques(artifact: Artifact) -> set:
 
 
 # --------------------------------------------------------------------------- #
+# Engine version requirements
+# --------------------------------------------------------------------------- #
+
+# The oldest engine any pack claims to support. Rules that use nothing newer sit
+# here; a pack's floor is raised only by a capability with a known landing
+# release.
+BASELINE_ENGINE = "1.0.2"
+
+# Capability -> the release that first provides it, as (platform, category,
+# field, version, why).
+#
+# There is no machine-readable capability/version map in the engine repo: its
+# compatibility/field-availability.json records what is available *now*, not
+# since when. These entries come from the 2026-09-11 coverage audit's sensor
+# inventory, which dated them against the release notes. Verify a new entry the
+# same way before adding it, and prefer leaving a capability out to guessing —
+# an over-claimed floor locks out engines that would have run the pack fine.
+#
+# Deliberately absent: file_delete / file_rename routing, which was checked
+# against src/engine/logsource.rs at v1.1.4 through v1.6.0 and is present on all
+# three platforms throughout, so it does not raise any floor.
+ENGINE_REQUIREMENTS: tuple[tuple[str, str, str, str, str], ...] = (
+    (
+        "windows",
+        "registry_event",
+        "Details",
+        "1.4.0",
+        "registry events began carrying value data in v1.4.0 (rustinel#310)",
+    ),
+    (
+        "windows",
+        "service_creation",
+        "ImagePath",
+        "1.4.1",
+        "service_creation gained ImagePath / Provider_Name in v1.4.1",
+    ),
+    (
+        "windows",
+        "service_creation",
+        "ServiceFileName",
+        "1.4.1",
+        "ServiceFileName resolves to the ImagePath added in v1.4.1",
+    ),
+    (
+        "windows",
+        "service_creation",
+        "Provider_Name",
+        "1.4.1",
+        "service_creation gained ImagePath / Provider_Name in v1.4.1",
+    ),
+    (
+        "windows",
+        "process_creation",
+        "IntegrityLevel",
+        "1.4.1",
+        "IntegrityLevel is populated from v1.4.1",
+    ),
+)
+
+# Sub-categories that share a parent's field contract.
+_CATEGORY_PARENTS = {
+    "file_create": "file_event",
+    "file_delete": "file_event",
+    "file_rename": "file_event",
+    "file_change": "file_event",
+    "registry_add": "registry_event",
+    "registry_set": "registry_event",
+    "registry_delete": "registry_event",
+    "dns": "dns_query",
+}
+
+
+def parse_version(version: str) -> tuple[int, ...]:
+    """'1.4.10' -> (1, 4, 10). Used only to order the versions in this repo."""
+    parts = []
+    for chunk in str(version).strip().lstrip("v").split("."):
+        digits = "".join(c for c in chunk if c.isdigit())
+        parts.append(int(digits) if digits else 0)
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts[:3])
+
+
+def max_version(*versions: str) -> str:
+    return max(versions, key=parse_version)
+
+
+def constraint_floor(constraint: str) -> str | None:
+    """The version in a '>=X.Y.Z' constraint, or None if it isn't that shape."""
+    text = str(constraint or "").strip()
+    if not text.startswith(">="):
+        return None
+    return text[2:].strip().lstrip("v") or None
+
+
+def detection_fields(detection: dict) -> set[str]:
+    """Every field name a Sigma rule's selections reference, modifiers stripped."""
+    fields: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                fields.add(str(key).split("|", 1)[0])
+                walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for name, selection in (detection or {}).items():
+        if name in ("condition", "timeframe"):
+            continue
+        walk(selection)
+    return fields
+
+
+def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
+    """The oldest engine that can run this artifact, plus why it is not the baseline.
+
+    A rule may also state `rustinel.min_engine` directly, for a requirement this
+    table cannot see (a correlation rule needs v1.5.0 whatever its fields are).
+    The declared value only ever raises the result.
+    """
+    minimum = BASELINE_ENGINE
+    reasons: list[str] = []
+
+    if artifact.kind == "sigma" and isinstance(artifact.meta, dict):
+        logsource = artifact.meta.get("logsource") or {}
+        product = str(logsource.get("product") or "").lower()
+        category = str(logsource.get("category") or "").lower()
+        category = _CATEGORY_PARENTS.get(category, category)
+        used = detection_fields(artifact.meta.get("detection") or {})
+
+        for req_product, req_category, field, version, why in ENGINE_REQUIREMENTS:
+            if req_product == product and req_category == category and field in used:
+                if parse_version(version) > parse_version(minimum):
+                    minimum = version
+                reasons.append(f"{field}: {why}")
+
+        declared = str((artifact.meta.get("rustinel") or {}).get("min_engine") or "").strip()
+        if declared:
+            if parse_version(declared) > parse_version(minimum):
+                minimum = declared
+            reasons.append(f"declared rustinel.min_engine: {declared}")
+
+    return minimum, reasons
+
+
+def pack_min_engine(resolved_ids, artifact_index) -> tuple[str, dict[str, list[str]]]:
+    """A pack's floor: the newest engine any of its members needs."""
+    minimum = BASELINE_ENGINE
+    drivers: dict[str, list[str]] = {}
+    for artifact_id in resolved_ids:
+        artifact = artifact_index.get(artifact_id)
+        if artifact is None:
+            continue
+        rule_min, reasons = artifact_min_engine(artifact)
+        if parse_version(rule_min) > parse_version(minimum):
+            minimum = rule_min
+        if reasons:
+            drivers[artifact_id] = reasons
+    return minimum, drivers
+
+
+# --------------------------------------------------------------------------- #
 # Packs
 # --------------------------------------------------------------------------- #
 
