@@ -25,9 +25,8 @@ os:
 severity: low
 test_status: atomic
 test_reason: >
-  Gating on Linux (hash) and macOS (path regex), both green on engine v1.6.0.
-  The Windows hash canary stays allow_failure until a run confirms the PE
-  executes and is hashed before Defender or the loader interferes.
+  Gating on all three platforms against engine v1.6.0: hash indicators on Linux
+  and Windows, the path indicator on macOS.
 references:
   - https://github.com/Karib0u/rustinel-rules/issues/32
 indicators:

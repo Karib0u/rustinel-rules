@@ -39,8 +39,9 @@ rustinel:
   expected_false_positive_level: low
   test_status: atomic
   test_reason: >
-    The atomic registers and removes a complete, inert subscription. It runs
-    allow_failure until a CI run shows the WMI-Activity trace events the engine
-    subscribes to actually carry the consumer class name in Operation; if they do
-    not, this rule moves to preview/ as rewrite-required behind
-    Karib0u/rustinel#481 (collect WMI-Activity 5857-5861).
+    Gating. The atomic registers and removes a complete, inert subscription and
+    the rule fires on it, which settles the open question: the WMI-Activity trace
+    events the engine already subscribes to do carry the consumer class name in
+    Operation. Collecting 5857-5861 (Karib0u/rustinel#481) would make this a
+    direct match on the permanent-subscription events rather than on trace text,
+    but it is no longer a prerequisite for the rule to work.

@@ -239,7 +239,6 @@
       "platform": "windows",
       "engine": "ioc",
       "script": "windows/canary_ioc.ps1",
-      "allow_failure": true,
       "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
     },
     {
@@ -501,8 +500,7 @@
       "name": "windows_wmi_subscription",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/wmi_subscription.ps1",
-      "allow_failure": true
+      "script": "windows/wmi_subscription.ps1"
     }
   ]
 }
