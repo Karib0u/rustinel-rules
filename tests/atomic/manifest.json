@@ -501,6 +501,34 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/wmi_subscription.ps1"
+    },
+    {
+      "id": "829cee70-a60f-4e8a-8b2f-38e1fff83e61",
+      "name": "macos_tcc_db_access",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/tcc_db_access.sh"
+    },
+    {
+      "id": "db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8",
+      "name": "macos_browser_credential_theft",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/browser_credential_theft.sh"
+    },
+    {
+      "id": "c92540cf-466d-4959-ab25-1c456bedf9d5",
+      "name": "macos_ssh_authorized_keys",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ssh_authorized_keys.sh"
+    },
+    {
+      "id": "578195d3-de1a-4c46-84c8-b246a060474c",
+      "name": "macos_launchctl_susp_load",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launchctl_susp_load.sh"
     }
   ]
 }

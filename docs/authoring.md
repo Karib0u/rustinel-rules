@@ -24,7 +24,7 @@ Place the rule in `rules/sigma/<os>/` and give it a UUID v4 `id`.
 
 | Field | Notes |
 | ----- | ----- |
-| `title` | Short, descriptive. |
+| `title` | Short, descriptive — and true of what the telemetry proves. A `process_creation` rule sees a command line, not a file being read, so name it that way. |
 | `id` | UUID v4, unique across the whole repo. |
 | `status` | `experimental` \| `test` \| `stable`. |
 | `description` | What it detects and why. |
@@ -45,7 +45,13 @@ rustinel:
   telemetry: [process_creation]      # required; supported channels only
   expected_false_positive_level: low # low | medium | high (warned if missing)
   test_status: atomic                # none | atomic | manual | dynamic
+  min_engine: "1.5.0"                # optional; see below
 ```
+
+`min_engine` is only needed for a requirement the tooling cannot infer from your fields — a
+correlation rule needs v1.5.0 whatever it selects on, for instance. Field-driven requirements are
+derived automatically from `ENGINE_REQUIREMENTS` in [`tools/lib.py`](../tools/lib.py), and a pack
+whose `requires_rustinel` is lower than its content needs fails validation.
 
 ### Full example
 

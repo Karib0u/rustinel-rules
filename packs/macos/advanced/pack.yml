@@ -9,7 +9,7 @@ description: >
 os: macos
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.0.2"
+requires_rustinel: ">=1.1.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -26,6 +26,8 @@ attack_coverage:
   - T1098
   - T1098.004
   - T1070.003
+  - T1005
+  - T1548
 telemetry_requirements:
   - process_creation
   - file_event
@@ -47,3 +49,4 @@ rules:
           - ffd3b3b3-9fd4-4fd2-9988-fe837e062181   # Shell History File Deleted (macOS) (sigma)
           - 457c6ee7-e5d8-4f06-b25e-a7a3d40e354d   # Shell History File Renamed Away (macOS) (sigma)
           - 40b5bf5b-055e-4db2-90df-bd2968ddad9f   # Shell History Destroyed in Place (macOS) (sigma)
+          - 829cee70-a60f-4e8a-8b2f-38e1fff83e61   # TCC Privacy Database Targeted on a Command Line (sigma)

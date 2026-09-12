@@ -32,12 +32,11 @@ jobs:
             platform: linux
           - os: windows-latest
             platform: windows
-          # macOS is experimental: the engine needs an Endpoint Security
-          # entitlement and root, and whether ES initializes on a hosted runner
-          # is unproven. This leg reports but does not gate (continue-on-error).
+          # macOS gates. Endpoint Security was expected to need an entitled
+          # runner; it initialises under sudo on hosted macos-latest and the pack
+          # has passed there on every run since engine v1.6.0.
           - os: macos-latest
             platform: macos
-            experimental: true
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.platform }}
     continue-on-error: ${{ matrix.experimental || false }}

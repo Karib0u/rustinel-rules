@@ -94,7 +94,7 @@ Key manifest fields:
 | `extends` | Pack ids cumulatively included (rules merged, never duplicated). |
 | `rules` | Optional dictionary specifying rules directly in this pack (`has`), or rules to include (`includes`) / exclude (`excludes`) from extended packs or automatic sources. |
 | `sources` | Optional dictionary of upstream sources categorized by type (`manual`, `sigma`, `yara`). |
-| `requires_rustinel` | Engine version constraint, e.g. `">=1.0.2"`. |
+| `requires_rustinel` | Engine version constraint, e.g. `">=1.4.0"`. **Derived from content** — validation fails if it is lower than what the pack's rules need. |
 | `attack_coverage` | ATT&CK technique ids covered (drift-checked against members). |
 | `telemetry_requirements` | Rustinel telemetry channels the pack needs. |
 | `expected_false_positive_level` / `status` / `test_status` | Quality signals surfaced in `index.json`. |

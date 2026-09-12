@@ -7,7 +7,7 @@ description: >
 os: windows
 level: hunting
 pack_schema_version: 2
-requires_rustinel: ">=1.0.2"
+requires_rustinel: ">=1.4.1"
 default: false
 expected_false_positive_level: high
 status: experimental
