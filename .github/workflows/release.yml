@@ -1,0 +1,46 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Validate and build release
+        run: |
+          uv sync --frozen
+          uv run python tools/validate.py
+          uv run python tools/build_packs.py
+          uv run python tools/build_catalog.py
+
+      - name: Sign rules catalog
+        env:
+          RELEASE_MINISIGN_KEY: ${{ secrets.RELEASE_MINISIGN_KEY }}
+        run: |
+          : "${RELEASE_MINISIGN_KEY:?RELEASE_MINISIGN_KEY is required}"
+          sudo apt-get update
+          sudo apt-get install -y minisign
+          umask 077
+          printf '%s\n' "$RELEASE_MINISIGN_KEY" > "$RUNNER_TEMP/minisign.key"
+          minisign -S -s "$RUNNER_TEMP/minisign.key" -m dist/index.json -x dist/index.json.minisig
+          minisign -V -p release-minisign.pub -m dist/index.json -x dist/index.json.minisig
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/index.json dist/index.json.minisig dist/catalog.json dist/*.zip \
+            --title "Rustinel rules $GITHUB_REF_NAME" --generate-notes
