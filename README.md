@@ -113,7 +113,13 @@ pack_schema_version: 2
 requires_rustinel: ">=1.0.2"
 ```
 
-Release artifacts ship zip packs, `index.json`, compatibility metadata, and a `sha256` per artifact.
+Release artifacts ship zip packs, `index.json`, `index.json.minisig`, compatibility metadata, and a `sha256` per artifact. Verify the catalog before trusting its pack checksums:
+
+```bash
+minisign -Vm index.json -p release-minisign.pub
+```
+
+The release signing key is stored as the `RELEASE_MINISIGN_KEY` repository secret. The public key in this repository must match the one embedded in the Rustinel updater. Rotate both copies of the public key and the signing secrets in both repositories together before publishing another release.
 
 ---
 
