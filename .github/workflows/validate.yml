@@ -66,6 +66,12 @@ jobs:
         working-directory: tools
         run: uv run python build_catalog.py
 
+      # Repeats the engine's rules install checks and compares with the latest
+      # published index.json, so a build engines would refuse fails here first.
+      - name: Check packs against the engine install contract
+        working-directory: tools
+        run: uv run python check_engine_install.py
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:

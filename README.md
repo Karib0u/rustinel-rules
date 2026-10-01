@@ -132,6 +132,7 @@ uv sync                                 # install pinned tooling
 uv run python tools/validate.py         # Detection as Code: must pass
 uv run python tools/build_packs.py      # build dist/<pack>/ + zips + index.json
 uv run python tools/build_catalog.py    # build the website catalog (dist/catalog.json)
+uv run python tools/check_engine_install.py  # dist/ passes the engine's install checks
 ```
 
 ```text

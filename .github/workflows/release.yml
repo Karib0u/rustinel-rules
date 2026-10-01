@@ -24,6 +24,7 @@ jobs:
           uv run python tools/validate.py
           uv run python tools/build_packs.py
           uv run python tools/build_catalog.py
+          uv run python tools/check_engine_install.py --release
 
       - name: Sign rules catalog
         env:
