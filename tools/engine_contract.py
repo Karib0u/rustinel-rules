@@ -43,6 +43,8 @@ SINCE_CORRECTIONS = {
 }
 
 BlockedFields = dict[tuple[str, str], dict[str, tuple[str, ...]]]
+# {(platform, category): native event IDs that carry at least one field}
+EventIds = dict[tuple[str, str], set[str]]
 # {(platform, category): {field: first release it is populated, None = always}}
 FieldSince = dict[tuple[str, str], dict[str, str | None]]
 
@@ -121,6 +123,17 @@ def parse_field_since(raw: bytes, version: str) -> FieldSince:
     return result
 
 
+def parse_event_ids(raw: bytes) -> EventIds:
+    """Event IDs each channel collects, from rows that carry one. Call
+    parse_contract first: this assumes a contract it accepted."""
+    result: EventIds = {}
+    for entry in json.loads(raw)["entries"]:
+        event_id = entry.get("event_id")
+        if isinstance(event_id, int) and not isinstance(event_id, bool):
+            result.setdefault((entry["platform"], entry["category"]), set()).add(str(event_id))
+    return result
+
+
 def read_pin(path: Path = PIN_PATH) -> dict:
     pin = json.loads(path.read_bytes())
     if not isinstance(pin, dict):
@@ -151,3 +164,9 @@ def load_field_since(contract_path: Path = CONTRACT_PATH, pin_path: Path = PIN_P
     """Field release map of the vendored contract, checked like load_contract."""
     pin, _ = load_contract(contract_path, pin_path)
     return parse_field_since(contract_path.read_bytes(), pin["version"])
+
+
+def load_event_ids(contract_path: Path = CONTRACT_PATH, pin_path: Path = PIN_PATH) -> EventIds:
+    """Collected event IDs of the vendored contract, checked like load_contract."""
+    load_contract(contract_path, pin_path)
+    return parse_event_ids(contract_path.read_bytes())

@@ -267,6 +267,29 @@ _CATEGORY_PARENTS = {
     "dns": "dns_query",
 }
 
+# Log sources that name a Windows event-log service instead of a category. The
+# engine routes `product: windows, service: security` (no category) to the
+# Security channel, which the field contract files under category "security".
+_SERVICE_CATEGORIES = {("windows", "security"): "security"}
+
+
+def logsource_category(logsource: dict) -> str:
+    """The category a Sigma log source routes to: its own `category`, or the one
+    a service-only log source implies. Empty when neither applies."""
+    category = str(logsource.get("category") or "").strip().lower()
+    if category:
+        return category
+    product = str(logsource.get("product") or "").strip().lower()
+    service = str(logsource.get("service") or "").strip().lower()
+    return _SERVICE_CATEGORIES.get((product, service), "")
+
+
+def contract_category(logsource: dict) -> str:
+    """The field-contract category for a log source, with sub-categories
+    (file_create, registry_set, dns, ...) folded into the parent they share."""
+    category = logsource_category(logsource)
+    return _CATEGORY_PARENTS.get(category, category)
+
 
 def parse_version(version: str) -> tuple[int, ...]:
     """'1.4.10' -> (1, 4, 10). Used only to order the versions in this repo."""
@@ -350,8 +373,7 @@ def artifact_min_engine(
             minimum = platform_minimum
             if platform_reason:
                 reasons.append(platform_reason)
-        category = str(logsource.get("category") or "").lower()
-        category = _CATEGORY_PARENTS.get(category, category)
+        category = contract_category(logsource)
         used = detection_fields(artifact.meta.get("detection") or {})
 
         available = field_since.get((product, category), {})

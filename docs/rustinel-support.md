@@ -49,7 +49,9 @@ category the engine collects on the current platform. Supported categories:
 | `dns_query` (`dns`) | ✅ | ✅ | ✅ | Linux/macOS: outbound plaintext queries (`QueryName` + `RecordType`); macOS DNS is not process-attributed |
 | `registry_event` / `registry_add` / `registry_set` / `registry_delete` | ✅ | — | — | Windows only |
 | `image_load` | ✅ | — | — | Windows only |
-| `ps_script` | ✅ | — | — | PowerShell ScriptBlock logging |
+| `ps_script` | ✅ | — | — | PowerShell ScriptBlock logging (event 4104) |
+| `ps_module` | ✅ | — | — | PowerShell module logging (event 4103) |
+| `security` | ✅ | — | — | Windows Security event log; see below |
 | `wmi_event` | ✅ | — | — | Windows only |
 | `service_creation` | ✅ | — | — | Windows Event ID 7045 |
 | `task_creation` | ✅ | — | — | Windows Event ID 106 |
@@ -72,6 +74,26 @@ pack's `telemetry_requirements`. `validate.py` rejects anything else.
   `microsoft-windows-powershell`, `dns-client` / `dns`, `wmi`. The engine maps community
   Sysmon-style log sources onto its own telemetry, so most upstream Sigma `logsource` blocks work
   unchanged.
+
+A rule on the Windows **Security** log names the service instead of a category, and selects the
+event by `EventID`. Its `rustinel.telemetry` channel is `security`:
+
+```yaml
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4698
+```
+
+The engine collects 38 Security event IDs; the exact list is the `security` rows of the
+[vendored field contract](../compatibility/field-availability.json), and `validate.py` rejects a
+rule that selects an event ID outside it. Most of these events are written only when the host's
+audit policy enables their subcategory, which Rustinel never changes: see the engine's
+[Windows host logging guide](https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md)
+and state the required subcategory in the rule's description. `ps_module` likewise needs
+PowerShell module logging, and `ps_script` needs ScriptBlock logging for ordinary scripts.
 
 A typical Windows process rule:
 
@@ -181,6 +203,21 @@ you write portable Sigma.
 
 `ServiceName`, `ServiceFileName`, `ServiceType`, `StartType`, `AccountName`, `User`, `ProcessId`,
 `Image`
+
+### `ps_module` — Windows
+
+`Payload`, `ContextInfo`, `ProcessId`, `Image`, `User`
+
+> Match on the actual `Payload` and `ContextInfo` values rather than their localized labels.
+
+### `security` — Windows (`service: security`)
+
+The fields of each Security event's XML, under their native names: for example `SubjectUserName`,
+`TargetUserName`, `LogonType`, `IpAddress` (logons), `ServiceName`, `ServiceFileName` (4697),
+`TaskName`, `TaskContent` (4698–4701; `TaskContentNew` on 4702), `MemberName`, `MemberSid` (group
+membership) and `AttributeLDAPDisplayName`, `AttributeValue` (5136). The per-event field list is in
+the vendored field contract. Native `-` placeholders are kept, so a filter on a field that does not
+apply to an event behaves as it would on Windows itself.
 
 ### `task_creation` — Windows
 
