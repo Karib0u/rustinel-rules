@@ -478,7 +478,7 @@ def main() -> int:
         return 1
     print(
         f"Engine field contract: Rustinel {engine_pin['version']} "
-        f"at {engine_pin['revision']} (schema 1)."
+        f"at {engine_pin['revision']} (schema {engine_pin['schema_version']})."
     )
 
     artifacts = lib.load_all_artifacts()

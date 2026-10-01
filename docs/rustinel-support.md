@@ -99,10 +99,12 @@ you write portable Sigma.
 
 `Image`, `OriginalFileName`, `Product`, `Description`, `TargetImage`, `CommandLine`, `ProcessId`,
 `ProcessStartTime`, `ParentProcessId`, `ParentImage`, `ParentCommandLine`, `CurrentDirectory`,
-`IntegrityLevel`, `User`
+`IntegrityLevel`, `User`, `ParentUser`, `Hashes`, `Imphash`
 
-> **Windows:** `User` and `CurrentDirectory` are `never` on Windows process starts in the pinned
-> engine (`User` arrives in v1.8.0), so key Windows rules on the image, command line and parent.
+> **Windows:** `CurrentDirectory` is `never` on Windows process starts. `User`, `ParentUser`,
+> `Hashes` and `Imphash` need engine v1.8.0. `Hashes` and `Imphash` are computed after the event
+> is admitted, so a rule that selects on them can alert up to two seconds late and cannot be
+> reproduced by replay.
 
 > **Linux: command-line and parent fields are best-effort.** The kernel exec event itself carries
 > only `Image`, `ProcessId` and `User` (uid). `CommandLine`, `ParentProcessId`, `ParentImage`,
@@ -115,7 +117,8 @@ you write portable Sigma.
 > `IntegrityLevel` is Windows-only. Linux also exposes credential and namespace fields
 > (`RealUserId`, `RealGroupId`, `EffectiveUserId`, `EffectiveGroupId`, `MountNamespace`,
 > `PidNamespace`, `NetworkNamespace`, `SessionId`, `ControllingTty`, `CgroupId`), most of them
-> conditional on the running kernel's BTF.
+> conditional on the running kernel's BTF. From v1.8.0 it adds container context (`ContainerId`,
+> `ContainerRuntime`, `CgroupPath`) when the cgroup path names a recognized container layout.
 >
 > **macOS: command-line and parent fields are native.** ESF exec events carry `CommandLine` (argv),
 > `ParentImage`, `ParentProcessId` and `CurrentDirectory` directly, so they are reliably populated
@@ -152,17 +155,18 @@ you write portable Sigma.
 
 `QueryName`, `QueryResults`, `RecordType`, `QueryStatus`, `ProcessId`, `Image`
 
-> On Linux and macOS, `QueryName` and `RecordType` are populated for outbound plaintext queries;
-> `QueryResults` and `QueryStatus` are not parsed yet. On macOS, DNS is captured at the packet layer
-> and is **not** attributed to a process, so `Image` and `ProcessId` are empty on macOS DNS events.
+> On Linux and macOS, `QueryName` and `RecordType` are populated for outbound plaintext queries.
+> Linux parses `QueryResults` and `QueryStatus` from v1.8.0. macOS captures DNS at the packet layer:
+> it never parses answers, and `Image` / `ProcessId` are best-effort (v1.7.0 and later).
 
 ### `image_load` — Windows
 
 `ImageLoaded`, `ProcessId`, `Image`, `OriginalFileName`, `Product`, `Description`, `Signed`,
-`Signature`, `User`
+`Signature`, `User`, `Hashes`, `Imphash`
 
-> `Signed`, `Signature` and `User` are `never` in the pinned engine: kernel image-load events carry
-> no Authenticode result.
+> `Signed`, `Signature` and `User` are `never`: kernel image-load events carry no Authenticode
+> result. `Hashes` and `Imphash` need engine v1.8.0 and arrive late, as on process starts. From
+> v1.8.0, image-load collection is a dense event stream; budget for its CPU and memory cost.
 
 ### `ps_script` — Windows
 
