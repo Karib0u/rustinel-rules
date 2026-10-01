@@ -20,12 +20,12 @@ atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
 
 ## Shared suite and engine pin
 
-The workflow pins `RUSTINEL_VERSION` in
-[`.github/workflows/atomic.yml`](../../.github/workflows/atomic.yml) to **1.6.0**.
-Both the binary release and its installer scripts use that tag, so an unchanged
-rules revision keeps testing against the same engine release. This baseline was
-chosen because the full suite passed on v1.6.0 across Linux, Windows and hosted
-macOS, including the IOC and WMI paths (see [#37](https://github.com/Karib0u/rustinel-rules/issues/37)).
+The workflow installs the released version recorded in
+[`compatibility/engine.json`](../../compatibility/engine.json) (**1.6.0**), using
+install scripts from the same exact commit as the vendored field contract, so an
+unchanged rules revision keeps testing against the same engine release. This
+baseline was chosen because the full suite passed on v1.6.0 across Linux, Windows
+and hosted macOS, including the IOC and WMI paths (see [#37](https://github.com/Karib0u/rustinel-rules/issues/37)).
 The test pin is separate from each pack's content-derived `requires_rustinel`
 minimum; passing here does not certify every older supported engine version.
 
@@ -41,10 +41,11 @@ The same suite has two uses:
 
 To deliberately update the engine pin:
 
-1. Open a dedicated PR changing `RUSTINEL_VERSION` to an exact published release
-   with binaries and installer scripts for all three platforms. Advance it when
-   accepted content needs newer engine capabilities; keep the pin update
-   separate from the content change.
+1. Open a dedicated PR that refreshes the pin and field contract together with
+   the [refresh procedure](../../compatibility/README.md), targeting an exact
+   published release with binaries and installer scripts for all three
+   platforms. Advance it when accepted content needs newer engine capabilities;
+   keep the pin update separate from the content change.
 2. Run the **full suite** on Linux, Windows and macOS with `pack: auto` and an
    empty filter (the normal PR run does this).
 3. Review every failure, allowed failure, report and engine log against the

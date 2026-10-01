@@ -30,6 +30,7 @@ import re
 import sys
 from pathlib import Path
 
+import engine_contract
 import lib
 
 # Telemetry channels Rustinel supports.
@@ -41,7 +42,7 @@ import lib
 # Windows-only; rules using them must set logsource product: windows. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
-# NEVER_POPULATED_FIELDS).
+# the vendored engine field contract).
 SUPPORTED_TELEMETRY = {
     "process_creation",
     "network_connection",
@@ -61,40 +62,6 @@ SUPPORTED_TELEMETRY = {
     "service_creation",
     "task_creation",
     "file_scan",
-}
-
-# Fields the certified engine never populates, keyed by (product, category).
-#
-# Mirrors the `never` rows of the engine field-availability contract
-# (rustinel/compatibility/field-availability.json). A selection on one of these
-# is dead weight at best: the field is missing on every event, so the selection
-# can never be true. When it is the only selection, the rule can never fire at
-# all — which is how the Essential scheduled-task rule (TaskContent) and the
-# unsigned-DLL hunting rule (Signed) shipped without ever producing an alert.
-#
-# Such a rule belongs under preview/ with a `telemetry-blocked` entry naming the
-# engine issue, not in a pack. Add a row here whenever the contract marks a field
-# `never`; drop it when the engine starts populating it.
-NEVER_POPULATED_FIELDS: dict[tuple[str, str], set[str]] = {
-    # TaskScheduler event 106 carries no task XML; needs Security 4698.
-    ("windows", "task_creation"): {"TaskContent"},
-    # Kernel-Process image-load records carry no Authenticode result.
-    ("windows", "image_load"): {"Signed", "Signature"},
-    # No token/logon resolution on the ETW process path yet.
-    ("windows", "process_creation"): {"User", "ParentUser", "LogonId", "LogonGuid"},
-    # Kernel-File gives no pre-rename name, and no creation timestamps.
-    ("windows", "file_event"): {
-        "SourceFilename",
-        "CreationUtcTime",
-        "PreviousCreationUtcTime",
-    },
-    # macOS network comes from /dev/bpf: no direction, user or reverse name.
-    ("macos", "network_connection"): {"Initiated", "User", "DestinationHostname"},
-    # macOS DNS is captured at the packet layer, unattributed to a process.
-    ("macos", "dns_query"): {"Image", "ProcessId"},
-    ("macos", "process_creation"): {"ParentCommandLine"},
-    # Linux DNS parses the query only, not the answer.
-    ("linux", "dns_query"): {"QueryResults", "QueryStatus"},
 }
 
 # The file_* sub-categories share one field contract.
@@ -172,7 +139,7 @@ class Report:
 
 def load_yara_compiler():
     """Return a callable(raw, where, rep) that compiles a YARA rule with yara-x,
-    or None if yara-x is unavailable. A compile failure is a hard error — this is
+    or None if yara-x is unavailable. A compile failure is a hard error - this is
     the real load/compile gate the engine uses (Rustinel embeds yara-x)."""
     try:
         import yara_x
@@ -245,7 +212,9 @@ def check_sigma_rule(art, rep: Report):
         rep.warn(art.rel_path, "missing rustinel.expected_false_positive_level")
 
 
-def check_engine_field_availability(art, rep: Report):
+def check_engine_field_availability(
+    art, rep: Report, never_populated: engine_contract.BlockedFields
+):
     """Reject a production rule that selects on a field the engine never populates."""
     doc = art.meta
     if not isinstance(doc, dict):
@@ -253,15 +222,16 @@ def check_engine_field_availability(art, rep: Report):
     logsource = doc.get("logsource") or {}
     product = str(logsource.get("product") or "").lower()
     category = _contract_category(str(logsource.get("category") or "").lower())
-    blocked = NEVER_POPULATED_FIELDS.get((product, category))
+    blocked = never_populated.get((product, category))
     if not blocked:
         return
     used = _detection_fields(doc.get("detection") or {})
-    for field in sorted(blocked & used):
+    for field in sorted(used if "*" in blocked else blocked.keys() & used):
+        reason = "; ".join(blocked.get(field, blocked.get("*", ())))
         rep.error(
             art.rel_path,
             f"selects on '{field}', which Rustinel never populates for "
-            f"{product}/{logsource.get('category')} — the rule cannot match. "
+            f"{product}/{logsource.get('category')}: {reason}. "
             f"Move it to preview/ with a telemetry-blocked entry, or drop the field.",
         )
 
@@ -419,7 +389,7 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
             rep.error(
                 where,
                 f"requires_rustinel is >={declared_floor} but the pack's content needs "
-                f">={derived} — {why}",
+                f">={derived} - {why}",
             )
 
         # Drift guard: declared attack_coverage should be backed by member content.
@@ -493,13 +463,23 @@ def check_release_version(rep: Report):
     if tag.lstrip("v") != version:
         rep.error(
             "pyproject.toml",
-            f"building tag {tag!r} but [project].version is {version!r} — bump the "
+            f"building tag {tag!r} but [project].version is {version!r} - bump the "
             f"version in the release PR before tagging, or retag",
         )
 
 
 def main() -> int:
     rep = Report()
+
+    try:
+        engine_pin, never_populated = engine_contract.load_contract()
+    except (OSError, ValueError) as exc:
+        print(f"[ERROR] engine field contract: {exc}")
+        return 1
+    print(
+        f"Engine field contract: Rustinel {engine_pin['version']} "
+        f"at {engine_pin['revision']} (schema 1)."
+    )
 
     artifacts = lib.load_all_artifacts()
     ioc_schema_validate = load_schema_validator(lib.IOC_SCHEMA_PATH)
@@ -513,7 +493,7 @@ def main() -> int:
     for art in artifacts:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
-            check_engine_field_availability(art, rep)
+            check_engine_field_availability(art, rep, never_populated)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":
@@ -539,9 +519,9 @@ def main() -> int:
         print(line)
 
     if rep.ok():
-        print(f"\nOK — validation passed ({len(rep.warnings)} warning(s)).")
+        print(f"\nOK - validation passed ({len(rep.warnings)} warning(s)).")
         return 0
-    print(f"\nFAILED — {len(rep.errors)} error(s), {len(rep.warnings)} warning(s).")
+    print(f"\nFAILED - {len(rep.errors)} error(s), {len(rep.warnings)} warning(s).")
     return 1
 
 

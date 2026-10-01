@@ -21,10 +21,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Deliberate upgrades only: see tests/atomic/README.md for the update procedure.
-  RUSTINEL_VERSION: "1.6.0"
-
 jobs:
   atomic:
     strategy:
@@ -61,17 +57,29 @@ jobs:
         run: python tests/atomic/run_atomics.py --check-coverage --strict-essential
         shell: bash
 
-      - name: Print pinned rustinel version
+      # Use the same release and revision as the vendored field contract.
+      # Passing --version makes the install script skip latest-release resolution.
+      - name: Read pinned rustinel version
+        id: engine
         run: |
-          echo "Pinned rustinel engine version: $RUSTINEL_VERSION"
+          uv run python - <<'PY'
+          import os
+          import sys
+          sys.path.insert(0, "tools")
+          from engine_contract import read_pin
+          pin = read_pin()
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version={pin['version']}\nrevision={pin['revision']}\n")
+          print(f"Pinned Rustinel {pin['version']} at {pin['revision']}")
+          PY
         shell: bash
 
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL "https://raw.githubusercontent.com/Karib0u/rustinel/v${RUSTINEL_VERSION}/scripts/install/install.sh" \
-                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "$RUSTINEL_VERSION" --force; then
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.sh \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi
             echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
@@ -84,11 +92,11 @@ jobs:
       - name: Install rustinel engine (Windows)
         if: matrix.platform == 'windows'
         run: |
-          Invoke-WebRequest "https://raw.githubusercontent.com/Karib0u/rustinel/v${env:RUSTINEL_VERSION}/scripts/install/install.ps1" -OutFile install.ps1
+          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.ps1 -OutFile install.ps1
           $ok = $false
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
-              powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" -Version "$env:RUSTINEL_VERSION" -Force
+              powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" -Version "${{ steps.engine.outputs.version }}" -Force
               if ($LASTEXITCODE -eq 0) { $ok = $true; break }
             } catch {
               Write-Host "attempt $attempt threw: $_"
@@ -103,8 +111,8 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL "https://raw.githubusercontent.com/Karib0u/rustinel/v${RUSTINEL_VERSION}/scripts/install/install.sh" \
-                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "$RUSTINEL_VERSION" --force; then
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.sh \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi
             echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
