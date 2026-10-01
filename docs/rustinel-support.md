@@ -291,8 +291,8 @@ All of these are implemented and pass validation:
 `event_count`, `value_count`, `temporal`, `temporal_ordered`, `value_sum`, `value_avg`,
 `value_percentile` and `value_median` correlations are supported from engine v1.5.0. Windows use
 event time, state lives in memory (a Sigma reload starts new windows), and a correlation can
-reference rules in other files. Give temporal correlations an explicit `condition`; see
-[authoring](authoring.md#correlation-rules).
+reference rules in other files. A temporal correlation without a `condition` requires every
+referenced rule; see [authoring](authoring.md#correlation-rules).
 
 ## 5. YARA support
 
