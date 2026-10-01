@@ -19,24 +19,6 @@
 # references anything listed below.
 schema: rustinel-rules/preview@1
 entries:
-  - id: 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99
-    kind: sigma
-    path: sigma/windows/task_creation_win_susp_scheduled_task_action.yml
-    state: telemetry-blocked
-    missing_fields:
-      - task_creation.TaskContent
-    reason: >
-      Every selection requires TaskContent. TaskScheduler event 106 — the only
-      task_creation source the engine collects — does not carry the task XML
-      definition, so the field is `never` in the engine field-availability
-      contract and the rule cannot match any event. Was shipped in Windows
-      Essential, where it contributed nothing.
-    blocker: https://github.com/Karib0u/rustinel/issues/479
-    notes: >
-      Promotion needs Security event 4698 (task created, carries the XML) or
-      task-file enrichment on 106. The TaskName / UserName branch is a separate,
-      shippable rule and is tracked in Karib0u/rustinel-rules#41.
-
   - id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
     kind: sigma
     path: sigma/windows/image_load_win_hunting_unsigned_dll_userwritable.yml
