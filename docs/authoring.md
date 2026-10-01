@@ -134,8 +134,6 @@ correlation:
   group-by:
     - ParentImage
   timespan: 10m
-  condition:
-    gte: 2
 level: critical
 rustinel:
   telemetry: [process_creation]
@@ -145,9 +143,9 @@ rustinel:
 
 `validate.py` enforces what the engine needs:
 
-- **Always state a temporal condition.** The Sigma spec defaults a temporal correlation to "every
-  rule matched", but the engine's parser (rsigma 0.21 / 0.22) defaults it to `gte: 1`, so a
-  correlation without a condition fires on any single referenced rule. Use `gte: <number of rules>`.
+- A temporal correlation without a `condition` requires every referenced rule, as the Sigma spec
+  says. (The rsigma parser alone would default to `gte: 1`; Rustinel restores the spec default at
+  load time, from v1.5.0.) Set `condition` only for a subset, such as `gte: 2` of three rules.
 - Every referenced id is an existing, non-correlation Sigma rule, all for the same platform.
 - `group-by` fields are populated for every referenced rule's log source.
 - `rustinel.telemetry` lists every channel the referenced rules need.

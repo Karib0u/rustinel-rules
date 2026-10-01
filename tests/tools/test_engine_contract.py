@@ -289,10 +289,13 @@ class CorrelationTests(unittest.TestCase):
     def test_valid_correlation_needs_no_logsource_or_detection(self):
         self.assertEqual(self.errors(self.correlation()), [])
 
-    def test_temporal_without_condition_is_rejected(self):
-        errors = self.errors(self.correlation(condition=None))
-        self.assertEqual(len(errors), 1)
-        self.assertIn("gte: 2", errors[0])
+    def test_temporal_condition_may_be_omitted_or_extended(self):
+        # Omitted means every rule, which Rustinel restores at load time.
+        for condition in (None, "rule_a and rule_b"):
+            with self.subTest(condition=condition):
+                self.assertEqual(self.errors(self.correlation(condition=condition)), [])
+        errors = self.errors(self.correlation(type="event_count", condition=None))
+        self.assertTrue(any("operator" in e for e in errors))
 
     def test_structural_errors(self):
         for corr, message in (
