@@ -42,7 +42,7 @@ the structural stub with `rustinel compile <pack>` to get a true Sigma load/comp
 
 Added incrementally as the project matures:
 
-- Atomic firing tests — **implemented** (see [Firing tests](#firing-tests))
+- Atomic firing tests - **implemented** (see [Firing tests](#firing-tests))
 - Detection coverage reports
 - Performance smoke tests
 - Field mapping coverage
@@ -65,9 +65,9 @@ Priority: prove that the most important **Essential** detections work end to end
 
 Beyond static validation, the repo ships **atomic firing tests** that prove a rule
 actually fires against the real engine. The harness ([`tests/atomic/`](../tests/atomic/),
-orchestrated by `run_atomics.py`) installs a released Rustinel engine on a real
-runner, performs a small **safe** atomic action for each rule — the behaviour the
-rule is meant to catch — and checks the engine wrote a matching alert.
+orchestrated by `run_atomics.py`) installs the pinned released Rustinel engine on a real
+runner, performs a small **safe** atomic action for each rule - the behaviour the
+rule is meant to catch - and checks the engine wrote a matching alert.
 
 ```text
 atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
@@ -80,7 +80,7 @@ pull request:
 | -------- | ----------------- | ----------------------------------------------------- |
 | Linux    | eBPF              | yes                                                    |
 | Windows  | ETW               | yes                                                    |
-| macOS    | Endpoint Security | no — experimental, reports only (`continue-on-error`) |
+| macOS    | Endpoint Security | yes                                                    |
 
 The same workflow runs `run_atomics.py --check-coverage --strict-essential`, which
 flags any rule marked `test_status: atomic` that lacks a test, plus Essential rules

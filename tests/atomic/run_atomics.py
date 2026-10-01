@@ -102,7 +102,7 @@ def index_rules(rules_dir: Path) -> dict[str, dict]:
 
     Covers the production rules/ tree and the non-production preview/ tree, the
     latter marked `preview: True`. Preview artifacts are indexed so a test-only
-    fixture the harness runs — the canary IOC set — resolves to a real artifact
+    fixture the harness runs - the canary IOC set - resolves to a real artifact
     instead of reading as an unknown id. They belong to no pack, so they are
     never subject to the Essential checks below.
 
@@ -229,7 +229,7 @@ def overlay_ioc_fixtures(pack_dir: Path, fixtures_dir: Path) -> int:
 
     tools/build_packs.py writes these from the `test-only` entries in
     preview/preview.yml, outside dist/ so no release artifact carries them.
-    Appending here — to the throwaway copy, never to the source pack — is what
+    Appending here - to the throwaway copy, never to the source pack - is what
     lets the harness prove the IOC path fires without shipping canary
     indicators to anyone who installs a pack.
     """
@@ -335,6 +335,12 @@ def start_engine(binary: Path, engine_dir: Path, stdout_log: Path):
         stderr=subprocess.STDOUT,
     )
     return proc, fh
+
+
+def engine_version(binary: Path) -> str:
+    """Read the actual binary version, including for local source builds."""
+    output = subprocess.check_output([str(binary), "--version"], text=True, timeout=10)
+    return output.strip().removeprefix("rustinel ")
 
 
 # --------------------------------------------------------------------------- #
@@ -615,6 +621,8 @@ def main() -> int:
         fixtures_dir = args.fixtures_dir or (args.rules_dir / "build" / "fixtures")
     logs_dir = setup_engine(engine_dir, dist_dir, pack, fixtures_dir)
     binary = resolve_binary(engine_dir, os_name, args.engine_bin)
+    version = engine_version(binary)
+    print(f"   engine version: {version}")
 
     stdout_log = engine_dir / "engine.stdout.log"
     proc, fh = start_engine(binary, engine_dir, stdout_log)
@@ -622,12 +630,15 @@ def main() -> int:
     time.sleep(args.warmup)
     if proc.poll() is not None:
         fh.close()
+        error = stdout_log.read_text(encoding="utf-8", errors="ignore")[-3000:]
         print("\nENGINE FAILED TO START - last output:\n")
-        print(stdout_log.read_text(encoding="utf-8", errors="ignore")[-3000:])
+        print(error)
         print(
             "\nLikely cause: insufficient privilege for eBPF/ETW, or kernel "
-            "doesn't support the probes on this runner."
+            "doesn't support the probes on this runner; on macOS, check "
+            "EndpointSecurity entitlement and Full Disk Access."
         )
+        report([], os_name, version, engine_error=error or "Engine exited during warmup")
         return 2
 
     results = []
@@ -683,18 +694,22 @@ def main() -> int:
                 proc.kill()
         fh.close()
 
-    return report(results, os_name)
+    return report(results, os_name, version)
 
 
-def report(results: list[dict], os_name: str) -> int:
+def report(
+    results: list[dict], os_name: str, version: str, *, engine_error: str | None = None
+) -> int:
     passed = [r for r in results if r["status"] == "PASS"]
     gating_fail = [r for r in results if r["status"] in ("FAIL", "ERROR")]
     out_path = HARNESS_ROOT / f"report-{os_name}.json"
-    out_path.write_text(
-        json.dumps({"platform": os_name, "results": results}, indent=2), encoding="utf-8"
-    )
+    data = {"platform": os_name, "engine_version": version, "results": results}
+    if engine_error is not None:
+        data["engine_error"] = engine_error
+    out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     print(f"\n== summary ({os_name}): {len(passed)}/{len(results)} fired ==")
+    print(f"   engine version: {version}")
     for r in results:
         if r["status"] != "PASS":
             print(f"   {r['status']:<14} {r['name']}  (expected {r['expect']})")
@@ -703,6 +718,8 @@ def report(results: list[dict], os_name: str) -> int:
     if summary:
         lines = [
             f"### Atomic firing tests - {os_name}",
+            "",
+            f"Rustinel engine version: `{version}`",
             "",
             "| Rule | Engine | Result |",
             "|---|---|---|",
@@ -715,11 +732,13 @@ def report(results: list[dict], os_name: str) -> int:
         }
         for r in results:
             lines.append(f"| {r['name']} | {r['engine']} | {emoji.get(r['status'], r['status'])} |")
+        if engine_error is not None:
+            lines.extend(["", "Engine failed to start:", "", "```text", engine_error, "```"])
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write("\n".join(lines) + "\n")
 
     print(f"   report: {out_path}")
-    return 1 if gating_fail else 0
+    return 1 if gating_fail or engine_error is not None else 0
 
 
 if __name__ == "__main__":

@@ -2,8 +2,7 @@ name: atomic
 
 # Firing tests: install the rustinel engine on real Windows, Linux + macOS
 # runners, perform an atomic action for each rule, and check the rule produced
-# an alert. Installs published engine releases (>= v1.1.0) via the official
-# install scripts.
+# an alert. Installs one pinned engine release via its official install scripts.
 on:
   workflow_dispatch:
     inputs:
@@ -22,6 +21,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Deliberate upgrades only: see tests/atomic/README.md for the update procedure.
+  RUSTINEL_VERSION: "1.6.0"
+
 jobs:
   atomic:
     strategy:
@@ -39,7 +42,6 @@ jobs:
             platform: macos
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.platform }}
-    continue-on-error: ${{ matrix.experimental || false }}
     steps:
       - uses: actions/checkout@v7
 
@@ -59,26 +61,17 @@ jobs:
         run: python tests/atomic/run_atomics.py --check-coverage --strict-essential
         shell: bash
 
-      # Resolve "latest" ourselves with an authenticated API call (GITHUB_TOKEN,
-      # ~1000 req/h/repo) instead of letting the install script make an
-      # unauthenticated one (60 req/h shared across all runner IPs -> 403).
-      # Passing --version then makes the install script skip the API call entirely.
-      - name: Resolve latest rustinel version
-        id: engine
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Print pinned rustinel version
         run: |
-          tag="$(gh release view --repo Karib0u/rustinel --json tagName --jq '.tagName')"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
-          echo "Resolved rustinel engine version: ${tag#v}"
+          echo "Pinned rustinel engine version: $RUSTINEL_VERSION"
         shell: bash
 
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
-                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
+            if curl -fsSL "https://raw.githubusercontent.com/Karib0u/rustinel/v${RUSTINEL_VERSION}/scripts/install/install.sh" \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "$RUSTINEL_VERSION" --force; then
               exit 0
             fi
             echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
@@ -91,11 +84,11 @@ jobs:
       - name: Install rustinel engine (Windows)
         if: matrix.platform == 'windows'
         run: |
-          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.ps1 -OutFile install.ps1
+          Invoke-WebRequest "https://raw.githubusercontent.com/Karib0u/rustinel/v${env:RUSTINEL_VERSION}/scripts/install/install.ps1" -OutFile install.ps1
           $ok = $false
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
-              powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" -Version "${{ steps.engine.outputs.version }}" -Force
+              powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir "$env:GITHUB_WORKSPACE\tests\atomic\.engine" -Version "$env:RUSTINEL_VERSION" -Force
               if ($LASTEXITCODE -eq 0) { $ok = $true; break }
             } catch {
               Write-Host "attempt $attempt threw: $_"
@@ -110,8 +103,8 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
-                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
+            if curl -fsSL "https://raw.githubusercontent.com/Karib0u/rustinel/v${RUSTINEL_VERSION}/scripts/install/install.sh" \
+                | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "$RUSTINEL_VERSION" --force; then
               exit 0
             fi
             echo "engine install attempt $attempt failed; retrying in $((attempt * 10))s" >&2
@@ -149,7 +142,7 @@ jobs:
             --filter "${{ github.event.inputs.filter }}"
         shell: pwsh
 
-      # macOS EndpointSecurity needs root; -E preserves the resolved engine
+      # macOS EndpointSecurity needs root; -E preserves the pinned engine
       # version + workspace env into the sudo'd process.
       - name: Run atomic tests (macOS)
         if: matrix.platform == 'macos'
@@ -170,6 +163,9 @@ jobs:
           if [ -d tests/atomic/.engine/logs ]; then
             sudo chown -R "$(id -u):$(id -g)" tests/atomic/.engine/logs
           fi
+          if [ -f tests/atomic/.engine/engine.stdout.log ]; then
+            sudo chown "$(id -u):$(id -g)" tests/atomic/.engine/engine.stdout.log
+          fi
         shell: bash
 
       - name: Upload report + engine logs
@@ -180,5 +176,6 @@ jobs:
           path: |
             tests/atomic/report-*.json
             tests/atomic/.engine/logs/
+            tests/atomic/.engine/engine.stdout.log
           include-hidden-files: true   # .engine/ is a dotdir, skipped otherwise
           if-no-files-found: warn
