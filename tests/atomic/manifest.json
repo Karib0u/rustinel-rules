@@ -47,6 +47,13 @@
       "script": "linux/webserver_spawns_shell.sh"
     },
     {
+      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
+      "name": "linux_webserver_spawns_shell_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webserver_spawns_shell_php_versioned.sh"
+    },
+    {
       "id": "9ac8732e-1818-4cda-89ac-01ca08a7b836",
       "name": "linux_sshd_config_tamper",
       "platform": "linux",
@@ -116,6 +123,13 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/lsass_comsvcs_minidump.ps1"
+    },
+    {
+      "id": "7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05",
+      "name": "windows_lsass_comsvcs_minidump_ordinal",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/lsass_comsvcs_minidump_ordinal.ps1"
     },
     {
       "id": "1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04",
@@ -249,6 +263,13 @@
       "script": "linux/nc_exec_reverse_shell.sh"
     },
     {
+      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
+      "name": "linux_nc_fifo_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/nc_fifo_reverse_shell.sh"
+    },
+    {
       "id": "3f32d825-006a-45e9-b5a9-6e7edeeff13c",
       "name": "linux_kmod_load_susp_path",
       "platform": "linux",
@@ -277,6 +298,13 @@
       "script": "linux/chmod_suid.sh"
     },
     {
+      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
+      "name": "linux_chmod_suid_plus_s",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chmod_suid_plus_s.sh"
+    },
+    {
       "id": "1bb5e9e4-f17e-476e-8e77-aaa1858f12f7",
       "name": "linux_udev_persistence",
       "platform": "linux",
@@ -289,6 +317,13 @@
       "platform": "linux",
       "engine": "sigma",
       "script": "linux/webshell_write.sh"
+    },
+    {
+      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
+      "name": "linux_webshell_write_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webshell_write_php_versioned.sh"
     },
     {
       "id": "d24c4943-3e22-481f-99ee-ca631b8a77af",
@@ -408,6 +443,13 @@
       "platform": "macos",
       "engine": "sigma",
       "script": "macos/gatekeeper_bypass.sh"
+    },
+    {
+      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "name": "macos_gatekeeper_bypass_clear",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_bypass_clear.sh"
     },
     {
       "id": "4d4f5162-7e80-4193-9da3-4e5f60712304",

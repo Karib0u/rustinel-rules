@@ -3,15 +3,18 @@ id: 5c3e4051-6d7f-4082-8c92-3d4e5f601203
 status: experimental
 description: >
   Detects disabling of macOS Gatekeeper (spctl --master-disable /
-  --global-disable) or explicit deletion of the com.apple.quarantine attribute
-  via xattr. Both let unsigned or freshly downloaded payloads run without the
-  usual Gatekeeper / quarantine prompts, a common step in fake-installer and
-  infostealer chains.
+  --global-disable) or removal of the com.apple.quarantine attribute via xattr,
+  either explicitly (-d com.apple.quarantine) or by clearing every attribute
+  (xattr -c / -cr). Both let unsigned or freshly downloaded payloads run without
+  the usual Gatekeeper / quarantine prompts, a common step in fake-installer and
+  infostealer chains; "xattr -c" is the form most such installers tell the
+  victim to paste into Terminal.
 references:
   - https://attack.mitre.org/techniques/T1553/001/
   - https://attack.mitre.org/techniques/T1562/001/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-01
 tags:
   - attack.defense-evasion
   - attack.t1553.001
@@ -33,7 +36,11 @@ detection:
       - '-rd com.apple.quarantine'
       - '-dr com.apple.quarantine'
       - '--delete com.apple.quarantine'
-  condition: selection_spctl or (selection_xattr and selection_xattr_delete)
+  selection_xattr_clear:
+    # -c clears every extended attribute, quarantine included. Allow it to be
+    # combined with -r, -s, -v or -x (xattr -cr, -rc, -crs ...).
+    CommandLine|re: '(^|\s)-[rsvx]*c[rsvx]*(\s|$)'
+  condition: selection_spctl or (selection_xattr and (selection_xattr_delete or selection_xattr_clear))
 falsepositives:
   - Developers stripping quarantine from their own builds; rare administrative Gatekeeper changes.
 level: high

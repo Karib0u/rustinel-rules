@@ -9,6 +9,7 @@ references:
   - https://attack.mitre.org/techniques/T1548/001/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-01
 tags:
   - attack.privilege-escalation
   - attack.persistence
@@ -19,13 +20,12 @@ logsource:
 detection:
   selection:
     Image|endswith: '/chmod'
-    CommandLine|contains:
-      - 'u+s'
-      - 'g+s'
-      - '4755'
-      - '4777'
-      - '6755'
-      - '2755'
+    CommandLine|re:
+      # Symbolic: +s, u+s, g+s, a+s, ug+xs, u=rwxs, ...
+      - '(^|[\s,])[ugoa]*[+=][rwxXt]*s[rwxXst]*([\s,]|$)'
+      # Octal with a setuid or setgid bit: 2xxx, 4xxx, 6xxx (sticky combos
+      # 3xxx, 5xxx, 7xxx included), optionally zero-prefixed.
+      - '(^|\s)0?[2-7][0-7]{3}(\s|$)'
   filter_pkg:
     ParentImage|endswith:
       - '/dpkg'

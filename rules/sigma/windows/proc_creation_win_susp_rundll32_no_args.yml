@@ -2,13 +2,16 @@ title: Rundll32 Execution Without Standard Arguments
 id: 9c8b7a6e-1d2f-4a3b-9c0d-2e3f4a5b6c71
 status: test
 description: >
-  Detects rundll32.exe executed without a DLL/entrypoint argument, a pattern
-  associated with proxied execution and process hollowing by some malware
-  families. Broader and noisier than the Essential encoded-PowerShell rule.
+  Detects rundll32.exe started with no arguments at all, the sacrificial
+  process that Cobalt Strike and similar frameworks spawn and then inject into
+  (spawnto). The command line has to end at the rundll32 image itself; a
+  rundll32 invocation that names any DLL or entry point, with or without a .dll
+  extension, is out of scope.
 references:
   - https://attack.mitre.org/techniques/T1218/011/
 author: rustinel-rules
 date: 2026-06-03
+modified: 2026-10-01
 tags:
   - attack.defense-evasion
   - attack.t1218.011
@@ -18,13 +21,13 @@ logsource:
 detection:
   selection:
     Image|endswith: '\rundll32.exe'
-  filter_args:
-    CommandLine|contains:
-      - '.dll'
-      - '.cpl'
-  condition: selection and not filter_args
+    # Nothing after the image: bare, path-qualified or quoted, with optional
+    # trailing whitespace.
+    CommandLine|re: '(?i)rundll32(\.exe)?"?\s*$'
+  condition: selection
 falsepositives:
-  - Some legitimate software launches rundll32.exe with non-DLL arguments.
+  - Rare legitimate software starts a bare rundll32.exe; filter on ParentImage
+    for the specific product.
 level: medium
 rustinel:
   telemetry:

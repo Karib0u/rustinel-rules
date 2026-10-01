@@ -11,6 +11,7 @@ references:
   - https://attack.mitre.org/techniques/T1505/003/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-01
 tags:
   - attack.persistence
   - attack.t1505.003
@@ -18,14 +19,17 @@ logsource:
   category: file_event
   product: linux
 detection:
-  selection:
+  selection_writer:
     Image|endswith:
       - '/nginx'
       - '/apache2'
       - '/httpd'
-      - '/php-fpm'
-      - '/php'
       - '/java'
+  selection_writer_php:
+    # php, php-fpm and php-cgi, including the versioned names Debian and
+    # Ubuntu install (php8.2, php-fpm8.2).
+    Image|re: '/php(-fpm|-cgi)?[0-9.]*$'
+  selection_script:
     TargetFilename|endswith:
       - '.php'
       - '.php5'
@@ -35,7 +39,7 @@ detection:
       - '.war'
       - '.asp'
       - '.aspx'
-  condition: selection
+  condition: 1 of selection_writer* and selection_script
 falsepositives:
   - CMS plugin installs and cache writers (WordPress); document webroot cache-path
     filters per environment.
