@@ -143,6 +143,102 @@ class FieldGuardTests(unittest.TestCase):
                 self.assertTrue(self.check_rule("windows", "process_creation", field, blocked).ok())
 
 
+class SecurityChannelTests(unittest.TestCase):
+    def setUp(self):
+        self.collected = engine_contract.load_event_ids()
+
+    def security_rule(self, detection, **logsource):
+        return lib.Artifact(
+            "security-rule",
+            "sigma",
+            lib.RULES_DIR / "security.yml",
+            {
+                "title": "t",
+                "id": "security-rule",
+                "status": "experimental",
+                "description": "d",
+                "references": ["r"],
+                "author": "a",
+                "level": "high",
+                "tags": ["attack.persistence"],
+                "logsource": {"product": "windows", "service": "security", **logsource},
+                "detection": {**detection, "condition": "selection"},
+                "rustinel": {"telemetry": ["security"], "expected_false_positive_level": "low"},
+            },
+            "",
+        )
+
+    def test_service_only_log_source_maps_to_the_security_category(self):
+        self.assertEqual(
+            lib.contract_category({"product": "windows", "service": "security"}), "security"
+        )
+        self.assertEqual(lib.contract_category({"product": "linux", "service": "security"}), "")
+        self.assertEqual(lib.contract_category({"category": "registry_set"}), "registry_event")
+
+    def test_security_and_ps_module_are_supported_channels(self):
+        report = validate.Report()
+        validate.check_sigma_rule(
+            self.security_rule({"selection": {"EventID": 4698, "TaskContent|contains": "x"}}),
+            report,
+        )
+        self.assertEqual(report.errors, [])
+        self.assertIn("ps_module", validate.SUPPORTED_TELEMETRY)
+
+    def test_collected_event_ids_pass_and_uncollected_ones_fail(self):
+        report = validate.Report()
+        validate.check_collected_event_ids(
+            self.security_rule({"selection": {"EventID": [4698, "4702"]}}), report, self.collected
+        )
+        self.assertEqual(report.errors, [])
+
+        report = validate.Report()
+        validate.check_collected_event_ids(
+            self.security_rule({"selection": {"EventID": [4698, 4769]}}), report, self.collected
+        )
+        self.assertEqual(len(report.errors), 1)
+        self.assertIn("EventID 4769", report.errors[0])
+
+    def test_event_ids_behind_modifiers_and_other_categories_are_not_checked(self):
+        report = validate.Report()
+        validate.check_collected_event_ids(
+            self.security_rule({"selection": {"EventID|gt": 1}}), report, self.collected
+        )
+        dns = lib.Artifact(
+            "dns",
+            "sigma",
+            lib.RULES_DIR / "dns.yml",
+            {
+                "logsource": {"product": "windows", "category": "dns_query"},
+                "detection": {"selection": {"EventID": 22}, "condition": "selection"},
+            },
+            "",
+        )
+        validate.check_collected_event_ids(dns, report, self.collected)
+        self.assertEqual(report.errors, [])
+
+    def test_security_fields_take_their_release_floor(self):
+        minimum, _ = lib.artifact_min_engine(
+            self.security_rule({"selection": {"EventID": 4698, "TaskContent|contains": "x"}})
+        )
+        self.assertEqual(minimum, "1.8.0")
+
+    def test_registry_sub_categories_reach_the_field_guard(self):
+        blocked = {("windows", "registry_event"): {"Example": ("engine reason",)}}
+        artifact = lib.Artifact(
+            "registry",
+            "sigma",
+            lib.RULES_DIR / "registry.yml",
+            {
+                "logsource": {"product": "windows", "category": "registry_set"},
+                "detection": {"selection": {"Example": "x"}, "condition": "selection"},
+            },
+            "",
+        )
+        report = validate.Report()
+        validate.check_engine_field_availability(artifact, report, blocked)
+        self.assertFalse(report.ok())
+
+
 class ContractLoadTests(unittest.TestCase):
     def test_invalid_contracts_fail_loudly(self):
         valid = {"schema_version": 1, "entries": [contract_row()]}

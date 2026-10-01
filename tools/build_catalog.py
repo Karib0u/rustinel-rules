@@ -112,7 +112,7 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         status = str(meta.get("status") or "").strip().lower() or None
         logsource = meta.get("logsource") or {}
         product = str(logsource.get("product") or "").strip().lower() or None
-        category = str(logsource.get("category") or "").strip().lower() or None
+        category = lib.logsource_category(logsource) or None
         references = as_list(meta.get("references"))
         falsepositives = as_list(meta.get("falsepositives"))
         author = str(meta.get("author") or "").strip() or None

@@ -38,8 +38,10 @@ import lib
 # Mirrors the engine's authoritative is_supported_category() in
 # src/engine/logsource.rs (ETW on Windows, eBPF on Linux), plus "file_scan"
 # for YARA / IOC executable hashing on process-start. The registry_*, image_load,
-# ps_script, wmi_event, service_creation and task_creation families are
-# Windows-only; rules using them must set logsource product: windows. The file_*
+# ps_script, ps_module, wmi_event, service_creation and task_creation families
+# are Windows-only; rules using them must set logsource product: windows.
+# "security" is the Windows Security event log, selected in Sigma with
+# `product: windows, service: security` and no category. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
 # the vendored engine field contract).
@@ -58,28 +60,19 @@ SUPPORTED_TELEMETRY = {
     "dns_query",
     "image_load",
     "ps_script",
+    "ps_module",
+    "security",
     "wmi_event",
     "service_creation",
     "task_creation",
     "file_scan",
 }
 
-# The file_* sub-categories share one field contract.
-FILE_CATEGORY_ALIASES = {
-    "file_create",
-    "file_delete",
-    "file_rename",
-    "file_change",
-}
-DNS_CATEGORY_ALIASES = {"dns"}
-
-
-def _contract_category(category: str) -> str:
-    if category in FILE_CATEGORY_ALIASES:
-        return "file_event"
-    if category in DNS_CATEGORY_ALIASES:
-        return "dns_query"
-    return category
+# Categories routed by native event ID, where an EventID the engine does not
+# collect can never match. Sysmon-style categories are left out: the engine
+# maps their Sysmon event IDs onto its own sources (DNS EventID 22 still
+# matches the DNS Client's 3006/3008).
+EVENT_ID_ROUTED_CATEGORIES = {"security"}
 
 
 def _detection_fields(detection: dict) -> set[str]:
@@ -221,7 +214,7 @@ def check_engine_field_availability(
         return
     logsource = doc.get("logsource") or {}
     product = str(logsource.get("product") or "").lower()
-    category = _contract_category(str(logsource.get("category") or "").lower())
+    category = lib.contract_category(logsource)
     blocked = never_populated.get((product, category))
     if not blocked:
         return
@@ -231,8 +224,52 @@ def check_engine_field_availability(
         rep.error(
             art.rel_path,
             f"selects on '{field}', which Rustinel never populates for "
-            f"{product}/{logsource.get('category')}: {reason}. "
+            f"{product}/{lib.logsource_category(logsource)}: {reason}. "
             f"Move it to preview/ with a telemetry-blocked entry, or drop the field.",
+        )
+
+
+def _selected_event_ids(detection: dict) -> set[str]:
+    """Literal EventID values a rule selects on, as strings. Values behind a
+    modifier (|gt, |re, ...) are not literal IDs and are skipped."""
+    ids: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if str(key) == "EventID":
+                    for item in value if isinstance(value, list) else [value]:
+                        if isinstance(item, (int, str)) and not isinstance(item, bool):
+                            ids.add(str(item).strip())
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for name, selection in (detection or {}).items():
+        if name in ("condition", "timeframe"):
+            continue
+        walk(selection)
+    return ids
+
+
+def check_collected_event_ids(art, rep: Report, collected: engine_contract.EventIds):
+    """Reject a rule that selects an event ID its channel never collects."""
+    doc = art.meta
+    if not isinstance(doc, dict):
+        return
+    logsource = doc.get("logsource") or {}
+    product = str(logsource.get("product") or "").lower()
+    category = lib.contract_category(logsource)
+    if category not in EVENT_ID_ROUTED_CATEGORIES:
+        return
+    known = collected.get((product, category), set())
+    for event_id in sorted(_selected_event_ids(doc.get("detection") or {}) - known):
+        rep.error(
+            art.rel_path,
+            f"selects EventID {event_id}, which Rustinel does not collect on "
+            f"{product}/{category} (collected: {', '.join(sorted(known, key=int)) or 'none'}).",
         )
 
 
@@ -473,6 +510,7 @@ def main() -> int:
 
     try:
         engine_pin, never_populated = engine_contract.load_contract()
+        collected_event_ids = engine_contract.load_event_ids()
     except (OSError, ValueError) as exc:
         print(f"[ERROR] engine field contract: {exc}")
         return 1
@@ -494,6 +532,7 @@ def main() -> int:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
             check_engine_field_availability(art, rep, never_populated)
+            check_collected_event_ids(art, rep, collected_event_ids)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":
