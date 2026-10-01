@@ -107,6 +107,57 @@ rules:
 
 ---
 
+### Correlation rules
+
+A correlation rule raises one alert when other rules match together: a count of matches
+(`event_count`), of distinct values (`value_count`), or a set of rules within one window
+(`temporal`, `temporal_ordered`). It lives in its own file under `rules/sigma/<os>/`, replaces
+`logsource` and `detection` with a `correlation` block, and references rules by `id`:
+
+```yaml
+title: Ransomware Recovery Inhibition Sequence
+id: <uuid4>
+status: experimental
+description: Shadow copies deleted and boot recovery disabled by the same parent within 10 minutes.
+references:
+  - https://attack.mitre.org/techniques/T1490/
+author: rustinel-rules
+date: 2026-10-01
+tags:
+  - attack.impact
+  - attack.t1490
+correlation:
+  type: temporal
+  rules:
+    - 1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04   # Volume Shadow Copy Deletion
+    - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering
+  group-by:
+    - ParentImage
+  timespan: 10m
+  condition:
+    gte: 2
+level: critical
+rustinel:
+  telemetry: [process_creation]
+  expected_false_positive_level: low
+  test_status: atomic
+```
+
+`validate.py` enforces what the engine needs:
+
+- **Always state a temporal condition.** The Sigma spec defaults a temporal correlation to "every
+  rule matched", but the engine's parser (rsigma 0.21 / 0.22) defaults it to `gte: 1`, so a
+  correlation without a condition fires on any single referenced rule. Use `gte: <number of rules>`.
+- Every referenced id is an existing, non-correlation Sigma rule, all for the same platform.
+- `group-by` fields are populated for every referenced rule's log source.
+- `rustinel.telemetry` lists every channel the referenced rules need.
+- Every pack that includes the correlation also includes every rule it references.
+- The pack floor is at least v1.5.0, the first engine with correlation support.
+
+Referenced rules still raise their own alerts. Correlations see every rule that matched an event,
+not only the one that won its standalone alert. An atomic test for a correlation triggers each
+referenced rule inside the window, and passes on the correlation's title.
+
 ## YARA rules
 
 Place the rule in `rules/yara/<os>/` as a `.yar` file. Set a stable `meta: id` (validation/build

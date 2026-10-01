@@ -250,6 +250,10 @@ PLATFORM_BASELINE_ENGINES: dict[str, tuple[str, str]] = {
     ),
 }
 
+# Sigma correlation rules (event_count, value_count, temporal, ...) arrived in
+# v1.5.0, whatever their referenced rules select on.
+CORRELATION_MIN_ENGINE = ("1.5.0", "Sigma correlation rules need v1.5.0")
+
 # Field -> first release that populates it comes from the vendored engine
 # field contract (`since`, schema 2 and later); see engine_contract.py. Platform
 # baselines above stay here because the contract does not express when a
@@ -271,6 +275,18 @@ _CATEGORY_PARENTS = {
 # engine routes `product: windows, service: security` (no category) to the
 # Security channel, which the field contract files under category "security".
 _SERVICE_CATEGORIES = {("windows", "security"): "security"}
+
+
+def is_correlation(meta) -> bool:
+    """True for a Sigma correlation document (a `correlation:` block instead of
+    `logsource` and `detection`)."""
+    return isinstance(meta, dict) and isinstance(meta.get("correlation"), dict)
+
+
+def correlation_rule_ids(meta) -> list[str]:
+    """The rule references of a correlation document, in order."""
+    rules = (meta.get("correlation") or {}).get("rules") if is_correlation(meta) else None
+    return [str(r).strip() for r in rules] if isinstance(rules, list) else []
 
 
 def logsource_category(logsource: dict) -> str:
@@ -364,6 +380,12 @@ def artifact_min_engine(
         field_since = _vendored_field_since()
     minimum = BASELINE_ENGINE
     reasons: list[str] = []
+
+    # A correlation's own floor; its referenced rules are pack members, so the
+    # pack floor already covers whatever they select on.
+    if artifact.kind == "sigma" and is_correlation(artifact.meta):
+        minimum, reason = CORRELATION_MIN_ENGINE
+        reasons.append(reason)
 
     if artifact.kind == "sigma" and isinstance(artifact.meta, dict):
         logsource = artifact.meta.get("logsource") or {}
