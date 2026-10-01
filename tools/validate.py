@@ -252,18 +252,11 @@ def check_correlation(
         rep.error(where, f"correlation timespan {timespan!r} must look like 30s, 5m, 1h or 7d")
 
     condition = corr.get("condition")
-    if ctype in TEMPORAL_CORRELATION_TYPES and condition is None:
-        # The Sigma spec defaults a temporal condition to "every rule matched",
-        # but rsigma-parser 0.21 and 0.22 default it to gte: 1, so the
-        # correlation fires on any single referenced rule.
-        rep.error(
-            where,
-            f"a {ctype} correlation needs an explicit condition (gte: "
-            f"{len(lib.correlation_rule_ids(doc)) or 'N'} for all rules): the engine's "
-            f"default fires on any single referenced rule",
-        )
-    elif isinstance(condition, str) and ctype in TEMPORAL_CORRELATION_TYPES:
-        pass  # extended condition over rule names, e.g. "rule_a and rule_b"
+    if ctype in TEMPORAL_CORRELATION_TYPES and (condition is None or isinstance(condition, str)):
+        # Omitted means every referenced rule must match: the Sigma default, which
+        # Rustinel restores at load time since v1.5.0. A string is an extended
+        # condition over rule names, e.g. "rule_a and rule_b".
+        pass
     elif not isinstance(condition, dict) or not CORRELATION_OPERATORS & condition.keys():
         rep.error(where, "correlation condition needs an operator (gte, gt, lte, lt, eq, neq)")
     elif ctype in VALUE_CORRELATION_TYPES and not condition.get("field"):
