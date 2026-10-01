@@ -112,6 +112,7 @@ artifacts the engine consumes, plus an `index.json` catalog.
 uv run python tools/validate.py        # gate: structure, metadata, ids, telemetry, IOC sanity
 uv run python tools/build_packs.py     # materialize dist/ (folders + zips + index.json)
 uv run python tools/build_catalog.py   # materialize dist/catalog.json for the website
+uv run python tools/check_engine_install.py  # dist/ passes the engine's install checks
 ```
 
 Output lands in `dist/`:
@@ -149,6 +150,26 @@ On a tag build, `validate.py` fails when the tag and that version disagree - the
 otherwise only surface as archives named after the wrong release, after publication. Both build
 scripts previously carried their own hard-coded default, which is how artifacts kept being labelled
 `0.2.0` for a full cycle after `v0.3.0` shipped.
+
+## Engine install contract
+
+`rustinel setup` and `rustinel rules list|install|update` read `index.json` and the pack zips
+straight from the latest GitHub release. Every engine since v1.2.0 does, and one malformed pack
+entry makes it reject the whole catalog on every platform. `tools/check_engine_install.py` repeats
+the engine's checks on `dist/` (catalog schema, required fields, `pack.yml` agreement, zip
+layout, the four IOC files, size limits, `requires_rustinel`) and runs in CI after the build.
+
+It also compares the build with the latest published `index.json`:
+
+- A pack id may never disappear: a host with that pack active would fail `rustinel rules update`.
+- `release_version` may not go backwards. The release workflow passes `--release`, which also
+  fails an unbumped version, because `rules update` only installs a newer one.
+- Every `requires_rustinel` change is reported. Engines outside the new range refuse to install or
+  update the pack, so raise a floor deliberately, in one announced release.
+- No pack may require an engine newer than the certified pin in `compatibility/engine.json`.
+
+Pass `--baseline none` to skip the comparison when offline. If the engine's install checks change
+(`src/rules.rs` in `Karib0u/rustinel`), update this script with them.
 
 ## Website catalog
 
