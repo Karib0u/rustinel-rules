@@ -3,7 +3,10 @@ id: 7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05
 status: experimental
 description: >
   Detects use of rundll32 with comsvcs.dll's MiniDump export to dump the memory
-  of a process (typically LSASS) for offline credential extraction. This is a
+  of a process (typically LSASS) for offline credential extraction. The export
+  is matched by name and by ordinal (#24, including the zero-padded and
+  negative-wraparound spellings), since calling it by ordinal is the standard
+  way to dodge rules that key on the string MiniDump. This is a
   high-confidence, low-noise credential-access technique with virtually no
   legitimate use.
 references:
@@ -11,6 +14,7 @@ references:
   - https://lolbas-project.github.io/lolbas/Libraries/Comsvcs/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-01
 tags:
   - attack.credential-access
   - attack.t1003.001
@@ -18,11 +22,17 @@ logsource:
   category: process_creation
   product: windows
 detection:
-  selection:
-    CommandLine|contains|all:
-      - 'comsvcs'
-      - 'MiniDump'
-  condition: selection
+  selection_comsvcs:
+    CommandLine|contains: 'comsvcs'
+  selection_export_name:
+    CommandLine|contains: 'MiniDump'
+  selection_export_ordinal:
+    # #24, #+24, #024, #+00024 ... but not #240 or #124.
+    CommandLine|re: '#\+?0*24([^0-9]|$)'
+  selection_export_ordinal_wrap:
+    # -4294967272 wraps to ordinal 24 as a 32-bit value.
+    CommandLine|contains: '#-4294967272'
+  condition: selection_comsvcs and 1 of selection_export*
 falsepositives:
   - None expected; legitimate use of comsvcs MiniDump is extremely rare.
 level: critical

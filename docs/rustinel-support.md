@@ -89,11 +89,20 @@ These are the normalized field names available in `detection:` selections. Field
 standard Sigma/Sysmon names; Rustinel maps them onto native ETW/eBPF/ESF properties internally, so
 you write portable Sigma.
 
+> **A mapped name is not a populated field.** Whether a field is actually filled depends on the
+> platform and event source. The per-platform answer (`always`, `conditional` or `never`) for the
+> pinned engine is in the [vendored field contract](../compatibility/field-availability.json), and
+> `validate.py` rejects a rule that selects on a field the contract marks `never`. The notes below
+> call out the `never` cases that most often catch authors.
+
 ### `process_creation`
 
 `Image`, `OriginalFileName`, `Product`, `Description`, `TargetImage`, `CommandLine`, `ProcessId`,
 `ProcessStartTime`, `ParentProcessId`, `ParentImage`, `ParentCommandLine`, `CurrentDirectory`,
-`IntegrityLevel`, `User`, `LogonId`, `LogonGuid`
+`IntegrityLevel`, `User`
+
+> **Windows:** `User` and `CurrentDirectory` are `never` on Windows process starts in the pinned
+> engine (`User` arrives in v1.8.0), so key Windows rules on the image, command line and parent.
 
 > **Linux: command-line and parent fields are best-effort.** The kernel exec event itself carries
 > only `Image`, `ProcessId` and `User` (uid). `CommandLine`, `ParentProcessId`, `ParentImage`,
@@ -103,18 +112,26 @@ you write portable Sigma.
 > process's current `/proc/<pid>/cmdline`, which a process can overwrite). Write Linux
 > `process_creation` rules so they still match meaningfully on `Image` alone, and treat
 > `CommandLine`/parent fields as additional signal rather than a guaranteed precondition.
-> `IntegrityLevel`, `LogonId` and `LogonGuid` are Windows-only.
+> `IntegrityLevel` is Windows-only. Linux also exposes credential and namespace fields
+> (`RealUserId`, `RealGroupId`, `EffectiveUserId`, `EffectiveGroupId`, `MountNamespace`,
+> `PidNamespace`, `NetworkNamespace`, `SessionId`, `ControllingTty`, `CgroupId`), most of them
+> conditional on the running kernel's BTF.
 >
-> **macOS: command-line and parent fields are native, except `ParentCommandLine`.** ESF exec events
-> carry `CommandLine` (argv), `ParentImage`, `ParentProcessId` and `CurrentDirectory` directly, so
-> they are reliably populated (no `/proc` race). However **`ParentCommandLine` is not provided** on
-> macOS — don't depend on it in macOS rules. Code-signing fields are not exposed yet either, a
-> known gap planned for a future engine enhancement.
+> **macOS: command-line and parent fields are native.** ESF exec events carry `CommandLine` (argv),
+> `ParentImage`, `ParentProcessId` and `CurrentDirectory` directly, so they are reliably populated
+> (no `/proc` race). `ParentCommandLine` is best-effort: it is filled only when the parent's command
+> line is already in the process cache. macOS also exposes code-signing fields: `Signed`,
+> `SignatureStatus`, `CodeSigningFlags` and `IsPlatformBinary` on every exec, and `SigningId`,
+> `TeamId` and `CdHash` when the binary carries them, plus `RealUserId`, `PreExecImage` and
+> `Script` (the script path for a direct shebang execution).
 
 ### `file_event` (and `file_create` / `file_delete` / `file_change` / `file_rename`)
 
 `SourceFilename`, `TargetFilename`, `ProcessId`, `Image`, `CreationUtcTime`,
 `PreviousCreationUtcTime`, `User`
+
+> `SourceFilename` (the old path of a rename) is populated on Linux and macOS only. The two
+> `*CreationUtcTime` fields are `never` on every platform.
 
 ### `registry_event` (and `registry_add` / `registry_set` / `registry_delete`) — Windows
 
@@ -123,7 +140,9 @@ you write portable Sigma.
 ### `network_connection`
 
 `DestinationIp`, `SourceIp`, `DestinationPort`, `SourcePort`, `ProcessId`, `Image`, `User`,
-`DestinationHostname`, `Protocol`
+`DestinationHostname`, `Protocol`, `Initiated`
+
+> `Initiated` (`true` for an outbound connection) is populated on Windows and Linux, not on macOS.
 
 > On macOS, network telemetry comes from `/dev/bpf` packet capture: `DestinationHostname` is not
 > populated, and `ProcessId`/`Image` are best-effort (matched against open sockets by port, so a
@@ -142,6 +161,9 @@ you write portable Sigma.
 `ImageLoaded`, `ProcessId`, `Image`, `OriginalFileName`, `Product`, `Description`, `Signed`,
 `Signature`, `User`
 
+> `Signed`, `Signature` and `User` are `never` in the pinned engine: kernel image-load events carry
+> no Authenticode result.
+
 ### `ps_script` — Windows
 
 `ScriptBlockText`, `ScriptBlockId`, `Path`, `ProcessId`, `Image`, `User`
@@ -159,6 +181,9 @@ you write portable Sigma.
 ### `task_creation` — Windows
 
 `TaskName`, `TaskContent`, `UserName`, `User`, `ProcessId`, `Image`
+
+> Only `TaskName` and `UserName` are populated: TaskScheduler event 106 does not carry the task XML,
+> so `TaskContent` is `never` here.
 
 > **Unmapped fields never match.** If a selection references a field not in the relevant list above,
 > that field is treated as missing on every event, so the rule won't fire. Stick to these names.
