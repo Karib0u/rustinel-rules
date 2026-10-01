@@ -1,0 +1,272 @@
+"""Regression tests for the offline engine field contract guard."""
+
+import hashlib
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
+from unittest.mock import patch
+
+import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "tools"))
+
+import engine_contract  # noqa: E402
+import lib  # noqa: E402
+import refresh_engine_contract  # noqa: E402
+import validate  # noqa: E402
+
+
+def contract_row(field="Example", availability="never", reason="engine reason", **kwargs):
+    return {
+        "platform": "windows",
+        "category": "process_creation",
+        "provider": "etw",
+        "source": "Kernel-Process",
+        "field": field,
+        "availability": availability,
+        "reason": reason,
+        **kwargs,
+    }
+
+
+def contract_bytes(entries):
+    return json.dumps({"schema_version": 1, "entries": entries}).encode()
+
+
+class FieldGuardTests(unittest.TestCase):
+    def setUp(self):
+        self.pin, self.blocked = engine_contract.load_contract()
+
+    def check_rule(self, platform, category, field, blocked=None):
+        artifact = lib.Artifact(
+            "test-rule",
+            "sigma",
+            lib.RULES_DIR / "test.yml",
+            {
+                "logsource": {"product": platform, "category": category},
+                "detection": {
+                    "selection": [{f"{field}|contains": "value"}],
+                    "condition": "selection",
+                },
+            },
+            "",
+        )
+        report = validate.Report()
+        validate.check_engine_field_availability(
+            artifact, report, self.blocked if blocked is None else blocked
+        )
+        return report
+
+    def test_production_guard_preserves_engine_reasons(self):
+        for category, field, reason in (
+            (
+                "task_creation",
+                "TaskContent",
+                "TaskScheduler event 106 does not carry the task XML definition",
+            ),
+            (
+                "image_load",
+                "Signed",
+                "Kernel-Process image-load events contain no Authenticode result",
+            ),
+            (
+                "process_creation",
+                "CurrentDirectory",
+                "Microsoft-Windows-Kernel-Process does not expose the working directory",
+            ),
+        ):
+            with self.subTest(category=category, field=field):
+                report = self.check_rule("windows", category, field)
+                self.assertFalse(report.ok())
+                self.assertIn(reason, report.errors[0])
+
+    def test_file_and_dns_aliases_use_contract_categories(self):
+        for category in ("file_event", "file_create", "file_delete", "file_change", "file_rename"):
+            with self.subTest(category=category):
+                self.assertFalse(self.check_rule("windows", category, "SourceFilename").ok())
+        self.assertFalse(self.check_rule("linux", "dns", "QueryResults").ok())
+
+    def test_available_fields_and_other_platforms_are_allowed(self):
+        for platform, category, field in (
+            ("macos", "process_creation", "ParentCommandLine"),
+            ("macos", "network_connection", "DestinationHostname"),
+            ("linux", "file_rename", "SourceFilename"),
+            ("windows", "process_creation", "CommandLine"),
+        ):
+            with self.subTest(platform=platform, category=category, field=field):
+                self.assertTrue(self.check_rule(platform, category, field).ok())
+
+    def test_wildcard_contract_blocks_any_field(self):
+        report = self.check_rule("windows", "pipe_created", "PipeName")
+        self.assertFalse(report.ok())
+        self.assertIn("named-pipe activity is not carried", report.errors[0])
+
+    def test_new_never_row_is_used_without_a_tooling_change(self):
+        blocked = engine_contract.parse_contract(contract_bytes([contract_row(field="NewField")]))
+        report = self.check_rule("windows", "process_creation", "NewField", blocked)
+        self.assertFalse(report.ok())
+        self.assertIn("engine reason", report.errors[0])
+
+    def test_mixed_event_availability_does_not_block_a_category(self):
+        raw = contract_bytes([contract_row(), contract_row(availability="conditional")])
+        blocked = engine_contract.parse_contract(raw)
+        self.assertTrue(self.check_rule("windows", "process_creation", "Example", blocked).ok())
+
+    def test_repeated_reasons_are_deduplicated(self):
+        raw = contract_bytes(
+            [contract_row(), contract_row(), contract_row(reason="another reason")]
+        )
+        blocked = engine_contract.parse_contract(raw)
+        self.assertEqual(
+            blocked[("windows", "process_creation")]["Example"],
+            ("engine reason", "another reason"),
+        )
+
+    def test_contract_rows_supersede_overrides(self):
+        for field in ("ParentUser", "LogonId", "LogonGuid"):
+            with self.subTest(field=field):
+                self.assertFalse(self.check_rule("windows", "process_creation", field).ok())
+                blocked = engine_contract.parse_contract(
+                    contract_bytes([contract_row(field=field, availability="conditional")])
+                )
+                self.assertTrue(self.check_rule("windows", "process_creation", field, blocked).ok())
+
+
+class ContractLoadTests(unittest.TestCase):
+    def test_invalid_contracts_fail_loudly(self):
+        valid = {"schema_version": 1, "entries": [contract_row()]}
+        cases = [b"", b"not json", b"{}", b"[]", b'{"schema_version": 99,"entries":[]}']
+        for schema in (None, True, "1", 2, 3):
+            cases.append(json.dumps({**valid, "schema_version": schema}).encode())
+        for entries in (None, [], {}, [None], [{}]):
+            cases.append(json.dumps({**valid, "entries": entries}).encode())
+        for key, value in (("field", ""), ("availability", "sometimes"), ("reason", "")):
+            row = {**contract_row(), key: value}
+            cases.append(contract_bytes([row]))
+        for raw in cases:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ValueError):
+                    engine_contract.parse_contract(raw)
+
+    def test_missing_contract_or_pin_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "missing.json"
+            with self.assertRaises(OSError):
+                engine_contract.load_contract(contract_path=missing)
+            with self.assertRaises(OSError):
+                engine_contract.load_contract(pin_path=missing)
+
+    def test_invalid_pin_and_checksum_mismatch_fail(self):
+        pin = engine_contract.read_pin()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "engine.json"
+            for key in ("version", "revision", "field_availability_sha256"):
+                invalid = {**pin, key: "invalid"}
+                path.write_text(json.dumps(invalid))
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    engine_contract.load_contract(pin_path=path)
+            path.write_text(json.dumps({**pin, "field_availability_sha256": "0" * 64}))
+            with self.assertRaisesRegex(ValueError, "checksum differs"):
+                engine_contract.load_contract(pin_path=path)
+
+    def test_main_returns_failure_before_loading_rules_if_contract_is_invalid(self):
+        for error in (ValueError("bad contract"), PermissionError("unreadable contract")):
+            with (
+                self.subTest(error=error),
+                patch.object(engine_contract, "load_contract", side_effect=error),
+                patch.object(lib, "load_all_artifacts") as artifacts,
+                redirect_stdout(io.StringIO()) as output,
+            ):
+                self.assertEqual(validate.main(), 1)
+            artifacts.assert_not_called()
+            self.assertIn(f"[ERROR] engine field contract: {error}", output.getvalue())
+
+    def test_validation_output_identifies_pinned_revision(self):
+        with redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(validate.main(), 0)
+        pin = engine_contract.read_pin()
+        self.assertIn(pin["version"], output.getvalue())
+        self.assertIn(pin["revision"], output.getvalue())
+
+    def test_atomic_workflow_emits_shared_pin_for_install_steps(self):
+        workflow = yaml.safe_load((REPO_ROOT / ".github/workflows/atomic.yml").read_text())
+        step = next(s for s in workflow["jobs"]["atomic"]["steps"] if s.get("id") == "engine")
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            result = subprocess.run(
+                ["bash", "-e"],
+                input=step["run"],
+                capture_output=True,
+                text=True,
+                cwd=REPO_ROOT,
+                env={**os.environ, "GITHUB_OUTPUT": str(output)},
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            pin = engine_contract.read_pin()
+            self.assertEqual(
+                output.read_text(), f"version={pin['version']}\nrevision={pin['revision']}\n"
+            )
+
+
+class RefreshTests(unittest.TestCase):
+    def test_refresh_uses_exact_commit_and_updates_both_files(self):
+        revision = "a" * 40
+        raw = contract_bytes([contract_row()])
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "field-availability.json"
+            pin = Path(directory) / "engine.json"
+            with (
+                patch.object(engine_contract, "CONTRACT_PATH", contract),
+                patch.object(engine_contract, "PIN_PATH", pin),
+                patch.object(
+                    refresh_engine_contract,
+                    "urlopen",
+                    side_effect=[
+                        io.BytesIO(json.dumps({"sha": revision}).encode()),
+                        io.BytesIO(raw),
+                    ],
+                ) as request,
+                redirect_stdout(io.StringIO()),
+            ):
+                refresh_engine_contract.refresh("1.6.0")
+            self.assertIn(revision, request.call_args_list[1].args[0])
+            loaded_pin, blocked = engine_contract.load_contract(contract, pin)
+            self.assertEqual(loaded_pin["revision"], revision)
+            self.assertEqual(
+                loaded_pin["field_availability_sha256"], hashlib.sha256(raw).hexdigest()
+            )
+            self.assertIn("Example", blocked[("windows", "process_creation")])
+
+    def test_unsupported_refresh_preserves_existing_files(self):
+        raw = json.loads(contract_bytes([contract_row()]))
+        raw["schema_version"] = 99
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "field-availability.json"
+            pin = Path(directory) / "engine.json"
+            contract.write_bytes(b"original contract")
+            pin.write_bytes(b"original pin")
+            with (
+                patch.object(engine_contract, "CONTRACT_PATH", contract),
+                patch.object(engine_contract, "PIN_PATH", pin),
+                patch.object(engine_contract, "read_pin", return_value=engine_contract.read_pin()),
+                patch.object(
+                    refresh_engine_contract,
+                    "urlopen",
+                    return_value=io.BytesIO(json.dumps(raw).encode()),
+                ),
+                self.assertRaisesRegex(ValueError, "unsupported"),
+            ):
+                refresh_engine_contract.refresh()
+            self.assertEqual(contract.read_bytes(), b"original contract")
+            self.assertEqual(pin.read_bytes(), b"original pin")
+
+
+if __name__ == "__main__":
+    unittest.main()

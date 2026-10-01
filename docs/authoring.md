@@ -4,7 +4,7 @@ How to add a Sigma rule, YARA rule, or IOC set so it loads, validates, and fires
 complements [CONTRIBUTING.md](../CONTRIBUTING.md) with engine-facing detail.
 
 > **Prerequisite:** skim the [Rustinel support reference](rustinel-support.md) first. The supported
-> log sources, fields and modifiers there are the contract — content outside it won't load or match.
+> log sources, fields and modifiers there are the contract - content outside it won't load or match.
 
 The workflow is the same for every artifact:
 
@@ -24,7 +24,7 @@ Place the rule in `rules/sigma/<os>/` and give it a UUID v4 `id`.
 
 | Field | Notes |
 | ----- | ----- |
-| `title` | Short, descriptive — and true of what the telemetry proves. A `process_creation` rule sees a command line, not a file being read, so name it that way. |
+| `title` | Short, descriptive - and true of what the telemetry proves. A `process_creation` rule sees a command line, not a file being read, so name it that way. |
 | `id` | UUID v4, unique across the whole repo. |
 | `status` | `experimental` \| `test` \| `stable`. |
 | `description` | What it detects and why. |
@@ -48,7 +48,7 @@ rustinel:
   min_engine: "1.5.0"                # optional; see below
 ```
 
-`min_engine` is only needed for a requirement the tooling cannot infer from your fields — a
+`min_engine` is only needed for a requirement the tooling cannot infer from your fields - a
 correlation rule needs v1.5.0 whatever it selects on, for instance. Field-driven requirements are
 derived automatically from `ENGINE_REQUIREMENTS` in [`tools/lib.py`](../tools/lib.py), and a pack
 whose `requires_rustinel` is lower than its content needs fails validation.
@@ -143,7 +143,7 @@ Validation checks balanced braces, a `condition:` section, a resolvable id, and 
 
 ## IOC sets
 
-IOCs are stored as **typed sets**, not one file per indicator — a set groups related indicators (a
+IOCs are stored as **typed sets**, not one file per indicator - a set groups related indicators (a
 campaign, a tool, an infrastructure cluster) and is the unit packs reference by `id`.
 
 1. Place the set under `rules/ioc/<os|common>/<name>.yml` (use `common` for cross-platform).
@@ -185,8 +185,9 @@ The build flattens every referenced set into `hashes.txt` / `ips.txt` / `domains
 
 Before adding a rule, check every field it selects on against the
 [supported fields](rustinel-support.md#3-supported-sigma-fields-per-category) **and** against
-`NEVER_POPULATED_FIELDS` in [the validator](../tools/validate.py). A field the engine never
-populates is missing on every event, so a selection on it is never true — and if it is the only
+the [vendored engine field contract](../compatibility/field-availability.json), used by
+[the validator](../tools/validate.py). A field the engine never
+populates is missing on every event, so a selection on it is never true - and if it is the only
 selection, the rule can never fire. Validation rejects such a rule under `rules/`.
 
 A rule like that is not deleted. Move it to `preview/` (same layout, `preview/sigma/<os>/…`) and add
@@ -217,7 +218,7 @@ one does. See [the repository model](repository.md#non-production-content-previe
 | `advanced` | Solid production value; may produce environment-dependent false positives. |
 | `hunting` | Broad/noisy leads for analysts. Never enabled by default. |
 
-Packs are cumulative — don't re-list a rule in Advanced if it's already in Essential; Advanced
+Packs are cumulative - don't re-list a rule in Advanced if it's already in Essential; Advanced
 `extends` Essential.
 
 ## Before opening a PR

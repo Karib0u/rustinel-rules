@@ -10,7 +10,7 @@ source tree into something Rustinel loads.
 | [`rustinel`](https://github.com/Karib0u/rustinel) | The engine: collects telemetry, evaluates rules, writes alerts. |
 | `rustinel-rules` | The detection **content** the engine loads (this repo). |
 
-They are versioned independently — content evolves faster than the engine — and compatibility is
+They are versioned independently - content evolves faster than the engine - and compatibility is
 declared explicitly per pack (`requires_rustinel`). The repository **must remain usable by Rustinel
 users out of the box**.
 
@@ -33,13 +33,13 @@ There are three detection kinds, and they share one model. Each is an **artifact
 Not every useful detection can ship. Some select on a field the certified engine never populates, so
 they can never match; some are shaped for a different sensor and need rewriting; some exist only to
 give the atomic harness something to trip. All three live under `preview/`, which mirrors the
-`rules/` layout but is **not** a source of pack membership — `load_all_artifacts()` indexes `rules/`
+`rules/` layout but is **not** a source of pack membership - `load_all_artifacts()` indexes `rules/`
 alone, so `build_packs.py` physically cannot package anything from it, and `validate.py` turns a
 pack reference to a preview id into a hard error rather than an "unknown id".
 
 | State | Meaning | Exit condition |
 | ----- | ------- | -------------- |
-| *(none — it's under `rules/`)* | Active. In a pack, counted in coverage. | — |
+| *(none - it's under `rules/`)* | Active. In a pack, counted in coverage. | - |
 | `telemetry-blocked` | Correct logic; a required field is `never` populated, so it can never match. | The blocking engine issue lands. |
 | `rewrite-required` | The telemetry exists, but the detection is shaped for a different sensor. | Rewritten against fields Rustinel emits. |
 | `test-only` | Harness fixture. Never a detection. | Never promoted. |
@@ -47,24 +47,26 @@ pack reference to a preview id into a hard error rather than an "unknown id".
 [`preview/preview.yml`](../preview/preview.yml) is the register: one entry per file, declaring the
 state, the missing fields where relevant, the reason, and the blocker issue. Keeping that metadata
 out of the Sigma document means the rule itself stays canonical and keeps its `id`, so promoting it
-is a `git mv` back into `rules/` plus a pack reference — nothing keyed on the id breaks.
+is a `git mv` back into `rules/` plus a pack reference - nothing keyed on the id breaks.
 
 Preview artifacts are validated like production ones (they must parse, carry full metadata and
 declare supported telemetry) and are excluded from pack membership, coverage counts and
 `catalog.json`.
 
-**The guard that catches this class of defect.** `validate.py` carries the engine's
-never-populated-field contract (`NEVER_POPULATED_FIELDS`) and fails any rule under `rules/` that
-selects on one. Two rules had shipped in packs for months without ever being able to produce an
-alert — one on `task_creation.TaskContent`, one on `image_load.Signed` — because nothing compared
-their fields against what the sensor actually emits.
+**The guard that catches this class of defect.** `validate.py` derives never-populated fields
+from the [vendored engine contract](../compatibility/field-availability.json), and fails any rule
+under `rules/` that selects on one, quoting the engine's reason. The shared
+[engine pin](../compatibility/engine.json) records the exact source revision and also selects
+atomic CI's engine release. Validation prints it and rejects missing, empty, malformed or
+unsupported contracts. See the [one-command refresh procedure](../compatibility/README.md).
+Only fields absent from the contract have documented overrides in `tools/engine_contract.py`.
 
 **Test-only fixtures and the harness.** `build_packs.py` flattens `test-only` IOC sets into
 `build/fixtures/ioc/`, outside `dist/` so no release artifact carries them.
 `tests/atomic/run_atomics.py` overlays that directory onto its throwaway copy of the pack under
 test; `--no-fixtures` runs against production content only.
 
-An **IOC set** is a typed collection — a campaign or tool yields many indicators (hashes, IPs,
+An **IOC set** is a typed collection - a campaign or tool yields many indicators (hashes, IPs,
 domains, path regexes) grouped into one set. The build flattens every referenced set into the
 per-type flat files the engine consumes.
 
@@ -77,7 +79,7 @@ of** any pack it `extends`. Packs are cumulative:
 Essential  ⊂  Advanced  ⊂  Hunting
 ```
 
-So Advanced `extends: [windows-essential]` and only lists the *extra* rules — it never re-lists
+So Advanced `extends: [windows-essential]` and only lists the *extra* rules - it never re-lists
 Essential's rules. The build resolves the full transitive membership (lower levels first,
 de-duplicated). See the [pack catalog](packs.md) for the live set, and the
 [pack schema](../schemas/pack.schema.json) for every field.
@@ -94,7 +96,7 @@ Key manifest fields:
 | `extends` | Pack ids cumulatively included (rules merged, never duplicated). |
 | `rules` | Optional dictionary specifying rules directly in this pack (`has`), or rules to include (`includes`) / exclude (`excludes`) from extended packs or automatic sources. |
 | `sources` | Optional dictionary of upstream sources categorized by type (`manual`, `sigma`, `yara`). |
-| `requires_rustinel` | Engine version constraint, e.g. `">=1.4.0"`. **Derived from content** — validation fails if it is lower than what the pack's rules need. |
+| `requires_rustinel` | Engine version constraint, e.g. `">=1.4.0"`. **Derived from content** - validation fails if it is lower than what the pack's rules need. |
 | `attack_coverage` | ATT&CK technique ids covered (drift-checked against members). |
 | `telemetry_requirements` | Rustinel telemetry channels the pack needs. |
 | `expected_false_positive_level` / `status` / `test_status` | Quality signals surfaced in `index.json`. |
@@ -143,7 +145,7 @@ detection-content release version is written. `tools/lib.py` reads it, and the b
 every pack manifest, archive name, `index.json` and `catalog.json`, so one build cannot emit two
 versions. Bump it in the release PR, before tagging.
 
-On a tag build, `validate.py` fails when the tag and that version disagree — the mismatch would
+On a tag build, `validate.py` fails when the tag and that version disagree - the mismatch would
 otherwise only surface as archives named after the wrong release, after publication. Both build
 scripts previously carried their own hard-coded default, which is how artifacts kept being labelled
 `0.2.0` for a full cycle after `v0.3.0` shipped.
@@ -193,5 +195,5 @@ automatically:
 ## Where to go next
 
 - [Pack catalog & rule inventory](packs.md)
-- [What Rustinel supports](rustinel-support.md) — before authoring anything
+- [What Rustinel supports](rustinel-support.md) - before authoring anything
 - [Using a pack with Rustinel](usage.md)
