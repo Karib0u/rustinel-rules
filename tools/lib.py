@@ -250,56 +250,10 @@ PLATFORM_BASELINE_ENGINES: dict[str, tuple[str, str]] = {
     ),
 }
 
-# Capability -> the release that first provides it, as (platform, category,
-# field, version, why).
-#
-# There is no machine-readable capability/version map in the engine repo: its
-# compatibility/field-availability.json records what is available *now*, not
-# since when. These entries come from the 2026-09-11 coverage audit's sensor
-# inventory, which dated them against the release notes. Verify a new entry the
-# same way before adding it, and prefer leaving a capability out to guessing —
-# an over-claimed floor locks out engines that would have run the pack fine.
-#
-# Deliberately absent: file_delete / file_rename routing. It is present from the
-# platform baseline onward (v1.0.2 on Linux, v1.1.0 on macOS), so it does not
-# raise either platform's floor.
-ENGINE_REQUIREMENTS: tuple[tuple[str, str, str, str, str], ...] = (
-    (
-        "windows",
-        "registry_event",
-        "Details",
-        "1.4.0",
-        "registry events began carrying value data in v1.4.0 (rustinel#310)",
-    ),
-    (
-        "windows",
-        "service_creation",
-        "ImagePath",
-        "1.4.1",
-        "service_creation gained ImagePath / Provider_Name in v1.4.1",
-    ),
-    (
-        "windows",
-        "service_creation",
-        "ServiceFileName",
-        "1.4.1",
-        "ServiceFileName resolves to the ImagePath added in v1.4.1",
-    ),
-    (
-        "windows",
-        "service_creation",
-        "Provider_Name",
-        "1.4.1",
-        "service_creation gained ImagePath / Provider_Name in v1.4.1",
-    ),
-    (
-        "windows",
-        "process_creation",
-        "IntegrityLevel",
-        "1.4.1",
-        "IntegrityLevel is populated from v1.4.1",
-    ),
-)
+# Field -> first release that populates it comes from the vendored engine
+# field contract (`since`, schema 2 and later); see engine_contract.py. Platform
+# baselines above stay here because the contract does not express when a
+# platform itself landed.
 
 # Sub-categories that share a parent's field contract.
 _CATEGORY_PARENTS = {
@@ -365,13 +319,26 @@ def detection_fields(detection: dict) -> set[str]:
     return fields
 
 
-def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
+@lru_cache(maxsize=1)
+def _vendored_field_since() -> dict:
+    import engine_contract  # engine_contract imports this module
+
+    return engine_contract.load_field_since()
+
+
+def artifact_min_engine(
+    artifact: Artifact, field_since: dict | None = None
+) -> tuple[str, list[str]]:
     """The oldest engine that can run this artifact, plus why it is not the baseline.
 
-    A rule may also state `rustinel.min_engine` directly, for a requirement this
-    table cannot see (a correlation rule needs v1.5.0 whatever its fields are).
-    The declared value only ever raises the result.
+    Each selected field raises the floor to the first release the engine field
+    contract says populates it (`field_since`, defaulting to the vendored
+    contract). A rule may also state `rustinel.min_engine` directly, for a
+    requirement the contract cannot see (a correlation rule needs v1.5.0
+    whatever its fields are). The declared value only ever raises the result.
     """
+    if field_since is None:
+        field_since = _vendored_field_since()
     minimum = BASELINE_ENGINE
     reasons: list[str] = []
 
@@ -387,11 +354,15 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
         category = _CATEGORY_PARENTS.get(category, category)
         used = detection_fields(artifact.meta.get("detection") or {})
 
-        for req_product, req_category, field, version, why in ENGINE_REQUIREMENTS:
-            if req_product == product and req_category == category and field in used:
-                if parse_version(version) > parse_version(minimum):
-                    minimum = version
-                reasons.append(f"{field}: {why}")
+        available = field_since.get((product, category), {})
+        for field in sorted(used):
+            version = available.get(field)
+            # Fields present from the platform baseline do not explain anything.
+            if version is None or parse_version(version) <= parse_version(platform_minimum):
+                continue
+            if parse_version(version) > parse_version(minimum):
+                minimum = version
+            reasons.append(f"{field}: populated from v{version} (engine field contract)")
 
         declared = str((artifact.meta.get("rustinel") or {}).get("min_engine") or "").strip()
         if declared:
@@ -403,7 +374,7 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
 
 
 def pack_min_engine(
-    resolved_ids, artifact_index, platform: str | None = None
+    resolved_ids, artifact_index, platform: str | None = None, field_since: dict | None = None
 ) -> tuple[str, dict[str, list[str]]]:
     """A pack's floor: the newest engine any of its members needs."""
     minimum, _ = platform_baseline_engine(platform or "")
@@ -412,7 +383,7 @@ def pack_min_engine(
         artifact = artifact_index.get(artifact_id)
         if artifact is None:
             continue
-        rule_min, reasons = artifact_min_engine(artifact)
+        rule_min, reasons = artifact_min_engine(artifact, field_since)
         if parse_version(rule_min) > parse_version(minimum):
             minimum = rule_min
         if reasons:

@@ -50,8 +50,9 @@ rustinel:
 
 `min_engine` is only needed for a requirement the tooling cannot infer from your fields - a
 correlation rule needs v1.5.0 whatever it selects on, for instance. Field-driven requirements are
-derived automatically from `ENGINE_REQUIREMENTS` in [`tools/lib.py`](../tools/lib.py), and a pack
-whose `requires_rustinel` is lower than its content needs fails validation.
+derived automatically from the `since` release of each selected field in the
+[vendored engine field contract](../compatibility/field-availability.json), and a pack whose
+`requires_rustinel` is lower than its content needs fails validation.
 
 ### Full example
 

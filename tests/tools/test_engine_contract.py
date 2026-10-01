@@ -91,7 +91,8 @@ class FieldGuardTests(unittest.TestCase):
         for category in ("file_event", "file_create", "file_delete", "file_change", "file_rename"):
             with self.subTest(category=category):
                 self.assertFalse(self.check_rule("windows", category, "SourceFilename").ok())
-        self.assertFalse(self.check_rule("linux", "dns", "QueryResults").ok())
+        # macOS DNS is captured from packets, so answers are never parsed.
+        self.assertFalse(self.check_rule("macos", "dns", "QueryResults").ok())
 
     def test_available_fields_and_other_platforms_are_allowed(self):
         for platform, category, field in (
@@ -130,7 +131,10 @@ class FieldGuardTests(unittest.TestCase):
         )
 
     def test_contract_rows_supersede_overrides(self):
-        for field in ("ParentUser", "LogonId", "LogonGuid"):
+        # The vendored contract now has its own ParentUser row, so that override
+        # no longer applies.
+        self.assertTrue(self.check_rule("windows", "process_creation", "ParentUser").ok())
+        for field in ("LogonId", "LogonGuid"):
             with self.subTest(field=field):
                 self.assertFalse(self.check_rule("windows", "process_creation", field).ok())
                 blocked = engine_contract.parse_contract(
@@ -154,6 +158,32 @@ class ContractLoadTests(unittest.TestCase):
             with self.subTest(raw=raw):
                 with self.assertRaises(ValueError):
                     engine_contract.parse_contract(raw)
+
+    def test_schema_2_requires_a_release_or_null_since(self):
+        for since in ("1.7.1", None):
+            with self.subTest(since=since):
+                raw = json.dumps(
+                    {"schema_version": 2, "entries": [contract_row(since=since)]}
+                ).encode()
+                blocked = engine_contract.parse_contract(raw)
+                self.assertIn("Example", blocked[("windows", "process_creation")])
+        for row in (
+            contract_row(),
+            contract_row(since="v1.7.1"),
+            contract_row(since="1.7"),
+            contract_row(since=171),
+        ):
+            with self.subTest(row=row), self.assertRaises(ValueError):
+                engine_contract.parse_contract(
+                    json.dumps({"schema_version": 2, "entries": [row]}).encode()
+                )
+
+    def test_unreleased_schema_3_still_fails_closed(self):
+        raw = json.dumps(
+            {"schema_version": 3, "entries": [contract_row(since="1.9.0", view="sysmon")]}
+        ).encode()
+        with self.assertRaisesRegex(ValueError, "unsupported"):
+            engine_contract.parse_contract(raw)
 
     def test_missing_contract_or_pin_fails(self):
         with tempfile.TemporaryDirectory() as directory:
