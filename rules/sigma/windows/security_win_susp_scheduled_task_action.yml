@@ -1,0 +1,60 @@
+title: Scheduled Task Registered With Suspicious Action
+id: 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99
+status: experimental
+description: >
+  Detects a scheduled task registered (Security 4698) or updated (4702) whose
+  action runs a script host, command interpreter or LOLBin together with a
+  suspicious payload indicator: an encoded PowerShell command, an inline script
+  protocol, a remote URL or a user-writable path. The match is on the task
+  definition XML itself, so it sees the action however the task was created
+  (schtasks, PowerShell, COM or a remote RPC call).
+  Requires the "Other Object Access Events" audit subcategory, which Windows
+  leaves off by default: auditpol /set /subcategory:"Other Object Access Events"
+  /success:enable.
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4698
+  - https://github.com/SigmaHQ/sigma/blob/master/rules/windows/builtin/security/win_security_susp_scheduled_task_creation.yml
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-06-04
+modified: 2026-10-01
+tags:
+  - attack.execution
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1053.005
+logsource:
+  product: windows
+  service: security
+detection:
+  # Payload indicators are read only from the action's <Command> and
+  # <Arguments>: every task XML carries xmlns="http://schemas.microsoft.com/...",
+  # so a bare 'http://' over the whole document would match any task.
+  selection_registered:
+    EventID: 4698
+    TaskContent|re: '(?i)<Command>"?([^<"]*\\)?(powershell|pwsh|cmd|wscript|cscript|mshta|rundll32|regsvr32|bitsadmin|certutil)(\.exe)?"?\s*</Command>'
+  selection_updated:
+    EventID: 4702
+    TaskContentNew|re: '(?i)<Command>"?([^<"]*\\)?(powershell|pwsh|cmd|wscript|cscript|mshta|rundll32|regsvr32|bitsadmin|certutil)(\.exe)?"?\s*</Command>'
+  payload_registered:
+    TaskContent|re:
+      - '(?i)<(Command|Arguments)>[^<]*(https?://|javascript:|vbscript:|\\Users\\|\\Temp\\|\\AppData\\|%TEMP%|%APPDATA%|%LOCALAPPDATA%)'
+      # -e, -ec, -enc, -encodedcommand (or /...), first argument or later.
+      - '(?i)<Arguments>([^<]*\s)?[-/]e(c|nc|ncodedcommand)?\s'
+  payload_updated:
+    TaskContentNew|re:
+      - '(?i)<(Command|Arguments)>[^<]*(https?://|javascript:|vbscript:|\\Users\\|\\Temp\\|\\AppData\\|%TEMP%|%APPDATA%|%LOCALAPPDATA%)'
+      - '(?i)<Arguments>([^<]*\s)?[-/]e(c|nc|ncodedcommand)?\s'
+  condition: >
+    (selection_registered and payload_registered)
+    or (selection_updated and payload_updated)
+falsepositives:
+  - Rare administrative tasks that intentionally run scripts from user-writable
+    locations or fetch remote content; filter on TaskName for those.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: low
+  test_status: atomic

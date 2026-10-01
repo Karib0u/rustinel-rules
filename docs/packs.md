@@ -11,8 +11,8 @@ Essential  ⊂  Advanced  ⊂  Hunting
 | Pack | Level | Default | Expected FP | Status | Min engine |
 | ---- | ----- | :-----: | ----------- | ------ | ---------- |
 | [Windows Essential](#windows-essential) | essential | ✅ | low | experimental | `>=1.4.0` |
-| [Windows Advanced](#windows-advanced) | advanced | ❌ | medium | experimental | `>=1.4.1` |
-| [Windows Hunting](#windows-hunting) | hunting | ❌ | high | experimental | `>=1.4.1` |
+| [Windows Advanced](#windows-advanced) | advanced | ❌ | medium | experimental | `>=1.8.0` |
+| [Windows Hunting](#windows-hunting) | hunting | ❌ | high | experimental | `>=1.8.0` |
 | [Linux Essential](#linux-essential) | essential | ✅ | low | experimental | `>=1.0.2` |
 | [Linux Advanced](#linux-advanced) | advanced | ❌ | medium | experimental | `>=1.0.2` |
 | [macOS Essential](#macos-essential) | essential | ❌ | low | experimental | `>=1.1.0` |
@@ -54,7 +54,7 @@ Low-noise, high-confidence Windows detections. **Safe default** (`default: true`
 Windows Essential **plus** broader production detections. More false positives may occur than in
 Essential; tune per environment before relying on by default.
 
-*Adds telemetry:* `ps_script`, `service_creation`
+*Adds telemetry:* `ps_script`, `service_creation`, `security`
 
 | Rule (added on top of Essential) | Type | Category | ATT&CK |
 | -------------------------------- | ---- | -------- | ------ |
@@ -64,6 +64,7 @@ Essential; tune per environment before relying on by default.
 | PowerShell Download-and-Execute Cradle | Sigma | ps_script | T1105, T1059.001 |
 | Suspicious Service Binary Path | Sigma | service_creation | T1543.003 |
 | Scheduled Task Creation via Schtasks | Sigma | process_creation | T1053.005 |
+| Scheduled Task Registered With Suspicious Action | Sigma | security (4698, 4702) | T1053.005 |
 | WMI Process Execution via WMIC | Sigma | process_creation | T1047 |
 
 ### Windows Hunting
@@ -187,27 +188,28 @@ The set now lives under `preview/` as `test-only` content. See
 
 ## Non-production content
 
-Two detections are parked under `preview/` because the certified engine never populates a field
-they require, so they can never match:
+One detection is parked under `preview/` because the certified engine never populates a field it
+requires, so it can never match:
 
 | Rule | Was in | Missing field | Blocker |
 | ---- | ------ | ------------- | ------- |
-| Scheduled Task Created With Suspicious Action | Windows Essential | `task_creation.TaskContent` | [rustinel#479](https://github.com/Karib0u/rustinel/issues/479) |
 | Unsigned DLL Loaded from User-Writable Path (Hunting) | Windows Hunting | `image_load.Signed` | [rustinel#320](https://github.com/Karib0u/rustinel/issues/320) |
 
-`tools/validate.py` fails the build if a pack references either one, or any other preview or
-test-only artifact.
+`tools/validate.py` fails the build if a pack references it, or any other preview or test-only
+artifact.
 
 ## Engine requirements
 
 Each pack's `requires_rustinel` is **derived from its own content**, not declared by hand:
-`tools/lib.py` maps the capabilities a rule depends on to the release that first provides them, and
-`validate.py` fails a pack whose declared floor is lower than what its rules need. Under-claiming is
+each field a rule selects on is dated by its `since` release in the
+[vendored engine field contract](../compatibility/field-availability.json), and `validate.py` fails
+a pack whose declared floor is lower than what its rules need. Under-claiming is
 the dangerous direction — `rustinel doctor` would report the pack as compatible with an engine that
 cannot populate the fields its rules select on, so the rules load and silently never match.
 
-Windows content raises the floor through registry value data (`Details`, v1.4.0) and
-`service_creation` `ImagePath` (v1.4.1). Linux runs on the v1.0.2 baseline. macOS has a v1.1.0
+Windows Essential needs registry value data (`Details`, v1.4.0). Windows Advanced and Hunting need
+v1.8.0 for the scheduled-task definition (`TaskContent` / `TaskContentNew`) on Security events
+4698 and 4702. Linux runs on the v1.0.2 baseline. macOS has a v1.1.0
 baseline because that release introduced its process, file, network and DNS collectors.
 
 ---

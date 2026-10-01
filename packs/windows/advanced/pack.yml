@@ -6,7 +6,7 @@ description: >
 os: windows
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.4.1"
+requires_rustinel: ">=1.8.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -34,6 +34,7 @@ telemetry_requirements:
   - process_creation
   - registry_event
   - task_creation
+  - security
   - ps_script
   - service_creation
   - image_load
@@ -54,6 +55,7 @@ rules:
           - c3d4e5f6-9012-4234-9c5d-6e7f8a901a12   # PowerShell Download-and-Execute Cradle
           - d4e5f6a7-0123-4345-9d6e-7f8a9b012a13   # Suspicious Service Binary Path
           - 4a596825-4674-4db3-b360-842435edf11a   # Scheduled Task Creation via Schtasks
+          - 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99   # Scheduled Task Registered With Suspicious Action (sigma)
           - 2a3c3182-80b8-42d4-bd39-83c55582ef70   # WMI Process Execution via WMIC
           - 52b94494-756b-40d7-af01-8d0c7d54a6cc   # Winlogon Helper DLL or Shell Modification (sigma)
           - 43c59081-d5ec-4153-9e26-04e66e07461a   # Security Service Stop or Disable via sc or net (sigma)

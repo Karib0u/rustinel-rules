@@ -234,6 +234,13 @@
       "script": "windows/schtasks_create.ps1"
     },
     {
+      "id": "3a1cdc64-a2a1-444b-a04b-32a3f1d09a99",
+      "name": "windows_scheduled_task_suspicious_action",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/scheduled_task_suspicious_action.ps1"
+    },
+    {
       "id": "2a3c3182-80b8-42d4-bd39-83c55582ef70",
       "name": "windows_wmic_process_create",
       "platform": "windows",
