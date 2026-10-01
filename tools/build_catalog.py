@@ -99,8 +99,17 @@ def as_list(value) -> list[str]:
     return [str(value).strip()] if str(value).strip() else []
 
 
-def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dict:
-    """Build the full, self-contained record for a single detection artifact."""
+def rule_record(
+    art: lib.Artifact,
+    pack_ids: list[str],
+    attack_map: dict,
+    artifacts_by_id: dict[str, lib.Artifact] | None = None,
+) -> dict:
+    """Build the full, self-contained record for a single detection artifact.
+
+    `artifacts_by_id` lets a correlation take its platform from the rules it
+    references, since a correlation document has no log source of its own.
+    """
     techniques = sorted(lib.artifact_attack_techniques(art))
     tactics: set[str] = set()
 
@@ -113,6 +122,14 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         logsource = meta.get("logsource") or {}
         product = str(logsource.get("product") or "").strip().lower() or None
         category = lib.logsource_category(logsource) or None
+        if lib.is_correlation(meta):
+            category = "correlation"
+            for ref in lib.correlation_rule_ids(meta):
+                target = (artifacts_by_id or {}).get(ref)
+                if target is not None:
+                    ref_logsource = target.meta.get("logsource") or {}
+                    product = str(ref_logsource.get("product") or "").strip().lower() or None
+                    break
         references = as_list(meta.get("references"))
         falsepositives = as_list(meta.get("falsepositives"))
         author = str(meta.get("author") or "").strip() or None
@@ -248,7 +265,10 @@ def build_catalog(version: str) -> dict:
             }
         )
 
-    rules = [rule_record(a, rule_packs.get(a.id, []), attack_map) for a in artifacts]
+    artifacts_by_id = {a.id: a for a in artifacts}
+    rules = [
+        rule_record(a, rule_packs.get(a.id, []), attack_map, artifacts_by_id) for a in artifacts
+    ]
 
     # Warn (don't fail) on any technique missing from the curated ATT&CK map so
     # the build still succeeds but a maintainer notices the gap.

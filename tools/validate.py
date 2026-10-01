@@ -108,6 +108,33 @@ REQUIRED_SIGMA_FIELDS = [
     "detection",
 ]
 
+# A correlation document replaces `logsource` + `detection` with `correlation`.
+REQUIRED_CORRELATION_FIELDS = [
+    f for f in REQUIRED_SIGMA_FIELDS if f not in ("logsource", "detection")
+] + ["correlation"]
+
+# What rsigma-parser 0.21 (the engine's Sigma parser) accepts.
+CORRELATION_TYPES = {
+    "event_count",
+    "value_count",
+    "temporal",
+    "temporal_ordered",
+    "value_sum",
+    "value_avg",
+    "value_percentile",
+    "value_median",
+}
+TEMPORAL_CORRELATION_TYPES = {"temporal", "temporal_ordered"}
+VALUE_CORRELATION_TYPES = {
+    "value_count",
+    "value_sum",
+    "value_avg",
+    "value_percentile",
+    "value_median",
+}
+CORRELATION_OPERATORS = {"lt", "lte", "gt", "gte", "eq", "neq"}
+_TIMESPAN_RE = re.compile(r"^\d+[smhdwMy]$")
+
 ATTACK_TAG_PREFIX = "attack."
 
 _HEX_RE = re.compile(r"^[0-9a-fA-F]+$")
@@ -185,7 +212,8 @@ def check_sigma_rule(art, rep: Report):
         rep.error(art.rel_path, "Sigma rule is not a mapping")
         return
 
-    for field in REQUIRED_SIGMA_FIELDS:
+    required = REQUIRED_CORRELATION_FIELDS if lib.is_correlation(doc) else REQUIRED_SIGMA_FIELDS
+    for field in required:
         if field not in doc or doc[field] in (None, "", [], {}):
             rep.error(art.rel_path, f"missing required field '{field}'")
 
@@ -203,6 +231,85 @@ def check_sigma_rule(art, rep: Report):
 
     if "expected_false_positive_level" not in rustinel:
         rep.warn(art.rel_path, "missing rustinel.expected_false_positive_level")
+
+
+def check_correlation(
+    art, rep: Report, sigma_by_id: dict, never_populated: engine_contract.BlockedFields
+):
+    """Check a correlation document against the engine parser and its references."""
+    doc = art.meta
+    if not lib.is_correlation(doc):
+        return
+    where = art.rel_path
+    corr = doc["correlation"]
+
+    ctype = corr.get("type")
+    if ctype not in CORRELATION_TYPES:
+        rep.error(where, f"correlation type {ctype!r} is not one of {sorted(CORRELATION_TYPES)}")
+
+    timespan = corr.get("timespan", corr.get("timeframe"))
+    if not isinstance(timespan, str) or not _TIMESPAN_RE.match(timespan):
+        rep.error(where, f"correlation timespan {timespan!r} must look like 30s, 5m, 1h or 7d")
+
+    condition = corr.get("condition")
+    if ctype in TEMPORAL_CORRELATION_TYPES and condition is None:
+        # The Sigma spec defaults a temporal condition to "every rule matched",
+        # but rsigma-parser 0.21 and 0.22 default it to gte: 1, so the
+        # correlation fires on any single referenced rule.
+        rep.error(
+            where,
+            f"a {ctype} correlation needs an explicit condition (gte: "
+            f"{len(lib.correlation_rule_ids(doc)) or 'N'} for all rules): the engine's "
+            f"default fires on any single referenced rule",
+        )
+    elif isinstance(condition, str) and ctype in TEMPORAL_CORRELATION_TYPES:
+        pass  # extended condition over rule names, e.g. "rule_a and rule_b"
+    elif not isinstance(condition, dict) or not CORRELATION_OPERATORS & condition.keys():
+        rep.error(where, "correlation condition needs an operator (gte, gt, lte, lt, eq, neq)")
+    elif ctype in VALUE_CORRELATION_TYPES and not condition.get("field"):
+        rep.error(where, f"a {ctype} correlation condition needs a 'field'")
+
+    group_by = corr.get("group-by") or []
+    if not isinstance(group_by, list) or not all(isinstance(f, str) for f in group_by):
+        rep.error(where, "correlation group-by must be a list of field names")
+        group_by = []
+
+    rule_ids = lib.correlation_rule_ids(doc)
+    if not rule_ids:
+        rep.error(where, "correlation rules must list at least one rule id")
+    referenced = []
+    for rule_id in rule_ids:
+        target = sigma_by_id.get(rule_id)
+        if target is None:
+            rep.error(where, f"correlation references unknown Sigma rule id '{rule_id}'")
+        elif lib.is_correlation(target.meta):
+            rep.error(where, f"correlation references another correlation '{rule_id}'")
+        else:
+            referenced.append(target)
+
+    products = {str((t.meta.get("logsource") or {}).get("product") or "") for t in referenced}
+    if len(products) > 1:
+        rep.error(where, f"correlation mixes rules for {sorted(products)}; use one platform")
+
+    telemetry = set((doc.get("rustinel") or {}).get("telemetry") or [])
+    for target in referenced:
+        logsource = target.meta.get("logsource") or {}
+        missing = set((target.meta.get("rustinel") or {}).get("telemetry") or []) - telemetry
+        if missing:
+            rep.error(
+                where,
+                f"rustinel.telemetry lacks {sorted(missing)} needed by referenced rule "
+                f"'{target.id}'",
+            )
+        product = str(logsource.get("product") or "").lower()
+        blocked = never_populated.get((product, lib.contract_category(logsource)), {})
+        for field in group_by:
+            if field in blocked or "*" in blocked:
+                rep.error(
+                    where,
+                    f"groups by '{field}', which Rustinel never populates for the referenced "
+                    f"rule '{target.id}' ({product}/{lib.logsource_category(logsource)})",
+                )
 
 
 def check_engine_field_availability(
@@ -419,15 +526,35 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
                 f"constraint, so its floor cannot be checked (content needs >={derived})",
             )
         elif lib.parse_version(declared_floor) < lib.parse_version(derived):
-            why = "; ".join(
-                f"{artifact_index[rule_id].meta.get('title', rule_id)} ({reasons[0]})"
-                for rule_id, reasons in list(drivers.items())[:2]
-            )
+            # Name the members that actually set the derived floor, with the
+            # reason that reaches it, not just the first members with a reason.
+            setters = []
+            for rule_id, reasons in drivers.items():
+                floor, _ = lib.artifact_min_engine(artifact_index[rule_id])
+                if floor == derived:
+                    reason = next((r for r in reasons if derived in r), reasons[-1])
+                    setters.append(
+                        f"{artifact_index[rule_id].meta.get('title', rule_id)} ({reason})"
+                    )
+            why = "; ".join(setters[:2]) or "the platform baseline"
             rep.error(
                 where,
                 f"requires_rustinel is >={declared_floor} but the pack's content needs "
                 f">={derived} - {why}",
             )
+
+        # A correlation only fires if every rule it references loads with it.
+        members = set(resolved)
+        for rule_id in resolved:
+            artifact = artifact_index.get(rule_id)
+            if artifact is None or not lib.is_correlation(artifact.meta):
+                continue
+            for ref in lib.correlation_rule_ids(artifact.meta):
+                if ref not in members:
+                    rep.error(
+                        where,
+                        f"correlation '{rule_id}' references '{ref}', which is not in this pack",
+                    )
 
         # Drift guard: declared attack_coverage should be backed by member content.
         declared = {str(t).upper() for t in pack.get("attack_coverage") or []}
@@ -528,11 +655,13 @@ def main() -> int:
     preview_artifacts = lib.load_preview_artifacts()
 
     check_unique_ids(artifacts + preview_artifacts, rep)
+    sigma_by_id = {a.id: a for a in artifacts if a.kind == "sigma" and a.id}
     for art in artifacts:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
             check_engine_field_availability(art, rep, never_populated)
             check_collected_event_ids(art, rep, collected_event_ids)
+            check_correlation(art, rep, sigma_by_id, never_populated)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":

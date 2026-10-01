@@ -239,6 +239,119 @@ class SecurityChannelTests(unittest.TestCase):
         self.assertFalse(report.ok())
 
 
+SHADOW = "1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04"  # Volume Shadow Copy Deletion
+BCDEDIT = "e86de5fe-3908-4a95-b4e8-930a93bf4555"  # Boot Recovery Tampering
+SSH_KEYS = "1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51"  # Linux authorized_keys
+
+
+class CorrelationTests(unittest.TestCase):
+    def setUp(self):
+        _, self.blocked = engine_contract.load_contract()
+        self.sigma = {a.id: a for a in lib.load_all_artifacts() if a.kind == "sigma"}
+
+    def correlation(self, **corr):
+        body = {
+            "type": "temporal",
+            "rules": [SHADOW, BCDEDIT],
+            "group-by": ["ParentImage"],
+            "timespan": "10m",
+            "condition": {"gte": 2},
+            **corr,
+        }
+        return lib.Artifact(
+            "corr",
+            "sigma",
+            lib.RULES_DIR / "corr.yml",
+            {
+                "title": "t",
+                "id": "corr",
+                "status": "experimental",
+                "description": "d",
+                "references": ["r"],
+                "author": "a",
+                "level": "critical",
+                "tags": ["attack.impact"],
+                "correlation": {k: v for k, v in body.items() if v is not None},
+                "rustinel": {
+                    "telemetry": ["process_creation"],
+                    "expected_false_positive_level": "low",
+                },
+            },
+            "",
+        )
+
+    def errors(self, artifact):
+        report = validate.Report()
+        validate.check_sigma_rule(artifact, report)
+        validate.check_correlation(artifact, report, self.sigma, self.blocked)
+        return report.errors
+
+    def test_valid_correlation_needs_no_logsource_or_detection(self):
+        self.assertEqual(self.errors(self.correlation()), [])
+
+    def test_temporal_without_condition_is_rejected(self):
+        errors = self.errors(self.correlation(condition=None))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("gte: 2", errors[0])
+
+    def test_structural_errors(self):
+        for corr, message in (
+            ({"type": "event_cnt"}, "correlation type"),
+            ({"timespan": "10min"}, "timespan"),
+            ({"type": "event_count", "condition": {"field": "x"}}, "operator"),
+            ({"type": "value_count", "condition": {"gte": 3}}, "needs a 'field'"),
+            ({"group-by": "ParentImage"}, "group-by"),
+            ({"rules": []}, "at least one rule"),
+        ):
+            with self.subTest(corr=corr):
+                self.assertTrue(any(message in e for e in self.errors(self.correlation(**corr))))
+
+    def test_references_must_resolve_to_one_platform(self):
+        self.assertTrue(
+            any("unknown Sigma rule" in e for e in self.errors(self.correlation(rules=["nope"])))
+        )
+        mixed = self.correlation(rules=[SHADOW, SSH_KEYS], condition={"gte": 2})
+        self.assertTrue(any("mixes rules" in e for e in self.errors(mixed)))
+
+    def test_group_by_and_telemetry_follow_the_referenced_rules(self):
+        errors = self.errors(self.correlation(**{"group-by": ["CurrentDirectory"]}))
+        self.assertTrue(any("never populates" in e for e in errors))
+        artifact = self.correlation()
+        artifact.meta["rustinel"]["telemetry"] = ["file_event"]
+        self.assertTrue(any("lacks ['process_creation']" in e for e in self.errors(artifact)))
+
+    def test_correlation_floor_is_v1_5_0(self):
+        minimum, reasons = lib.artifact_min_engine(self.correlation())
+        self.assertEqual(minimum, "1.5.0")
+        self.assertIn("correlation", reasons[0])
+
+    def test_pack_must_carry_every_referenced_rule(self):
+        corr = self.correlation()
+        index = {**{a.id: a for a in lib.load_all_artifacts()}, corr.id: corr}
+        pack = {
+            "__path__": str(lib.REPO_ROOT / "packs" / "windows" / "test" / "pack.yml"),
+            "name": "t",
+            "id": "windows-test",
+            "description": "d",
+            "os": "windows",
+            "level": "essential",
+            "pack_schema_version": 2,
+            "requires_rustinel": ">=1.5.0",
+            "default": False,
+            "expected_false_positive_level": "low",
+            "status": "experimental",
+            "license": "DRL-1.1",
+            "extends": [],
+            "attack_coverage": [],
+            "telemetry_requirements": ["process_creation"],
+            "test_status": "none",
+            "rules": {"has": {"sigma": [corr.id, SHADOW]}},
+        }
+        report = validate.Report()
+        validate.check_packs([pack], list(index.values()), report)
+        self.assertTrue(any(f"references '{BCDEDIT}'" in e for e in report.errors), report.errors)
+
+
 class ContractLoadTests(unittest.TestCase):
     def test_invalid_contracts_fail_loudly(self):
         valid = {"schema_version": 1, "entries": [contract_row()]}
