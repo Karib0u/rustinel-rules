@@ -3,12 +3,16 @@
 import base64
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from run_atomics import make_predicate
+import run_atomics
+from run_atomics import engine_version, make_predicate, report
 
 sys.path.insert(0, str(Path(__file__).parent / "canary"))
 import make_canary  # noqa: E402
@@ -66,6 +70,64 @@ class AlertMatchingTests(unittest.TestCase):
         matches, _ = make_predicate({"id": "test-rule"}, {"test-rule": {"title": "Test Rule"}})
         self.assertTrue(matches({"rule.name": "Test Rule"}))
         self.assertFalse(matches({"rule.name": "Another Rule"}))
+
+
+class ReportTests(unittest.TestCase):
+    def test_version_comes_from_the_binary(self):
+        binary = Path("/engine/rustinel")
+        with patch.object(
+            run_atomics.subprocess, "check_output", return_value="rustinel 1.6.0\n"
+        ) as query:
+            self.assertEqual(engine_version(binary), "1.6.0")
+        query.assert_called_once_with([str(binary), "--version"], text=True, timeout=10)
+
+    def test_reports_preserve_version_and_failure_details_on_every_platform(self):
+        for platform in ("linux", "windows", "macos"):
+            for status, expected_exit in (
+                ("PASS", 0),
+                ("FAIL (allowed)", 0),
+                ("FAIL", 1),
+                ("ERROR", 1),
+            ):
+                with (
+                    self.subTest(platform=platform, status=status),
+                    tempfile.TemporaryDirectory() as tmp,
+                ):
+                    root = Path(tmp)
+                    summary = root / "summary.md"
+                    result = {
+                        "name": "atomic-test",
+                        "engine": "sigma",
+                        "status": status,
+                        "expect": "rule.name equals Test Rule",
+                        "action_exit": 3,
+                        "action_output": "permission denied",
+                    }
+                    with (
+                        patch.object(run_atomics, "HARNESS_ROOT", root),
+                        patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(summary)}),
+                    ):
+                        self.assertEqual(report([result], platform, "1.6.0"), expected_exit)
+                    data = json.loads((root / f"report-{platform}.json").read_text())
+                    self.assertEqual(data["platform"], platform)
+                    self.assertEqual(data["engine_version"], "1.6.0")
+                    self.assertEqual(data["results"], [result])
+                    self.assertIn("Rustinel engine version: `1.6.0`", summary.read_text())
+                    self.assertIn(status, summary.read_text())
+
+    def test_startup_failure_is_reported_with_engine_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            summary = root / "summary.md"
+            with (
+                patch.object(run_atomics, "HARNESS_ROOT", root),
+                patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(summary)}),
+            ):
+                self.assertEqual(report([], "macos", "1.6.0", engine_error="NotPermitted"), 1)
+            data = json.loads((root / "report-macos.json").read_text())
+            self.assertEqual(data["engine_version"], "1.6.0")
+            self.assertEqual(data["engine_error"], "NotPermitted")
+            self.assertIn("NotPermitted", summary.read_text())
 
 
 class CanaryBlobTests(unittest.TestCase):
