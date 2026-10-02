@@ -58,6 +58,16 @@ To deliberately update the engine pin:
 4. Record the release choice and suite results in the PR, update this README's
    baseline, and merge only after all three gating jobs pass.
 
+The Linux job also runs `tests/replay/linux_persistence.py` against the pinned
+engine. These sensor-free replay cases check that containerd and dockerd writes
+under their standard storage paths are excluded, while host persistence writes,
+other writers, and missing writer metadata remain detectable. Custom storage
+roots remain visible for explicit tuning. Run the same check locally with:
+
+```bash
+python3 tests/replay/linux_persistence.py --engine /path/to/rustinel
+```
+
 A latest-engine nightly job and a broader positive/negative certification corpus
 are deferred.
 

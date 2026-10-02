@@ -7,9 +7,11 @@ description: >
   Moderately noisy due to legitimate dotfile management, so intended for the
   Advanced tier.
 references:
+  - https://github.com/Karib0u/rustinel/issues/686
   - https://attack.mitre.org/techniques/T1546/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-02
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -32,8 +34,16 @@ detection:
     TargetFilename|endswith:
       - '/etc/bash.bashrc'
       - '/etc/profile'
-  condition: selection_user_rc or selection_system or selection_system_files
+  filter_container_unpack:
+    Image|endswith:
+      - '/containerd'
+      - '/dockerd'
+    TargetFilename|startswith:
+      - '/var/lib/containerd/'
+      - '/var/lib/docker/'
+  condition: (selection_user_rc or selection_system or selection_system_files) and not filter_container_unpack
 falsepositives:
+  - Image unpacking under custom runtime storage paths or by other runtimes.
   - Dotfile management, provisioning, and developer environment setup.
 level: medium
 rustinel:

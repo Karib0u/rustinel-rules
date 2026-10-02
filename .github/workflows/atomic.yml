@@ -130,6 +130,11 @@ jobs:
         run: Add-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE" -ErrorAction SilentlyContinue
         shell: pwsh
 
+      - name: Check Linux persistence replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/linux_persistence.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Run atomic tests (Linux)
         if: matrix.platform == 'linux'
         run: |
