@@ -13,14 +13,24 @@ atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
    (a script)        (process / file / registry)            (engine)     (we check)
 ```
 
-> **Status:** ready to run once the engine publishes releases + install scripts.
-> The workflow installs released binaries; until those exist, run locally against
-> a source build with `--engine-bin` (see below).
->
-> **macOS is experimental.** The macOS packs are disabled by default, and the
-> engine needs a signed build carrying the EndpointSecurity entitlement running
-> as root. Whether ES initializes on a GitHub-hosted runner is unproven, so the
-> macOS CI leg is `continue-on-error` (it reports but does not gate).
+> **Status:** The v0.3 maintenance workflow tests against released Rustinel
+> **v1.8.0** on Linux, Windows and hosted macOS. All three jobs gate CI.
+> macOS packs remain disabled by default for users; CI loads them explicitly.
+> The test engine version is separate from each pack's minimum engine requirement.
+
+## Linux persistence replay
+
+The Linux job also runs `tests/replay/linux_persistence.py` against its installed
+engine. These sensor-free replay cases check that containerd and dockerd writes
+under their standard storage paths are excluded, while host persistence writes,
+other writers, and missing writer metadata remain detectable. Custom storage
+roots remain visible for explicit tuning. The replay manifest records the actual
+binary's version without needing the newer engine contract tooling. Run locally
+with Rustinel v1.8.0:
+
+```bash
+python3 tests/replay/linux_persistence.py --engine /path/to/rustinel
+```
 
 ---
 
