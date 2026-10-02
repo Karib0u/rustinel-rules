@@ -2,7 +2,7 @@ name: validate
 
 on:
   push:
-    branches: [main]
+    branches: [main, release/0.3]
   pull_request:
   workflow_dispatch:
 
@@ -25,10 +25,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Lint (ruff)
-        run: uv run ruff check tools
+        run: uv run ruff check tools tests/replay
 
       - name: Format check (ruff)
-        run: uv run ruff format --check tools
+        run: uv run ruff format --check tools tests/replay
 
       - name: Type check (ty)
         run: uv run ty check

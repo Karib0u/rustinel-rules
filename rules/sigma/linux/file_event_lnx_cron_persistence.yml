@@ -6,9 +6,11 @@ description: >
   spools, a classic scheduled-task persistence mechanism. Package installs also
   drop cron files, so intended for the Advanced tier with tuning.
 references:
+  - https://github.com/Karib0u/rustinel/issues/686
   - https://attack.mitre.org/techniques/T1053/003/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-02
 tags:
   - attack.persistence
   - attack.execution
@@ -27,8 +29,16 @@ detection:
       - '/var/spool/cron/'
   selection_file:
     TargetFilename|endswith: '/etc/crontab'
-  condition: selection_dir or selection_file
+  filter_container_unpack:
+    Image|endswith:
+      - '/containerd'
+      - '/dockerd'
+    TargetFilename|startswith:
+      - '/var/lib/containerd/'
+      - '/var/lib/docker/'
+  condition: (selection_dir or selection_file) and not filter_container_unpack
 falsepositives:
+  - Image unpacking under custom runtime storage paths or by other runtimes.
   - Package installation and legitimate scheduled administrative tasks.
 level: medium
 rustinel:

@@ -6,9 +6,11 @@ description: >
   per-user unit directory, a durable persistence mechanism. Noisy on hosts where
   packages are installed/updated, so intended for the Advanced tier with tuning.
 references:
+  - https://github.com/Karib0u/rustinel/issues/686
   - https://attack.mitre.org/techniques/T1543/002/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-02
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -28,8 +30,16 @@ detection:
       - '.service'
       - '.timer'
       - '.socket'
-  condition: selection_path and selection_ext
+  filter_container_unpack:
+    Image|endswith:
+      - '/containerd'
+      - '/dockerd'
+    TargetFilename|startswith:
+      - '/var/lib/containerd/'
+      - '/var/lib/docker/'
+  condition: (selection_path and selection_ext) and not filter_container_unpack
 falsepositives:
+  - Image unpacking under custom runtime storage paths or by other runtimes.
   - Package installation and updates that ship systemd units.
 level: medium
 rustinel:
