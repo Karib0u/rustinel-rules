@@ -2,8 +2,8 @@ name: atomic
 
 # Firing tests: install the rustinel engine on real Windows, Linux + macOS
 # runners, perform an atomic action for each rule, and check the rule produced
-# an alert. Installs published engine releases (>= v1.1.0) via the official
-# install scripts.
+# an alert. Tests maintenance releases against Rustinel v1.8.0 via the
+# installers from that same release.
 on:
   workflow_dispatch:
     inputs:
@@ -17,7 +17,7 @@ on:
         default: "auto"
   pull_request:
   push:
-    branches: [main]
+    branches: [main, release/0.3]
 
 permissions:
   contents: read
@@ -59,25 +59,20 @@ jobs:
         run: python tests/atomic/run_atomics.py --check-coverage --strict-essential
         shell: bash
 
-      # Resolve "latest" ourselves with an authenticated API call (GITHUB_TOKEN,
-      # ~1000 req/h/repo) instead of letting the install script make an
-      # unauthenticated one (60 req/h shared across all runner IPs -> 403).
-      # Passing --version then makes the install script skip the API call entirely.
-      - name: Resolve latest rustinel version
+      # Keep maintenance CI on the engine used to verify the persistence replay.
+      # This does not change any pack's minimum supported engine version.
+      - name: Set maintenance test engine version
         id: engine
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          tag="$(gh release view --repo Karib0u/rustinel --json tagName --jq '.tagName')"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
-          echo "Resolved rustinel engine version: ${tag#v}"
+          echo "version=1.8.0" >> "$GITHUB_OUTPUT"
+          echo "Maintenance test engine version: 1.8.0"
         shell: bash
 
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/v${{ steps.engine.outputs.version }}/scripts/install/install.sh \
                 | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi
@@ -91,7 +86,7 @@ jobs:
       - name: Install rustinel engine (Windows)
         if: matrix.platform == 'windows'
         run: |
-          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.ps1 -OutFile install.ps1
+          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/v${{ steps.engine.outputs.version }}/scripts/install/install.ps1 -OutFile install.ps1
           $ok = $false
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
@@ -110,7 +105,7 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/v${{ steps.engine.outputs.version }}/scripts/install/install.sh \
                 | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi

@@ -20,9 +20,13 @@ def main():
     parser.add_argument("--engine", required=True, type=Path)
     args = parser.parse_args()
     engine = args.engine.resolve()
-    engine_version = subprocess.run(
-        [str(engine), "--version"], check=True, capture_output=True, text=True, timeout=10
-    ).stdout.strip().removeprefix("rustinel ")
+    engine_version = (
+        subprocess.run(
+            [str(engine), "--version"], check=True, capture_output=True, text=True, timeout=10
+        )
+        .stdout.strip()
+        .removeprefix("rustinel ")
+    )
     repo = Path(__file__).resolve().parents[2]
     cases = []
     for title, suffix in RULES.values():
