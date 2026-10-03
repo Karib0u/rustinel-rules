@@ -1,0 +1,41 @@
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+    - title: Performance
+      labels:
+        - performance
+        - perf
+    - title: Features
+      labels:
+        - feature
+        - feat
+        - enhancement
+    - title: Bug Fixes
+      labels:
+        - bug
+        - fix
+        - bugfix
+    - title: Documentation
+      labels:
+        - documentation
+        - docs
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Maintenance
+      labels:
+        - refactor
+        - refactoring
+        - ci
+        - ci-cd
+        - workflow
+        - chore
+        - maintenance
+    - title: Other Changes
+      labels:
+        - "*"
