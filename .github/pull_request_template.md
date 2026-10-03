@@ -2,6 +2,8 @@
 
 - 
 
+- [ ] PR has a changelog label (see CONTRIBUTING.md).
+
 ## Validation
 
 - [ ] `uv run ruff check tools`

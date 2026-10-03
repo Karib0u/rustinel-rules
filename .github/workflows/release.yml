@@ -13,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Check release highlights
+        run: |
+          NOTES=".github/release-notes/${GITHUB_REF_NAME#v}.md"
+          if [[ ! -s "$NOTES" ]] || ! grep -q '[^[:space:]]' "$NOTES"; then
+            echo "::error::Add release highlights to $NOTES in the release preparation PR."
+            exit 1
+          fi
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -44,4 +52,6 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" \
             dist/index.json dist/index.json.minisig dist/catalog.json dist/*.zip \
-            --title "Rustinel rules $GITHUB_REF_NAME" --generate-notes
+            --title "Rustinel rules $GITHUB_REF_NAME" \
+            --notes-file ".github/release-notes/${GITHUB_REF_NAME#v}.md" \
+            --generate-notes
