@@ -122,6 +122,16 @@ jobs:
           exit 1
         shell: bash
 
+      # The engine's own verdict on every built pack for this platform. Fails on a
+      # parse/compile error or a can-never-fire production rule; degraded only
+      # warns. Preview is reported (promotion candidates), never failed.
+      - name: Check Sigma compatibility (sigma doctor)
+        run: |
+          engine="$GITHUB_WORKSPACE/tests/atomic/.engine/rustinel"
+          [ -f "$engine.exe" ] && engine="$engine.exe"
+          uv run python tools/sigma_doctor.py --engine "$engine" --platform "${{ matrix.platform }}"
+        shell: bash
+
       # The canary atomic writes a tiny unsigned PE into the workspace and runs it
       # so the engine can hash a process image whose SHA-256 is known in advance.
       # Without the exclusion, real-time protection can quarantine it first.

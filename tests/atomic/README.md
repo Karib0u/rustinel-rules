@@ -69,6 +69,17 @@ roots remain visible for explicit tuning. Run the same check locally with:
 python3 tests/replay/linux_persistence.py --engine /path/to/rustinel
 ```
 
+Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
+`rustinel sigma doctor` whether each built pack for that platform can fire. It
+fails on a parse or compile error and on any `can-never-fire` production rule;
+`degraded` documents only warn (summarised by reason). `preview/` is report-only:
+a Preview rule whose verdict improves is listed as a promotion candidate, never
+promoted automatically. Run it locally after `tools/build_packs.py`:
+
+```bash
+uv run python tools/sigma_doctor.py --engine /path/to/rustinel
+```
+
 A latest-engine nightly job and a broader positive/negative certification corpus
 are deferred.
 
