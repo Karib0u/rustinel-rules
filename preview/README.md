@@ -14,7 +14,12 @@ documents themselves stay canonical and keep their `id`, so promotion is a `git 
 | ----- | ------- | -------------- |
 | `telemetry-blocked` | The logic is right, but a required field is `never` populated by the engine, so the rule can never match. | The blocker lands and the field becomes available. |
 | `rewrite-required` | The telemetry exists, but the detection is shaped for a different sensor. | The rule is rewritten against the fields Rustinel actually emits. |
+| `rejected` | The telemetry exists, but the logic itself is unsound (too noisy, trivially evaded, or wrong). Kept as a record rather than deleted. | The logic is redesigned; otherwise it stays here. |
 | `test-only` | Fixture content for `tests/atomic`. Never a detection. | Never promoted. |
+
+Production rules are `Active`: they live under `rules/` and ship in a pack. Everything else is one
+of the states above. A rule is never deleted merely because current telemetry is missing; it moves
+here with its blocker recorded.
 
 Preview rules are still validated: they must parse, carry the same required metadata as production
 rules, and declare supported telemetry. They are excluded from pack membership, coverage counts and
