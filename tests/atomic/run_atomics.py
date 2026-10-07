@@ -262,13 +262,39 @@ def overlay_ioc_fixtures(pack_dir: Path, fixtures_dir: Path) -> int:
     return added
 
 
+IS_WINDOWS = os.name == "nt"
+
+
+def restrict_to_trusted_writers(path: Path) -> None:
+    """Engine v1.9.1+ refuses rule and IOC inputs that another account can write
+    ("untrusted portable input"). Hosted Windows runners grant BUILTIN\\Users write
+    on the workspace, so cut inheritance and allow only SYSTEM and Administrators.
+    Call it on the empty folder before copying in: new files inherit this ACL."""
+    if not IS_WINDOWS:
+        return
+    subprocess.run(
+        [
+            "icacls",
+            str(path),
+            "/inheritance:r",
+            "/grant:r",
+            "*S-1-5-18:(OI)(CI)F",  # SYSTEM
+            "*S-1-5-32-544:(OI)(CI)F",  # Administrators
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
 def setup_engine(engine_dir: Path, dist_dir: Path, pack: dict, fixtures_dir: Path | None) -> Path:
     pack_id = pack["id"]
     src = dist_dir / pack_id
     dst = engine_dir / pack_id
     if dst.exists():
         shutil.rmtree(dst)
-    shutil.copytree(src, dst)
+    dst.mkdir(parents=True)
+    restrict_to_trusted_writers(dst)
+    shutil.copytree(src, dst, dirs_exist_ok=True)
 
     if fixtures_dir is not None:
         added = overlay_ioc_fixtures(dst, fixtures_dir)
