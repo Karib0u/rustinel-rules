@@ -130,6 +130,44 @@ class ReportTests(unittest.TestCase):
             self.assertIn("NotPermitted", summary.read_text())
 
 
+class PackStagingTests(unittest.TestCase):
+    def test_pack_dir_is_locked_down_on_windows_before_files_arrive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            src = tmp / "dist" / "p"
+            (src / "sigma").mkdir(parents=True)
+            (src / "sigma" / "r.yml").write_text("x")
+            calls = []
+
+            def fake_run(cmd, **kwargs):
+                # The folder must still be empty: new files inherit the ACL.
+                calls.append((cmd, sorted(Path(cmd[1]).iterdir())))
+
+            with (
+                patch.object(run_atomics, "IS_WINDOWS", True),
+                patch.object(run_atomics.subprocess, "run", fake_run),
+            ):
+                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None)
+            ((cmd, contents),) = calls
+            self.assertEqual(cmd[0], "icacls")
+            self.assertIn("/inheritance:r", cmd)
+            self.assertIn("*S-1-5-32-544:(OI)(CI)F", cmd)
+            self.assertNotIn("*S-1-5-32-545", " ".join(cmd))
+            self.assertEqual(contents, [])
+            self.assertTrue((tmp / "engine" / "p" / "sigma" / "r.yml").exists())
+
+    def test_no_acl_change_off_windows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "dist" / "p").mkdir(parents=True)
+            with (
+                patch.object(run_atomics, "IS_WINDOWS", False),
+                patch.object(run_atomics.subprocess, "run") as run,
+            ):
+                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None)
+            run.assert_not_called()
+
+
 class CanaryBlobTests(unittest.TestCase):
     """The hash IOC only matches if three things agree byte for byte.
 
