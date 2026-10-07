@@ -390,12 +390,22 @@ class ContractLoadTests(unittest.TestCase):
                     json.dumps({"schema_version": 2, "entries": [row]}).encode()
                 )
 
-    def test_unreleased_schema_3_still_fails_closed(self):
-        raw = json.dumps(
+    def test_schema_3_requires_view_and_schema_4_fails_closed(self):
+        ok = json.dumps(
             {"schema_version": 3, "entries": [contract_row(since="1.9.0", view="sysmon")]}
         ).encode()
-        with self.assertRaisesRegex(ValueError, "unsupported"):
-            engine_contract.parse_contract(raw)
+        self.assertIn(
+            "Example", engine_contract.parse_contract(ok)[("windows", "process_creation")]
+        )
+        for schema, row in (
+            (3, contract_row(since="1.9.0")),
+            (3, contract_row(since="1.9.0", view="")),
+            (4, contract_row(since="1.9.0", view="sysmon")),
+        ):
+            with self.subTest(schema=schema, row=row), self.assertRaises(ValueError):
+                engine_contract.parse_contract(
+                    json.dumps({"schema_version": schema, "entries": [row]}).encode()
+                )
 
     def test_missing_contract_or_pin_fails(self):
         with tempfile.TemporaryDirectory() as directory:

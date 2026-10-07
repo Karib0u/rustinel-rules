@@ -13,9 +13,10 @@ CONTRACT_PATH = lib.REPO_ROOT / "compatibility" / "field-availability.json"
 PIN_PATH = lib.REPO_ROOT / "compatibility" / "engine.json"
 
 # Contract schemas this tooling understands. Schema 2 (engine v1.7.1+) adds a
-# `since` release to every row and an optional `value`. Schema 3 (engine main,
-# not yet released) adds `view`; it needs a tooling update before vendoring.
-SUPPORTED_SCHEMAS = {1, 2}
+# `since` release to every row and an optional `value`. Schema 3 (engine v1.9.0+)
+# adds `view` and `action` to every row; availability and `since` keep their
+# meaning, so the same derivation applies. Later schemas need a tooling update.
+SUPPORTED_SCHEMAS = {1, 2, 3}
 
 _SINCE_RE = re.compile(r"\d+\.\d+\.\d+")
 
@@ -74,6 +75,8 @@ def parse_contract(raw: bytes) -> BlockedFields:
             not isinstance(entry.get("reason"), str) or not entry["reason"].strip()
         ):
             raise ValueError(f"field contract entry {index} marked never needs a reason")
+        if schema >= 3 and (not isinstance(entry.get("view"), str) or not entry["view"].strip()):
+            raise ValueError(f"field contract entry {index} has invalid view")
         if schema >= 2:
             # Required from schema 2: null means the availability predates the
             # oldest release the engine supports.

@@ -2,9 +2,11 @@
 
 `field-availability.json` is an unmodified copy of the engine's generated contract.
 `engine.json` records its released engine version, exact commit and SHA-256 digest.
-Validation and atomic CI read this shared pin, currently v1.8.0. The initial
+Validation and atomic CI read this shared pin, currently v1.9.1. The initial
 baseline was v1.6.0, proposed in [#37](https://github.com/Karib0u/rustinel-rules/issues/37).
-This certification version is separate from each pack's minimum supported version.
+`engine.json` is the engine CI tests against; each pack's `requires_rustinel` is the
+true minimum compatible version of its content. The two are independent: moving the
+pin never changes a floor by itself.
 
 Restore the vendored file from the current exact revision with one command:
 
@@ -13,17 +15,17 @@ uv run python tools/refresh_engine_contract.py
 ```
 
 To deliberately move certification to another released engine, refresh both files
-together (replace `1.8.0` with the intended version):
+together (replace `1.9.1` with the intended version):
 
 ```bash
-uv run python tools/refresh_engine_contract.py --version 1.8.0
+uv run python tools/refresh_engine_contract.py --version 1.9.1
 ```
 
 The command resolves the release tag to a commit, downloads from that commit and
 validates the schema before writing either file. Review the field and override
 changes, run `tools/validate.py` and the full Windows/Linux/macOS atomic suite,
-review any failures, then merge the pin and contract together. Schemas 1 and 2
-are supported; schema 3 (engine `main`) and later need an explicit tooling update
+review any failures, then merge the pin and contract together. Schemas 1 to 3
+are supported; schema 4 and later need an explicit tooling update
 before they can be vendored.
 
 Validation needs no network access. It fails on missing or unreadable files,
