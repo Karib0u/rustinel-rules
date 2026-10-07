@@ -11,6 +11,10 @@
 #                      match. Promote when the blocking issue lands.
 #   rewrite-required   the telemetry exists but the detection is shaped for a
 #                      different sensor and must be rewritten before it ships.
+#   rejected           the telemetry exists, but the logic itself is unsound (too
+#                      noisy, trivially evaded, or wrong). Kept so the decision
+#                      and its reasoning are not lost or re-litigated; promote
+#                      only after the logic is redesigned.
 #   test-only          fixture content that exists to exercise the pipeline in
 #                      tests/atomic. Never a production detection.
 #
@@ -34,7 +38,8 @@ entries:
     notes: >
       Needs Authenticode enrichment (rustinel#320), which in turn needs the async
       enrichment contract (rustinel#427). Without #427 a rule on `Signed` still
-      evaluates before enrichment and still never matches.
+      evaluates before enrichment and still never matches. Re-checked against the
+      certified pin (Rustinel 1.9.1): `image_load.Signed` is still `never`.
 
   - id: ioc-eicar-test
     kind: ioc
