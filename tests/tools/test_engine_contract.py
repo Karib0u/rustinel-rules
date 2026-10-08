@@ -231,6 +231,53 @@ class SecurityChannelTests(unittest.TestCase):
         )
         self.assertEqual(minimum, "1.8.0")
 
+    def event_log_rule(self, telemetry, detection, **logsource):
+        artifact = self.security_rule(detection)
+        artifact.meta["logsource"] = {"product": "windows", **logsource}
+        artifact.meta["rustinel"]["telemetry"] = [telemetry]
+        return artifact
+
+    def test_v1_9_0_event_log_channels_route_like_security(self):
+        for logsource, category in (
+            ({"service": "windefend"}, "windefend"),
+            ({"service": "application"}, "application"),
+            ({"service": "powershell-classic"}, "ps_classic_start"),
+            ({"category": "ps_classic_start"}, "ps_classic_start"),
+            ({"service": "powershell-classic", "category": "ps_script"}, "ps_script"),
+        ):
+            with self.subTest(logsource=logsource):
+                self.assertEqual(
+                    lib.contract_category({"product": "windows", **logsource}), category
+                )
+
+    def test_v1_9_0_event_log_channels_validate_and_take_their_floor(self):
+        for telemetry, logsource, event_id in (
+            ("windefend", {"service": "windefend"}, 5001),
+            ("application", {"service": "application"}, 15457),
+            ("ps_classic_start", {"category": "ps_classic_start"}, 400),
+        ):
+            with self.subTest(telemetry=telemetry):
+                # EventID alone has no contract row; the channel sets the floor.
+                rule = self.event_log_rule(
+                    telemetry, {"selection": {"EventID": event_id}}, **logsource
+                )
+                report = validate.Report()
+                validate.check_sigma_rule(rule, report)
+                validate.check_collected_event_ids(rule, report, self.collected)
+                self.assertEqual(report.errors, [])
+                minimum, reasons = lib.artifact_min_engine(rule)
+                self.assertEqual(minimum, "1.9.0")
+                self.assertIn("v1.9.0", reasons[0])
+
+    def test_v1_9_0_event_log_channels_reject_uncollected_event_ids(self):
+        rule = self.event_log_rule(
+            "windefend", {"selection": {"EventID": [1116, 1150]}}, service="windefend"
+        )
+        report = validate.Report()
+        validate.check_collected_event_ids(rule, report, self.collected)
+        self.assertEqual(len(report.errors), 1)
+        self.assertIn("EventID 1150", report.errors[0])
+
     def test_registry_sub_categories_reach_the_field_guard(self):
         blocked = {("windows", "registry_event"): {"Example": ("engine reason",)}}
         artifact = lib.Artifact(

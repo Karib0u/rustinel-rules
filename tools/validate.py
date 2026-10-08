@@ -41,8 +41,11 @@ import lib
 # ps_script, ps_module, wmi_event, service_creation and task_creation families
 # are Windows-only; rules using them must set logsource product: windows.
 # "security" is the Windows Security event log, selected in Sigma with
-# `product: windows, service: security` and no category; windefend and
-# application are selected the same way. The file_*
+# `product: windows, service: security` and no category; "windefend" (Defender
+# Operational) and "application" follow the same pattern with their own
+# service names. "ps_classic_start" is classic PowerShell engine start (400),
+# selected by that category or by `service: powershell-classic` alone. These
+# three arrived in v1.9.0. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
 # the vendored engine field contract).
@@ -76,7 +79,7 @@ SUPPORTED_TELEMETRY = {
 # collect can never match. Sysmon-style categories are left out: the engine
 # maps their Sysmon event IDs onto its own sources (DNS EventID 22 still
 # matches the DNS Client's 3006/3008).
-EVENT_ID_ROUTED_CATEGORIES = {"security"}
+EVENT_ID_ROUTED_CATEGORIES = {"security", "windefend", "application", "ps_classic_start"}
 
 
 def _detection_fields(detection: dict) -> set[str]:
@@ -467,6 +470,12 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         for field in REQUIRED_PACK_FIELDS:
             if field not in pack:
                 rep.error(where, f"missing required field '{field}'")
+        if pack.get("level") == "hunting" and pack.get("active_response_eligible") is not False:
+            rep.error(
+                where,
+                "hunting packs must set 'active_response_eligible: false' "
+                "(hunting content is not eligible for active response)",
+            )
         if pack.get("pack_schema_version") != 2:
             rep.error(where, "pack_schema_version must be 2 for v2")
         if not pack.get("license"):
