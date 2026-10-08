@@ -26,5 +26,8 @@ if (Test-Path $backup) {
 # DEBUG-4732
 'admins=' + $admins
 auditpol.exe /get /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}','{0CCE9235-69AE-11D9-BED3-505054503030}'
-Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4720,4728,4732,4733,4726} -MaxEvents 6 | ForEach-Object { "$($_.Id) $($_.TimeCreated) $(($_.Properties | ForEach-Object { $_.Value }) -join '|')" }
+$ErrorActionPreference = 'Continue'
+$ev = Get-WinEvent -LogName Security -MaxEvents 40 -ErrorAction Continue 2>&1
+$ev | ForEach-Object { if ($_.Id) { "$($_.Id) $($_.TimeCreated.ToString('HH:mm:ss'))" } else { "ERR $_" } }
+(Get-Date).ToString('HH:mm:ss')
 exit 0
