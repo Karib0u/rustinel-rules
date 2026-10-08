@@ -150,6 +150,16 @@ jobs:
         run: python3 tests/replay/linux_detection_logic.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check Windows process detection replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/windows_process.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check network_connection replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/network_connection.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Run atomic tests (Linux)
         if: matrix.platform == 'linux'
         run: |

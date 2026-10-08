@@ -1,0 +1,46 @@
+title: Scheduled Task Registered With Generic System-Looking Name (Hunting)
+id: ac8bc6a3-2d35-431b-97ac-2a430a83558b
+status: experimental
+description: >
+  Detects a scheduled task registered (TaskScheduler event 106) in the task
+  scheduler root folder with a generic, system-looking name such as "Updater",
+  "WindowsUpdate" or "SystemCheck" and no vendor folder. Persistence tooling
+  often names tasks to blend in this way. This is a low-confidence lead: the
+  event carries only the task name and the registering user, never the task
+  action (TaskContent is not populated on task_creation), so the rule cannot
+  tell a benign updater from a malicious one. Pair with the Security 4698 rule
+  "Scheduled Task Registered With Suspicious Action", which reads the action.
+  Requires the Microsoft-Windows-TaskScheduler/Operational channel.
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.execution
+  - attack.t1053.005
+logsource:
+  category: task_creation
+  product: windows
+detection:
+  selection:
+    TaskName|re: '(?i)^\\(windows|microsoft|system|office|chrome|google|adobe|java)?(update|updater|check|service|helper|sync|backup|monitor)[a-z0-9_-]{0,12}$'
+  filter_system_account:
+    UserName|endswith:
+      - '\SYSTEM'
+      - '\LOCAL SERVICE'
+      - '\NETWORK SERVICE'
+  condition: selection and not filter_system_account
+falsepositives:
+  - Software updaters that register a root-level task for the current user.
+    Filter on TaskName for approved software.
+level: low
+rustinel:
+  telemetry:
+    - task_creation
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    The task_creation channel is not yet exercised by the atomic harness. The
+    positive and negative cases are covered by tests/tools/test_powershell_rules.py.

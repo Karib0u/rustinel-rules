@@ -2,12 +2,14 @@
 #   "WMI Process Execution via WMIC"  (process_creation)
 #
 # Copies cmd.exe to wmic.exe and emits the WMIC process creation command-line
-# shape. This avoids depending on WMIC being installed on the runner image.
+# shape (process call create <command>). Real wmic.exe is not used: it is not
+# installed by default on current Windows 11 and Server images, so this stays
+# deterministic on every runner and nothing is created through WMI.
 $ErrorActionPreference = 'SilentlyContinue'
 $dir = Join-Path $env:TEMP 'rustinel-wmic-atomic'
 $bin = Join-Path $dir 'wmic.exe'
 New-Item -ItemType Directory -Path $dir -Force | Out-Null
 Copy-Item "$env:SystemRoot\System32\cmd.exe" $bin -Force
-& $bin /c echo process call create | Out-Null
+& $bin /c echo process call create calc.exe | Out-Null
 Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
 exit 0
