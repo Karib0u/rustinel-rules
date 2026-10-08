@@ -11,22 +11,22 @@ status: experimental
 license: DRL-1.1
 extends: []
 attack_coverage:
-  - T1574.006
-  - T1098.004
-  - T1548.003
-  - T1059.004
-  - T1105
-  - T1505.003
-  - T1562.001
-  - T1071
-  - T1547.006
   - T1014
+  - T1059.004
+  - T1071
+  - T1098.004
+  - T1105
   - T1136.001
+  - T1505.003
+  - T1547.006
+  - T1548.003
+  - T1562.001
+  - T1574.006
 telemetry_requirements:
   - process_creation
   - file_event
   - file_scan
-test_status: none
+test_status: atomic
 sources:
     manual:
       - https://attack.mitre.org/

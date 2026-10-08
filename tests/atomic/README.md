@@ -94,6 +94,21 @@ only; real Endpoint Security signing values are exercised by the atomics.
 python3 tests/replay/macos_detection_logic.py --engine /path/to/rustinel
 ```
 
+`tests/replay/shell_history.py` guards the shell-history rules on both Linux and
+macOS ([#43](https://github.com/Karib0u/rustinel-rules/issues/43)). The defect it
+pins is the old `file_event` rule, which fired whenever an interactive shell saved
+its history on exit. Each platform replays deletes, renames and in-place
+destruction commands that must alert, next to the benign near misses that must
+not: ordinary `.bash_history`/`.zsh_history` writes, zsh's temp-file rename *onto*
+`.zsh_history`, `less`/`grep`/`tail` reads and `truncate`/`ln` on unrelated files.
+The three rules sit on different event channels, so they cannot shadow each
+other; the replay asserts the exact alert set. It runs in the Linux job for both
+platforms:
+
+```bash
+python3 tests/replay/shell_history.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;

@@ -18,27 +18,31 @@ license: DRL-1.1
 extends:
   - macos-essential
 attack_coverage:
+  - T1005
+  - T1056.002
+  - T1059.002
+  - T1059.004
+  - T1070.003
+  - T1098
+  - T1098.004
+  - T1105
+  - T1136.001
+  - T1204.002
   - T1496
   - T1543.001
   - T1543.004
-  - T1105
-  - T1059.004
-  - T1204.002
-  - T1553.001
-  - T1059.002
-  - T1564.002
-  - T1136.001
-  - T1098
-  - T1098.004
-  - T1070.003
-  - T1005
   - T1548.006
+  - T1553.001
+  - T1555.001
+  - T1555.003
+  - T1562.001
+  - T1564.002
 telemetry_requirements:
   - process_creation
   - file_event
   - file_delete
   - file_rename
-test_status: none
+test_status: atomic
 sources:
     manual:
       - https://attack.mitre.org/
