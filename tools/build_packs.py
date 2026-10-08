@@ -168,7 +168,8 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         zip_path.unlink()
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for file in sorted(out_dir.rglob("*")):
-            if file.is_file():
+            # Keep empty dirs: the engine requires sigma/, yara/ and ioc/ in every pack.
+            if file.is_file() or (file.is_dir() and not any(file.iterdir())):
                 zf.write(file, file.relative_to(out_dir))
 
     return {
