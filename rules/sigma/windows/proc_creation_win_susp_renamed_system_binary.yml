@@ -9,6 +9,9 @@ description: >
   evading name-based detections (and often application control) with a renamed
   copy. Each pair is matched separately so a binary is only compared with the
   names it legitimately ships under.
+  The level is low on purpose: Rustinel emits only the highest-severity rule per
+  event, so a renamed binary that also trips a specific rule (a renamed netsh or
+  bitsadmin) is reported by that rule, and this one covers the rest.
 references:
   - https://attack.mitre.org/techniques/T1036/003/
 author: rustinel-rules
@@ -92,7 +95,7 @@ falsepositives:
   - Software that bundles a renamed copy of a system tool (some installers ship
     a private cmd.exe or msiexec.exe copy). Filter the Image path of the product.
   - Chocolatey and Scoop shims; they launch the real binary and keep its name.
-level: medium
+level: low
 rustinel:
   telemetry:
     - process_creation
