@@ -173,6 +173,15 @@ class SecurityChannelTests(unittest.TestCase):
             lib.contract_category({"product": "windows", "service": "security"}), "security"
         )
         self.assertEqual(lib.contract_category({"product": "linux", "service": "security"}), "")
+        for service, category in (
+            ("windefend", "windefend"),
+            ("application", "application"),
+            ("wmi", "wmi_event"),
+            ("powershell-classic", "ps_classic_start"),
+        ):
+            self.assertEqual(
+                lib.contract_category({"product": "windows", "service": service}), category
+            )
         self.assertEqual(lib.contract_category({"category": "registry_set"}), "registry_event")
 
     def test_security_and_ps_module_are_supported_channels(self):

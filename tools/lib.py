@@ -288,10 +288,12 @@ _CATEGORY_PARENTS = {
 # Since v1.9.0 it routes `service: windefend` (Defender Operational) and
 # `service: application` the same way, and `service: powershell-classic` with
 # no category to the classic engine-start events (`ps_classic_start`).
+# `wmi` (Operational 5857-5861) shares the contract rows of `wmi_event`.
 _SERVICE_CATEGORIES = {
     ("windows", "security"): "security",
     ("windows", "windefend"): "windefend",
     ("windows", "application"): "application",
+    ("windows", "wmi"): "wmi_event",
     ("windows", "powershell-classic"): "ps_classic_start",
 }
 

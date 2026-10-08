@@ -1,0 +1,38 @@
+title: Account Created and Added to Privileged Group
+id: 410d4870-cc7e-4cc9-a551-0fb32c136c7e
+status: experimental
+description: >
+  Correlation: the same logon session creates a user account (Security 4720) and
+  adds a member to a privileged group (the "Member Added to Privileged Group"
+  rule) within ten minutes. Creating an account and immediately making it an
+  administrator is a typical backdoor-account sequence, and much stronger than
+  either event alone. Grouped by SubjectLogonId so unrelated administrators do
+  not combine. Needs both audit subcategories: "User Account Management" and
+  "Security Group Management".
+references:
+  - https://attack.mitre.org/techniques/T1136/001/
+  - https://attack.mitre.org/techniques/T1098/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1136.001
+  - attack.t1098
+correlation:
+  type: temporal
+  rules:
+    - 3feb077a-6922-4052-93b8-7b95156ca1e5
+    - 859d9985-7720-42b1-a557-c1f6f8972642
+  group-by:
+    - SubjectLogonId
+  timespan: 10m
+falsepositives:
+  - Provisioning scripts that create an account and grant administrative rights
+    in one session; filter on SubjectUserName for the provisioning account.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: atomic

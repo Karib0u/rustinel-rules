@@ -362,6 +362,12 @@ filename = "alerts.json"
 
 [reload]
 enabled = false
+
+# Several tests rerun the same atomic script (e.g. a base rule and the correlation
+# built on it). Dedup would collapse the rerun's identical alerts for 60s, so the
+# later test never sees its alert. The harness checks firing, not the sink.
+[dedup]
+enabled = false
 """
     (engine_dir / "config.toml").write_text(config, encoding="utf-8")
     logs = engine_dir / "logs"
