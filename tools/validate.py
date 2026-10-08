@@ -463,6 +463,12 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         for field in REQUIRED_PACK_FIELDS:
             if field not in pack:
                 rep.error(where, f"missing required field '{field}'")
+        if pack.get("level") == "hunting" and pack.get("active_response_eligible") is not False:
+            rep.error(
+                where,
+                "hunting packs must set 'active_response_eligible: false' "
+                "(hunting content is not eligible for active response)",
+            )
         if pack.get("pack_schema_version") != 2:
             rep.error(where, "pack_schema_version must be 2 for v2")
         if not pack.get("license"):
