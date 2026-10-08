@@ -1,12 +1,13 @@
 # Atomic test - rule b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11
-#   "Microsoft Defender Tampering via Registry"  (registry_event)
+#   "Microsoft Defender Tampering via Registry"  (registry_set)
 #
-# Writes and removes a Defender policy key whose path includes the watched
-# value name. Registry telemetry exposes the key path but not the value name.
+# Sets DisableRealtimeMonitoring = 1 under an HKCU-only Defender-shaped key (the
+# live HKLM policy is never touched), then removes the key tree.
 $ErrorActionPreference = 'SilentlyContinue'
-$key = 'HKCU:\Software\Microsoft\Windows Defender\DisableRealtimeMonitoring'
+$base = 'HKCU:\Software\RustinelAtomic'
+$key = "$base\Windows Defender\Real-Time Protection"
 New-Item -Path $key -Force | Out-Null
-New-ItemProperty -Path $key -Name 'AtomicValue' -Value 1 -PropertyType DWord -Force | Out-Null
+New-ItemProperty -Path $key -Name 'DisableRealtimeMonitoring' -Value 1 -PropertyType DWord -Force | Out-Null
 Start-Sleep -Seconds 1
-Remove-Item $key -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $base -Recurse -Force -ErrorAction SilentlyContinue
 exit 0

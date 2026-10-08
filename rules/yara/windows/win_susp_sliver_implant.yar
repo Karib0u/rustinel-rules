@@ -12,8 +12,7 @@ rule win_susp_sliver_implant
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "manual"
-        test_reason = "Advanced-tier YARA fixture is exercised manually; a Go implant with garbled strings will not match, matching this rule's documented scope."
+        test_status = "atomic"
 
     strings:
         // Go package / module paths compiled into the implant.

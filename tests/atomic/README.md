@@ -69,6 +69,18 @@ roots remain visible for explicit tuning. Run the same check locally with:
 python3 tests/replay/linux_persistence.py --engine /path/to/rustinel
 ```
 
+`tests/replay/linux_detection_logic.py` does the same for rule logic: each
+corrected Linux rule (duplicate UID 0, `/dev/tcp`, netcat, kernel modules, chmod,
+base64 pipelines, package-manager writers) has positive events and near-miss
+negatives, so a loosened pattern fails before it reaches a sensor. These replays
+run on hosted runners; real eBPF behaviour such as `O_APPEND` Modify events,
+short-lived command-line enrichment and kernel module loading needs a controlled
+host with BTF and is not exercised here.
+
+```bash
+python3 tests/replay/linux_detection_logic.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;
@@ -219,6 +231,14 @@ harness command. Filtered runs do not replace the full suite for a pin update.
    The Run key atomic requires both the rule name and a registry path ending in
    `\CurrentVersion\Run\RustinelAtomicTest`, so background registry activity
    cannot satisfy it.
+   Add `negatives: [{script, marker}]` for benign activity that must **not** raise the
+   rule (for example a registry value written back to its default). After the
+   positive fires, the runner runs each negative script once, waits
+   `--negative-wait` seconds (default 8) and fails if the rule alerts on an event
+   whose alert JSON contains `marker` (a string or list of strings). The marker
+   ties the alert to the negative action, so a late duplicate of the positive
+   cannot fail it. Several manifest entries may share one rule `id` to cover
+   separate detection branches.
 3. `python3 tests/atomic/run_atomics.py --list` to confirm the join key resolves.
 4. Flip that artifact's `test_status` to `atomic`.
    `--check-coverage` reports platform-specific manifest gaps and Essential

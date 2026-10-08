@@ -2,48 +2,44 @@ title: Microsoft Defender Tampering via Registry
 id: b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11
 status: experimental
 description: >
-  Detects registry modifications that disable core Microsoft Defender
-  protections such as anti-spyware, real-time monitoring and behavior
-  monitoring. Commonly used to blind endpoint defenses prior to payload
-  execution.
-  Note: Rustinel's registry telemetry exposes the key path in TargetObject and
-  the value name in Details, so this rule matches the Defender value names in
-  either field to remain robust across event shapes.
+  Detects registry writes that disable core Microsoft Defender protections
+  such as anti-spyware, real-time monitoring and behavior monitoring by setting
+  the matching Disable* value to 1. Commonly used to blind endpoint defenses
+  prior to payload execution.
+  Note: Rustinel sets TargetObject to the key path plus the value name
+  (key\value) and Details to the written value data, so the rule matches the
+  exact value name and requires DWORD 1. Writes that set the value back to 0
+  (re-enabling protection) do not match.
 references:
   - https://attack.mitre.org/techniques/T1562/001/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
   - attack.t1562.001
 logsource:
-  category: registry_event
+  category: registry_set
   product: windows
 detection:
   selection_path:
     TargetObject|contains: '\Windows Defender'
-  value_in_keyname:
-    TargetObject|contains:
-      - 'DisableAntiSpyware'
-      - 'DisableRealtimeMonitoring'
-      - 'DisableBehaviorMonitoring'
-      - 'DisableScanOnRealtimeEnable'
-      - 'DisableOnAccessProtection'
-      - 'DisableIOAVProtection'
-  value_in_details:
-    Details|contains:
-      - 'DisableAntiSpyware'
-      - 'DisableRealtimeMonitoring'
-      - 'DisableBehaviorMonitoring'
-      - 'DisableScanOnRealtimeEnable'
-      - 'DisableOnAccessProtection'
-      - 'DisableIOAVProtection'
-  condition: selection_path and (value_in_keyname or value_in_details)
+  selection_value:
+    TargetObject|endswith:
+      - '\DisableAntiSpyware'
+      - '\DisableRealtimeMonitoring'
+      - '\DisableBehaviorMonitoring'
+      - '\DisableScanOnRealtimeEnable'
+      - '\DisableOnAccessProtection'
+      - '\DisableIOAVProtection'
+  selection_disabled:
+    Details: 'DWORD (0x00000001)'
+  condition: selection_path and selection_value and selection_disabled
 falsepositives:
   - Authorized AV migration or managed GPO changes.
 level: high
 rustinel:
   telemetry:
-    - registry_event
+    - registry_set
   expected_false_positive_level: low
   test_status: atomic

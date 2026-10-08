@@ -40,8 +40,4 @@ rustinel:
   telemetry:
     - image_load
   expected_false_positive_level: medium
-  test_status: manual
-  test_reason: >
-    Reliable image-load firing depends on a runspace-hosting binary that the
-    disposable atomic runners do not ship; validated manually with a
-    PowerShell-runspace host loading the automation DLL.
+  test_status: atomic

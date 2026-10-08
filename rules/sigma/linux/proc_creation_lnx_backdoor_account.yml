@@ -2,15 +2,17 @@ title: Backdoor Account Creation (Duplicate UID 0)
 id: 66fd4673-d86b-41d1-ba33-60d7c66dc962
 status: experimental
 description: >
-  Detects useradd or usermod creating or modifying an account with UID 0,
-  including the --non-unique flag that permits a second root-equivalent account.
-  Nobody legitimately creates a duplicate UID-0 user; this is classic persistence
-  after webserver or SSH compromise and the Linux parity for the macOS local-admin
-  rule.
+  Detects useradd or usermod setting an account's UID to 0, a second
+  root-equivalent account. The UID itself is required: `-o`/`--non-unique` only
+  permits a duplicate UID and is routine for other values, so it never matches on
+  its own. Nobody legitimately creates a duplicate UID-0 user; this is classic
+  persistence after webserver or SSH compromise and the Linux parity for the macOS
+  local-admin rule.
 references:
   - https://attack.mitre.org/techniques/T1136/001/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.t1136.001
@@ -23,11 +25,9 @@ detection:
       - '/useradd'
       - '/usermod'
   selection_uid0:
-    CommandLine|contains:
-      - '-u 0'
-      - '--uid 0'
-      - '-o '
-      - '--non-unique'
+    # -u 0, -u0, -ou 0, --uid 0, --uid=0; the value must be exactly 0, so
+    # -u 1000 and -u 0123 do not match.
+    CommandLine|re: '(^|\s)(-[a-zA-Z]*u\s*|--uid[\s=])0(\s|$)'
   condition: selection_tool and selection_uid0
 falsepositives:
   - None expected; investigate any duplicate or manual UID-0 account creation.

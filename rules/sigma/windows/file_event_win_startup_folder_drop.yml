@@ -33,8 +33,4 @@ rustinel:
   telemetry:
     - file_event
   expected_false_positive_level: medium
-  test_status: manual
-  test_reason: >
-    Windows file_event firing is not yet exercised by the atomic harness (no
-    Windows file rule has a fixture); validated manually with Atomic Red Team
-    T1547.001.
+  test_status: atomic

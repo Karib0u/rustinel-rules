@@ -450,6 +450,20 @@ def make_predicate(test: dict, rules: dict[str, dict]):
     return pred, f'rule.name == "{title}"'
 
 
+def negative_violation(negative: dict, pred, alerts: list[dict]) -> dict | None:
+    """The first alert that makes a negative fixture fail: the rule fired AND the
+    alert carries one of the fixture's markers. The marker ties the alert to the
+    negative action, so a late duplicate from the positive atomic cannot fail it."""
+    markers = negative["marker"]
+    markers = [markers] if isinstance(markers, str) else markers
+    for alert in alerts:
+        if pred(alert):
+            blob = json.dumps(alert, ensure_ascii=False)
+            if any(marker in blob for marker in markers):
+                return alert
+    return None
+
+
 def run_script(script: Path, os_name: str, timeout: int):
     if os_name == "windows":
         cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script)]
@@ -599,6 +613,12 @@ def main() -> int:
         default=6,
         help="seconds between re-running the atomic action while waiting",
     )
+    ap.add_argument(
+        "--negative-wait",
+        type=int,
+        default=8,
+        help="seconds to wait for an alert that a negative fixture must NOT raise",
+    )
     ap.add_argument("--warmup", type=int, default=10, help="seconds to let the engine start")
     ap.add_argument("--script-timeout", type=int, default=30)
     ap.add_argument("--list", action="store_true", help="list selected tests and exit")
@@ -633,6 +653,10 @@ def main() -> int:
             _, desc = make_predicate(t, rules)
             tag = " [allow_failure]" if t.get("allow_failure") else ""
             print(f"  {t['name']:<28} {t['engine']:<6} -> {desc}{tag}")
+            for i, neg in enumerate(t.get("negatives", []), 1):
+                print(
+                    f"  {t['name'] + ':negative-' + str(i):<28} {t['engine']:<6} -> must stay silent"
+                )
         return 0
 
     # ---- real run: needs the engine + a built pack ----
@@ -711,6 +735,42 @@ def main() -> int:
             )
             mark = "PASS" if found else "FAIL"
             print(f"  [{mark}] {t['name']:<28} ({desc})")
+
+            # Negative fixtures: benign activity that must NOT raise this rule.
+            # Only meaningful once the positive fired (otherwise the rule is not
+            # loaded or telemetry is down and silence proves nothing).
+            for i, neg in enumerate(t.get("negatives", []), 1):
+                if not found:
+                    break
+                neg_name = f"{t['name']}:negative-{i}"
+                snap = snapshot_alerts(logs_dir)
+                nrc, nout = run_script(ATOMICS_DIR / neg["script"], os_name, args.script_timeout)
+                time.sleep(args.negative_wait)
+                bad = negative_violation(neg, pred, read_new_alerts(logs_dir, snap))
+                nstatus = (
+                    "PASS"
+                    if bad is None and nrc == 0
+                    else ("FAIL (allowed)" if t.get("allow_failure") else "FAIL")
+                )
+                results.append(
+                    {
+                        "id": t["id"],
+                        "name": neg_name,
+                        "engine": t["engine"],
+                        "expect": f"no alert ({desc}) carrying {neg['marker']!r}",
+                        "status": nstatus,
+                        "action_exit": nrc,
+                        "allow_failure": bool(t.get("allow_failure")),
+                        "action_output": (
+                            json.dumps(bad)[-500:]
+                            if bad
+                            else ("" if nrc == 0 else nout.strip()[-500:])
+                        ),
+                    }
+                )
+                print(
+                    f"  [{'PASS' if nstatus == 'PASS' else 'FAIL'}] {neg_name:<28} (must stay silent)"
+                )
     finally:
         if not args.keep_running:
             proc.terminate()

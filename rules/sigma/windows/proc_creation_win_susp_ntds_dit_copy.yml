@@ -1,0 +1,50 @@
+title: NTDS.dit Copied or Accessed with a File Tool
+id: 6228b718-bcc1-4901-80b9-e2a6fc23a4a6
+status: experimental
+description: >
+  Detects a file-copy or file-access tool referencing ntds.dit on its command
+  line: esentutl.exe with the /y or /vss copy switches, or cmd.exe,
+  powershell.exe, pwsh.exe, robocopy.exe or xcopy.exe with a copy verb. This is
+  the shadow-copy and raw-copy route to the Active Directory database, used
+  when ntdsutil IFM is monitored or unavailable. Plain mentions of ntds.dit
+  (echo, documentation, searches) do not match. The ntdsutil IFM route is
+  covered by its own rule.
+references:
+  - https://attack.mitre.org/techniques/T1003/003/
+  - https://lolbas-project.github.io/lolbas/Binaries/Esentutl/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.credential-access
+  - attack.t1003.003
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_ntds:
+    CommandLine|contains: 'ntds.dit'
+  selection_esentutl:
+    - Image|endswith: '\esentutl.exe'
+    - OriginalFileName: 'esentutl.exe'
+  selection_esentutl_copy:
+    CommandLine|contains|windash:
+      - ' -y '
+      - ' -vss '
+  selection_copy_tool:
+    - Image|endswith:
+        - '\robocopy.exe'
+        - '\xcopy.exe'
+    - Image|endswith:
+        - '\cmd.exe'
+        - '\powershell.exe'
+        - '\pwsh.exe'
+      CommandLine|re: '(?i)(\bcopy\b|copy-item|\bcp\b|\brobocopy\b|\bxcopy\b)'
+  condition: selection_ntds and ((selection_esentutl and selection_esentutl_copy) or selection_copy_tool)
+falsepositives:
+  - Domain controller backup or migration performed by administrators with copy tooling.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

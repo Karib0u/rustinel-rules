@@ -2,7 +2,8 @@ title: SSH Daemon Configuration Tampering
 id: 9ac8732e-1818-4cda-89ac-01ca08a7b836
 status: experimental
 description: >
-  Detects creation or replacement of OpenSSH daemon configuration files. Attackers
+  Detects a write to OpenSSH daemon configuration files by anything other than a
+  package manager. Attackers
   modify sshd_config or drop-ins to weaken authentication, enable root login, or
   keep remote access after compromising a Linux host.
 references:
@@ -10,6 +11,7 @@ references:
   - https://attack.mitre.org/techniques/T1562/001/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.defense-evasion
@@ -24,7 +26,15 @@ detection:
     TargetFilename|endswith: '/etc/ssh/sshd_config'
   selection_dropin:
     TargetFilename|contains: '/etc/ssh/sshd_config.d/'
-  condition: selection_file or selection_dropin
+  filter_pkg:
+    Image|endswith:
+      - '/dpkg'
+      - '/rpm'
+      - '/dnf'
+      - '/yum'
+      - '/apt'
+      - '/apt-get'
+  condition: (selection_file or selection_dropin) and not filter_pkg
 falsepositives:
   - Legitimate SSH hardening, package upgrades and configuration management.
 level: high

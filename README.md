@@ -43,7 +43,7 @@ See [Manage rule packs](https://docs.rustinel.io/rule-packs/) for updates and ma
 | --- | --- | --- |
 | Essential | High-confidence detections with low expected noise. Start here. | Windows, Linux, macOS |
 | Advanced | Broader coverage, with more environment-dependent false positives. | Windows, Linux, macOS |
-| Hunting | Noisier leads for investigation. | Windows |
+| Hunting | Noisier leads for investigation. | Windows, Linux |
 
 Packs are cumulative: Advanced includes Essential, and Hunting includes Advanced.
 Install one pack per endpoint.
