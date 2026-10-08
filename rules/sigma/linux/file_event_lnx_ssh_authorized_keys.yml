@@ -1,17 +1,17 @@
-title: SSH authorized_keys Created or Replaced
+title: SSH authorized_keys Written
 id: 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51
 status: experimental
 description: >
-  Detects creation or replacement of an SSH authorized_keys file, a common
-  persistence and remote-access technique that lets an attacker log in with their
-  own key.
-  Note: Rustinel's Linux file telemetry hooks file creation and rename, so this
-  catches newly created or editor-rewritten authorized_keys files; in-place
-  appends to an existing file are not observed.
+  Detects a write to an SSH authorized_keys file, a common persistence and
+  remote-access technique that lets an attacker log in with their own key.
+  Rustinel reports a create, a rename onto the file, and an open for write
+  (`O_WRONLY`, `O_RDWR`, `O_TRUNC`, `O_APPEND`) on `file_event`, so an in-place
+  `echo key >> authorized_keys` is observed as well as a rewritten file.
 references:
   - https://attack.mitre.org/techniques/T1098/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.lateral-movement
@@ -24,9 +24,18 @@ detection:
     TargetFilename|endswith:
       - '/authorized_keys'
       - '/authorized_keys2'
-  condition: selection
+  filter_pkg:
+    Image|endswith:
+      - '/dpkg'
+      - '/rpm'
+      - '/dnf'
+      - '/yum'
+      - '/apt'
+      - '/apt-get'
+  condition: selection and not filter_pkg
 falsepositives:
   - Legitimate key provisioning via ssh-copy-id or configuration management.
+  - Package installs that seed keys; the package-manager writer filter handles the bulk.
 level: high
 rustinel:
   telemetry:

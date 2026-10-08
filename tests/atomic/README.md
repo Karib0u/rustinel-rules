@@ -69,6 +69,18 @@ roots remain visible for explicit tuning. Run the same check locally with:
 python3 tests/replay/linux_persistence.py --engine /path/to/rustinel
 ```
 
+`tests/replay/linux_detection_logic.py` does the same for rule logic: each
+corrected Linux rule (duplicate UID 0, `/dev/tcp`, netcat, kernel modules, chmod,
+base64 pipelines, package-manager writers) has positive events and near-miss
+negatives, so a loosened pattern fails before it reaches a sensor. These replays
+run on hosted runners; real eBPF behaviour such as `O_APPEND` Modify events,
+short-lived command-line enrichment and kernel module loading needs a controlled
+host with BTF and is not exercised here.
+
+```bash
+python3 tests/replay/linux_detection_logic.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;

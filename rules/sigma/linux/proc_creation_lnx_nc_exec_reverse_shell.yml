@@ -18,7 +18,7 @@ references:
   - https://attack.mitre.org/techniques/T1071/
 author: rustinel-rules
 date: 2026-07-09
-modified: 2026-10-01
+modified: 2026-10-08
 tags:
   - attack.execution
   - attack.command-and-control
@@ -33,12 +33,11 @@ detection:
       - '/nc'
       - '/ncat'
       - '/netcat'
-    CommandLine|contains:
-      - ' -e '
-      - ' -c '
-      - '--exec'
-      - '--sh-exec'
-      - '--lua-exec'
+    # -e/-c (also clustered, as in -lvnp... -e) followed by a shell, or a long
+    # exec option. A bare `-c` is not enough: OpenBSD nc uses it for TLS.
+    CommandLine|re:
+      - '\s-[a-zA-Z]*[ec]\s+[''"]?(\S*/)?(ba|da|z|k|c|tc)?sh([''"\s]|$)'
+      - '\s--(sh-|lua-)?exec[\s=]'
   selection_socat:
     Image|endswith: '/socat'
     CommandLine|contains:
