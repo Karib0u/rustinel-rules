@@ -231,6 +231,14 @@ harness command. Filtered runs do not replace the full suite for a pin update.
    The Run key atomic requires both the rule name and a registry path ending in
    `\CurrentVersion\Run\RustinelAtomicTest`, so background registry activity
    cannot satisfy it.
+   Add `negatives: [{script, marker}]` for benign activity that must **not** raise the
+   rule (for example a registry value written back to its default). After the
+   positive fires, the runner runs each negative script once, waits
+   `--negative-wait` seconds (default 8) and fails if the rule alerts on an event
+   whose alert JSON contains `marker` (a string or list of strings). The marker
+   ties the alert to the negative action, so a late duplicate of the positive
+   cannot fail it. Several manifest entries may share one rule `id` to cover
+   separate detection branches.
 3. `python3 tests/atomic/run_atomics.py --list` to confirm the join key resolves.
 4. Flip that artifact's `test_status` to `atomic`.
    `--check-coverage` reports platform-specific manifest gaps and Essential

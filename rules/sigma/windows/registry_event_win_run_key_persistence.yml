@@ -5,13 +5,15 @@ description: >
   Detects creation or modification of autorun Run / RunOnce keys, a widely used
   persistence mechanism that survives reboot. Expected to fire on legitimate
   installers, so intended for the Advanced tier with tuning.
-  Note: Rustinel's registry telemetry sets TargetObject to the key path (without
-  the trailing value name), so the Run key paths are matched without a trailing
-  separator.
+  Note: Rustinel sets TargetObject to the key path plus the value name
+  (key\value), so the Run key paths are matched with a trailing separator and
+  only write events (registry_set) can fire the rule. The written command is in
+  Details.
 references:
   - https://attack.mitre.org/techniques/T1547/001/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.t1547.001
@@ -21,10 +23,10 @@ logsource:
 detection:
   selection:
     TargetObject|contains:
-      - '\CurrentVersion\Run'
-      - '\CurrentVersion\RunOnce'
-      - '\CurrentVersion\RunServices'
-      - '\CurrentVersion\Policies\Explorer\Run'
+      - '\CurrentVersion\Run\'
+      - '\CurrentVersion\RunOnce\'
+      - '\CurrentVersion\RunServices\'
+      - '\CurrentVersion\Policies\Explorer\Run\'
   condition: selection
 falsepositives:
   - Software installers and legitimate startup applications.

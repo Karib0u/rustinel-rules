@@ -72,6 +72,53 @@ class AlertMatchingTests(unittest.TestCase):
         self.assertFalse(matches({"rule.name": "Another Rule"}))
 
 
+class NegativeFixtureTests(unittest.TestCase):
+    RULE = "Microsoft Defender Tampering via Registry"
+
+    def setUp(self):
+        self.pred = lambda alert: alert.get("rule.name") == self.RULE
+        self.negative = {"script": "x.ps1", "marker": "DWORD (0x00000000)"}
+
+    def test_alert_carrying_the_marker_is_a_violation(self):
+        alert = {"rule.name": self.RULE, "registry.data.strings": ["DWORD (0x00000000)"]}
+        self.assertIs(run_atomics.negative_violation(self.negative, self.pred, [alert]), alert)
+
+    def test_late_positive_duplicate_is_not_a_violation(self):
+        alert = {"rule.name": self.RULE, "registry.data.strings": ["DWORD (0x00000001)"]}
+        self.assertIsNone(run_atomics.negative_violation(self.negative, self.pred, [alert]))
+
+    def test_other_rules_are_ignored(self):
+        alert = {"rule.name": "Other", "registry.data.strings": ["DWORD (0x00000000)"]}
+        self.assertIsNone(run_atomics.negative_violation(self.negative, self.pred, [alert]))
+
+    def test_any_marker_in_a_list_counts(self):
+        negative = {"script": "x.ps1", "marker": ["nope", "0x00000000"]}
+        alert = {"rule.name": self.RULE, "d": "DWORD (0x00000000)"}
+        self.assertIs(run_atomics.negative_violation(negative, self.pred, [alert]), alert)
+
+
+class RegistryManifestTests(unittest.TestCase):
+    def setUp(self):
+        self.manifest = json.loads(Path(__file__).with_name("manifest.json").read_text())["tests"]
+
+    def test_negative_scripts_exist_and_carry_markers(self):
+        for test in self.manifest:
+            for neg in test.get("negatives", []):
+                self.assertTrue((run_atomics.ATOMICS_DIR / neg["script"]).is_file(), neg["script"])
+                self.assertTrue(neg["marker"], neg["script"])
+
+    def test_every_registry_rule_has_a_negative_fixture(self):
+        for name in (
+            "windows_wdigest_registry",
+            "windows_defender_registry_tamper",
+            "windows_run_key_persistence",
+            "windows_ifeo_debugger",
+            "windows_winlogon_helper",
+        ):
+            test = next(t for t in self.manifest if t["name"] == name)
+            self.assertTrue(test.get("negatives"), name)
+
+
 class ReportTests(unittest.TestCase):
     def test_version_comes_from_the_binary(self):
         binary = Path("/engine/rustinel")

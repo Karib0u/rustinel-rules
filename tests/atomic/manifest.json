@@ -171,7 +171,14 @@
       "name": "windows_defender_registry_tamper",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/defender_registry_tamper.ps1"
+      "script": "windows/defender_registry_tamper.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "Microsoft Defender Tampering via Registry"},
+        {"field": "registry.path", "endswith": "\\DisableRealtimeMonitoring"}
+      ],
+      "negatives": [
+        {"script": "windows/defender_registry_tamper_negative.ps1", "marker": "DWORD (0x00000000)"}
+      ]
     },
     {
       "id": "e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20",
@@ -192,7 +199,14 @@
       "name": "windows_wdigest_registry",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/wdigest_registry.ps1"
+      "script": "windows/wdigest_registry.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "WDigest Cleartext Credential Caching Enabled"},
+        {"field": "registry.path", "endswith": "\\WDigest\\UseLogonCredential"}
+      ],
+      "negatives": [
+        {"script": "windows/wdigest_registry_negative.ps1", "marker": "DWORD (0x00000000)"}
+      ]
     },
     {
       "id": "3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10",
@@ -224,6 +238,9 @@
       "expect": [
         {"field": "rule.name", "equals": "Registry Run Key Persistence"},
         {"field": "registry.path", "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"}
+      ],
+      "negatives": [
+        {"script": "windows/run_key_persistence_negative.ps1", "marker": "RunRustinelNegative"}
       ]
     },
     {
@@ -393,14 +410,50 @@
       "name": "windows_ifeo_debugger",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ifeo_debugger.ps1"
+      "script": "windows/ifeo_debugger.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
+        {"field": "registry.path", "endswith": "\\rustinel_atomic.exe\\Debugger"}
+      ],
+      "negatives": [
+        {"script": "windows/ifeo_debugger_negative.ps1", "marker": "rustinel_negative.exe"}
+      ]
+    },
+    {
+      "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
+      "name": "windows_ifeo_globalflag",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ifeo_globalflag.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
+        {"field": "registry.path", "endswith": "\\rustinel_atomic.exe\\GlobalFlag"}
+      ]
+    },
+    {
+      "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
+      "name": "windows_silentprocessexit_monitor",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ifeo_silentprocessexit.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
+        {"field": "registry.path", "endswith": "\\SilentProcessExit\\rustinel_atomic.exe\\MonitorProcess"}
+      ]
     },
     {
       "id": "52b94494-756b-40d7-af01-8d0c7d54a6cc",
       "name": "windows_winlogon_helper",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/winlogon_helper.ps1"
+      "script": "windows/winlogon_helper.ps1",
+      "expect": [
+        {"field": "rule.name", "equals": "Winlogon Helper DLL or Shell Modification"},
+        {"field": "registry.path", "endswith": "\\Winlogon\\Shell"}
+      ],
+      "negatives": [
+        {"script": "windows/winlogon_helper_negative.ps1", "marker": ["\"explorer.exe\"", "userinit.exe,\""]}
+      ]
     },
     {
       "id": "43c59081-d5ec-4153-9e26-04e66e07461a",
