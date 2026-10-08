@@ -19,7 +19,6 @@ attack_coverage:
   - T1053.003
   - T1546.004
   - T1059.004
-  - T1036
   - T1105
   - T1070.003
   - T1070.002
@@ -46,7 +45,6 @@ rules:
           - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
           - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
           - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
-          - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
           - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
           - d0c6216e-881c-408f-8e72-0a466522306b   # Outbound Network Connection from Shell Binary (sigma)
           - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Deleted (sigma)

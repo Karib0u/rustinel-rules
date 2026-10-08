@@ -2,15 +2,20 @@ title: Kernel Module Load from Suspicious Path
 id: 3f32d825-006a-45e9-b5a9-6e7edeeff13c
 status: experimental
 description: >
-  Detects insmod or modprobe loading a kernel module from a world-writable or
-  user-owned path (/tmp, /dev/shm, /var/tmp, /home). This is the highest-impact
-  Linux persistence — rootkit installation (Diamorphine descendants, cryptomining
-  rootkits) — with a cheap, low-false-positive signal on servers.
+  Detects a kernel module loaded from a world-writable or user-owned path
+  (/tmp, /dev/shm, /var/tmp, /home). This is the highest-impact Linux persistence
+  — rootkit installation (Diamorphine descendants, cryptomining rootkits) — with a
+  cheap, low-false-positive signal on servers.
+  `insmod` takes a file path, so any such path on its command line is the signal.
+  `modprobe` normally takes a module name, so it only matches when it is handed a
+  `.ko` file in one of those paths, or a configuration file there via `-C` /
+  `--config`, which redirects the module aliases and install commands it runs.
 references:
   - https://attack.mitre.org/techniques/T1547/006/
   - https://attack.mitre.org/techniques/T1014/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.defense-evasion
@@ -20,16 +25,20 @@ logsource:
   category: process_creation
   product: linux
 detection:
-  selection:
-    Image|endswith:
-      - '/insmod'
-      - '/modprobe'
+  selection_insmod:
+    Image|endswith: '/insmod'
     CommandLine|contains:
       - '/tmp/'
       - '/dev/shm/'
       - '/var/tmp/'
       - '/home/'
-  condition: selection
+  selection_modprobe_module:
+    Image|endswith: '/modprobe'
+    CommandLine|re: '\s(/tmp/|/dev/shm/|/var/tmp/|/home/)\S*\.ko(\.[a-z0-9]+)?(\s|$)'
+  selection_modprobe_config:
+    Image|endswith: '/modprobe'
+    CommandLine|re: '\s(-C\s*|--config[\s=])(/tmp/|/dev/shm/|/var/tmp/|/home/)'
+  condition: 1 of selection_*
 falsepositives:
   - Kernel developers building modules on workstations; near zero on servers.
 level: high
