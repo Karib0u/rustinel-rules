@@ -2,44 +2,50 @@ title: Winlogon Helper DLL or Shell Modification
 id: 52b94494-756b-40d7-af01-8d0c7d54a6cc
 status: experimental
 description: >
-  Detects modification of Winlogon Userinit, Shell, Notify or Taskman values,
+  Detects writes to the Winlogon Userinit, Shell, Notify or Taskman values,
   which run an attacker-chosen binary at logon. Complements the Run-key
   persistence rule with a different key in the same technique family; commonly
   abused by commodity stealers.
-  Note: Rustinel exposes the registry key path in TargetObject and the value name
-  in Details, so the watched value names are matched in either field.
+  Note: Rustinel sets TargetObject to the key path plus the value name
+  (key\value) and Details to the written value data. Shell and Userinit are
+  ignored when set to their Windows defaults (explorer.exe and
+  C:\Windows\system32\userinit.exe,); any other value, and any Taskman or
+  Notify write, matches.
 references:
   - https://attack.mitre.org/techniques/T1547/004/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.privilege-escalation
   - attack.t1547.004
 logsource:
-  category: registry_event
+  category: registry_set
   product: windows
 detection:
-  selection_path:
-    TargetObject|contains: '\Microsoft\Windows NT\CurrentVersion\Winlogon'
-  value_in_keyname:
-    TargetObject|contains:
-      - '\Userinit'
-      - '\Shell'
-      - '\Notify'
-      - '\Taskman'
-  value_in_details:
-    Details|contains:
-      - 'Userinit'
-      - 'Shell'
-      - 'Notify'
-      - 'Taskman'
-  condition: selection_path and (value_in_keyname or value_in_details)
+  selection_shell:
+    TargetObject|endswith: '\Microsoft\Windows NT\CurrentVersion\Winlogon\Shell'
+  selection_userinit:
+    TargetObject|endswith: '\Microsoft\Windows NT\CurrentVersion\Winlogon\Userinit'
+  selection_other:
+    - TargetObject|endswith: '\Microsoft\Windows NT\CurrentVersion\Winlogon\Taskman'
+    - TargetObject|contains: '\Microsoft\Windows NT\CurrentVersion\Winlogon\Notify\'
+  filter_shell_default:
+    Details: 'explorer.exe'
+  filter_userinit_default:
+    Details:
+      - 'C:\Windows\system32\userinit.exe,'
+      - 'C:\Windows\system32\userinit.exe'
+  condition: >
+    (selection_shell and not filter_shell_default)
+    or (selection_userinit and not filter_userinit_default)
+    or selection_other
 falsepositives:
   - VDI and kiosk products legitimately replace the Shell value; tune per host.
 level: medium
 rustinel:
   telemetry:
-    - registry_event
+    - registry_set
   expected_false_positive_level: medium
   test_status: atomic
