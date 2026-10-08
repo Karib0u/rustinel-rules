@@ -1,0 +1,26 @@
+title: Fixture - Correlation Base Marker (macos)
+id: 16c1796c-f66a-4bf3-8e69-588a2287e1f3
+status: test
+description: >
+  Test-only base rule for the correlation firing test. Matches a process whose
+  command line carries a unique marker no real software uses. Never a detection.
+references:
+  - https://github.com/Karib0u/rustinel-rules/issues/61
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.execution
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection:
+    CommandLine|contains: 'rustinel-corr-fixture-7f3a'
+  condition: selection
+falsepositives:
+  - None; the marker exists only for the atomic harness.
+level: informational
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low

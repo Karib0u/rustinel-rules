@@ -631,7 +631,8 @@
       "platform": "macos",
       "engine": "yara",
       "script": "macos/coinminer_yara_fixture.sh",
-      "allow_failure": true
+      "allow_failure": true,
+      "allow_failure_reason": "Mach-O with an appended overlay invalidates its code signature, so AMFI can kill the exec before the file scan resolves it; timing is nondeterministic on hosted runners."
     },
     {
       "id": "ioc-canary-exec",
@@ -779,7 +780,8 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/lolbin_outbound_connect.ps1",
-      "allow_failure": true
+      "allow_failure": true,
+      "allow_failure_reason": "network_connection telemetry is not proven to fire on hosted Windows runners, and the rule excludes loopback targets."
     },
     {
       "id": "86c19f1a-add5-4553-9c24-f76e7fe3da9d",
@@ -836,6 +838,146 @@
       "platform": "windows",
       "engine": "yara",
       "script": "windows/cobaltstrike_yara_fixture.ps1"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_ip",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_domain",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "d943bd63-a255-4b5c-ba0d-2155d49cf2d3",
+      "name": "linux_sigma_correlation_fixture",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "linux_yara_memory_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "windows_canary_ioc_ip",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/ioc_ip_domain.ps1",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "windows_canary_ioc_domain",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/ioc_ip_domain.ps1",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "3ea62257-1966-4582-b381-a5adcaf806a8",
+      "name": "windows_sigma_correlation_fixture",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/sigma_correlation.ps1"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "windows_yara_memory_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/yara_memory_marker.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_ip",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_domain",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "ac1a60e4-e530-43ff-8553-e0624f374305",
+      "name": "macos_sigma_correlation_fixture",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "macos_yara_memory_fixture",
+      "platform": "macos",
+      "engine": "yara",
+      "script": "macos/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ],
+      "allow_failure": true,
+      "allow_failure_reason": "Process-memory reads on macOS need task_for_pid, which the hardened Python on a hosted runner may refuse; unproven on CI until this test has run there."
     }
   ]
 }

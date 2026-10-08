@@ -68,3 +68,52 @@ entries:
       Loaded into the atomic run by tools/build_packs.py --fixtures, which
       flattens test-only IOC sets into build/fixtures/ioc/ for
       tests/atomic/run_atomics.py to overlay onto the staged pack.
+
+  - id: 37aafcf3-ac54-4833-9b14-633e3a2af312
+    kind: sigma
+    path: sigma/linux/fixture_proc_creation_linux_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the linux Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: d943bd63-a255-4b5c-ba0d-2155d49cf2d3
+    kind: sigma
+    path: sigma/linux/fixture_proc_creation_linux_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the linux base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: 56e1042f-d22b-4eb5-b5b0-2c5a37e66c0e
+    kind: sigma
+    path: sigma/windows/fixture_proc_creation_windows_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the windows Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: 3ea62257-1966-4582-b381-a5adcaf806a8
+    kind: sigma
+    path: sigma/windows/fixture_proc_creation_windows_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the windows base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: 16c1796c-f66a-4bf3-8e69-588a2287e1f3
+    kind: sigma
+    path: sigma/macos/fixture_proc_creation_macos_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the macos Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: ac1a60e4-e530-43ff-8553-e0624f374305
+    kind: sigma
+    path: sigma/macos/fixture_proc_creation_macos_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the macos base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: yara-fixture-memory-marker
+    kind: yara
+    path: yara/common/fixture_memory_marker.yar
+    state: test-only
+    reason: >
+      Marker rule for the YARA process-memory firing test (rustinel-rules#61). The matching string is assembled at runtime by a long-lived atomic process, so only a memory scan can see it.

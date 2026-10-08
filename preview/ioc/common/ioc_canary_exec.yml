@@ -13,6 +13,11 @@
 #                byte-stable across toolchains, so a Mach-O canary cannot have a
 #                hash known at authoring time; the path indicator exercises the
 #                same IOC pipeline on the same event instead.
+#   ips          a TEST-NET-3 (RFC 5737) address, and
+#   domains      a name under the reserved .invalid TLD (RFC 2606). Rustinel
+#                matches both against IPs and host names found in a process
+#                command line, so the atomics need no network access: they run a
+#                short-lived process that merely carries the indicator.
 #
 # Regenerate the hashes with:  uv run python tests/atomic/canary/make_canary.py
 id: ioc-canary-exec
@@ -25,8 +30,9 @@ os:
 severity: low
 test_status: atomic
 test_reason: >
-  Gating on all three platforms against engine v1.6.0: hash indicators on Linux
-  and Windows, the path indicator on macOS.
+  Gating on all three platforms: hash indicators on Linux and Windows, the path
+  indicator on macOS, and the IP and domain indicators on all three (carried in a
+  process command line).
 references:
   - https://github.com/Karib0u/rustinel-rules/issues/32
 indicators:
@@ -40,3 +46,9 @@ indicators:
   paths_regex:
     - value: '[\\/]rustinel-canary-exec[\\/]canary-[a-z0-9_.-]+$'
       comment: canary-exec-path launch path used by the macOS canary atomic
+  ips:
+    - value: 203.0.113.61
+      comment: canary-exec-ip RFC 5737 TEST-NET-3 address carried in an atomic command line
+  domains:
+    - value: canary-exec.rustinel-test.invalid
+      comment: canary-exec-domain reserved .invalid name carried in an atomic command line
