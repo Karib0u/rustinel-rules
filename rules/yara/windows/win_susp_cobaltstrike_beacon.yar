@@ -11,8 +11,7 @@ rule win_susp_cobaltstrike_beacon
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
-        test_status = "manual"
-        test_reason = "On-disk beacons are typically packed; this rule is the primary beneficiary of optional memory scanning and is validated manually rather than in the disk-scan atomic harness."
+        test_status = "atomic"
 
     strings:
         $b1 = "beacon.dll" ascii wide nocase
