@@ -108,7 +108,10 @@
       "platform": "linux",
       "engine": "ioc",
       "script": "linux/canary_ioc.sh",
-      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-hash"
+      }
     },
     {
       "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
@@ -173,11 +176,20 @@
       "engine": "sigma",
       "script": "windows/defender_registry_tamper.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "Microsoft Defender Tampering via Registry"},
-        {"field": "registry.path", "endswith": "\\DisableRealtimeMonitoring"}
+        {
+          "field": "rule.name",
+          "equals": "Microsoft Defender Tampering via Registry"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\DisableRealtimeMonitoring"
+        }
       ],
       "negatives": [
-        {"script": "windows/defender_registry_tamper_negative.ps1", "marker": "DWORD (0x00000000)"}
+        {
+          "script": "windows/defender_registry_tamper_negative.ps1",
+          "marker": "DWORD (0x00000000)"
+        }
       ]
     },
     {
@@ -201,11 +213,20 @@
       "engine": "sigma",
       "script": "windows/wdigest_registry.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "WDigest Cleartext Credential Caching Enabled"},
-        {"field": "registry.path", "endswith": "\\WDigest\\UseLogonCredential"}
+        {
+          "field": "rule.name",
+          "equals": "WDigest Cleartext Credential Caching Enabled"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\WDigest\\UseLogonCredential"
+        }
       ],
       "negatives": [
-        {"script": "windows/wdigest_registry_negative.ps1", "marker": "DWORD (0x00000000)"}
+        {
+          "script": "windows/wdigest_registry_negative.ps1",
+          "marker": "DWORD (0x00000000)"
+        }
       ]
     },
     {
@@ -236,11 +257,20 @@
       "engine": "sigma",
       "script": "windows/run_key_persistence.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "Registry Run Key Persistence"},
-        {"field": "registry.path", "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"}
+        {
+          "field": "rule.name",
+          "equals": "Registry Run Key Persistence"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"
+        }
       ],
       "negatives": [
-        {"script": "windows/run_key_persistence_negative.ps1", "marker": "RunRustinelNegative"}
+        {
+          "script": "windows/run_key_persistence_negative.ps1",
+          "marker": "RunRustinelNegative"
+        }
       ]
     },
     {
@@ -291,7 +321,10 @@
       "platform": "windows",
       "engine": "ioc",
       "script": "windows/canary_ioc.ps1",
-      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-hash"
+      }
     },
     {
       "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
@@ -412,11 +445,20 @@
       "engine": "sigma",
       "script": "windows/ifeo_debugger.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
-        {"field": "registry.path", "endswith": "\\rustinel_atomic.exe\\Debugger"}
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\rustinel_atomic.exe\\Debugger"
+        }
       ],
       "negatives": [
-        {"script": "windows/ifeo_debugger_negative.ps1", "marker": "rustinel_negative.exe"}
+        {
+          "script": "windows/ifeo_debugger_negative.ps1",
+          "marker": "rustinel_negative.exe"
+        }
       ]
     },
     {
@@ -426,8 +468,14 @@
       "engine": "sigma",
       "script": "windows/ifeo_globalflag.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
-        {"field": "registry.path", "endswith": "\\rustinel_atomic.exe\\GlobalFlag"}
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\rustinel_atomic.exe\\GlobalFlag"
+        }
       ]
     },
     {
@@ -437,8 +485,14 @@
       "engine": "sigma",
       "script": "windows/ifeo_silentprocessexit.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "IFEO Debugger or SilentProcessExit Hijack"},
-        {"field": "registry.path", "endswith": "\\SilentProcessExit\\rustinel_atomic.exe\\MonitorProcess"}
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\SilentProcessExit\\rustinel_atomic.exe\\MonitorProcess"
+        }
       ]
     },
     {
@@ -448,11 +502,23 @@
       "engine": "sigma",
       "script": "windows/winlogon_helper.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "Winlogon Helper DLL or Shell Modification"},
-        {"field": "registry.path", "endswith": "\\Winlogon\\Shell"}
+        {
+          "field": "rule.name",
+          "equals": "Winlogon Helper DLL or Shell Modification"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\Winlogon\\Shell"
+        }
       ],
       "negatives": [
-        {"script": "windows/winlogon_helper_negative.ps1", "marker": ["\"explorer.exe\"", "userinit.exe,\""]}
+        {
+          "script": "windows/winlogon_helper_negative.ps1",
+          "marker": [
+            "\"explorer.exe\"",
+            "userinit.exe,\""
+          ]
+        }
       ]
     },
     {
@@ -567,7 +633,10 @@
       "platform": "macos",
       "engine": "ioc",
       "script": "macos/canary_ioc.sh",
-      "expect": { "field": "rule.description", "contains": "canary-exec-path" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-path"
+      }
     },
     {
       "id": "6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb",
@@ -645,6 +714,83 @@
       "platform": "macos",
       "engine": "sigma",
       "script": "macos/launchctl_susp_load.sh"
+    },
+    {
+      "id": "d0c6216e-881c-408f-8e72-0a466522306b",
+      "name": "linux_shell_outbound_connect",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/shell_outbound_connect.sh"
+    },
+    {
+      "id": "59bbd501-1c61-45c9-940d-9465cabd36c4",
+      "name": "windows_startup_folder_drop",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/startup_folder_drop.ps1"
+    },
+    {
+      "id": "717396f6-aff0-49b0-b8f3-53568e276d5c",
+      "name": "windows_lolbin_outbound_connect",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/lolbin_outbound_connect.ps1"
+    },
+    {
+      "id": "86c19f1a-add5-4553-9c24-f76e7fe3da9d",
+      "name": "windows_automation_dll_foreign_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/automation_dll_foreign_host.ps1"
+    },
+    {
+      "id": "31ddbaff-1a32-4eb6-b7ce-647b59aeb901",
+      "name": "windows_amsi_bypass_scriptblock",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/amsi_bypass_scriptblock.ps1"
+    },
+    {
+      "id": "c3d4e5f6-9012-4234-9c5d-6e7f8a901a12",
+      "name": "windows_download_cradle_scriptblock",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/download_cradle_scriptblock.ps1"
+    },
+    {
+      "id": "d4e5f6a7-0123-4345-9d6e-7f8a9b012a13",
+      "name": "windows_service_binary_path",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/service_binary_path.ps1"
+    },
+    {
+      "id": "4aae4b03-4807-428a-ac89-5c5f3cda65e4",
+      "name": "windows_recon_commands",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/recon_commands.ps1"
+    },
+    {
+      "id": "yara-lnx-sliver-implant",
+      "name": "linux_sliver_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/sliver_yara_fixture.sh"
+    },
+    {
+      "id": "yara-win-sliver-implant",
+      "name": "windows_sliver_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/sliver_yara_fixture.ps1"
+    },
+    {
+      "id": "yara-win-cobaltstrike-beacon",
+      "name": "windows_cobaltstrike_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/cobaltstrike_yara_fixture.ps1"
     }
   ]
 }

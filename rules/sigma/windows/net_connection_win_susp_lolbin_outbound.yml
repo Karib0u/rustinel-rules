@@ -71,8 +71,4 @@ rustinel:
   telemetry:
     - network_connection
   expected_false_positive_level: medium
-  test_status: manual
-  test_reason: >
-    An atomic needs a public destination (loopback is filtered as non-public).
-    Initiated, IPv4/IPv6 range handling and benign negatives are covered offline
-    by tests/replay/network_connection.py.
+  test_status: atomic
