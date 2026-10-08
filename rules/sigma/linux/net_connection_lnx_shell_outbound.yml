@@ -2,42 +2,65 @@ title: Outbound Network Connection from Shell Binary
 id: d0c6216e-881c-408f-8e72-0a466522306b
 status: experimental
 description: >
-  Detects a public-internet outbound connection whose owning process is a shell
-  binary (bash, sh, dash, zsh). This is the enrichment-race safety net: a reverse
-  shell whose /proc/<pid>/cmdline read loses the race is invisible to the
-  command-line reverse-shell rules, but its socket is not. Add legitimate public
-  endpoints to the private-network filter as tuning.
+  Detects an outbound connection initiated by a shell binary (bash, sh, dash,
+  zsh, ksh) to a public address. This is the enrichment-race safety net: a
+  reverse shell whose /proc/<pid>/cmdline read loses the race is invisible to
+  the command-line reverse-shell rules, but its socket is not. Requires
+  Initiated=true so accepted connections (reported on rustinel 1.6.0+ with the
+  fexit tier) cannot match. The event proves only that a shell process opened
+  a connection to a non-private, non-reserved destination; it does not prove
+  the protocol, any data transfer, or command and control. Linux drops refused
+  connects and IPv4 loopback / ::1 in the kernel, so failed attempts are not
+  seen. Add legitimate public endpoints to the non-public filter as tuning.
 references:
   - https://attack.mitre.org/techniques/T1059/004/
-  - https://attack.mitre.org/techniques/T1071/
 author: rustinel-rules
 date: 2026-07-09
 tags:
-  - attack.command-and-control
   - attack.execution
   - attack.t1059.004
-  - attack.t1071
 logsource:
   category: network_connection
   product: linux
 detection:
   selection:
+    Initiated: 'true'
     Image|endswith:
       - '/bash'
       - '/sh'
       - '/dash'
       - '/zsh'
       - '/ksh'
-  filter_private:
+  filter_nonpublic:
     DestinationIp|cidr:
+      - '0.0.0.0/8'
       - '10.0.0.0/8'
-      - '172.16.0.0/12'
-      - '192.168.0.0/16'
+      - '100.64.0.0/10'
       - '127.0.0.0/8'
       - '169.254.0.0/16'
+      - '172.16.0.0/12'
+      - '192.0.0.0/24'
+      - '192.0.2.0/24'
+      - '192.168.0.0/16'
+      - '198.18.0.0/15'
+      - '198.51.100.0/24'
+      - '203.0.113.0/24'
+      - '224.0.0.0/4'
+      - '240.0.0.0/4'
+      - '::/128'
       - '::1/128'
+      - '::ffff:0.0.0.0/104'
+      - '::ffff:10.0.0.0/104'
+      - '::ffff:127.0.0.0/104'
+      - '::ffff:169.254.0.0/112'
+      - '::ffff:172.16.0.0/108'
+      - '::ffff:192.168.0.0/112'
+      - '100::/64'
+      - '2001:db8::/32'
+      - 'fc00::/7'
       - 'fe80::/10'
-  condition: selection and not filter_private
+      - 'ff00::/8'
+  condition: selection and not filter_nonpublic
 falsepositives:
   - Provisioning scripts that use /dev/tcp health checks against public
     endpoints; the CIDR filter is the tuning surface.
@@ -48,5 +71,7 @@ rustinel:
   expected_false_positive_level: medium
   test_status: manual
   test_reason: >
-    The network_connection channel is not yet exercised by the atomic harness;
-    validated manually with a /dev/tcp connection from a shell to a lab public IP.
+    Needs a listening non-loopback public target (the Linux sensor filters
+    loopback and refused connects, and hosted runners have no IPv6 egress).
+    Initiated, IPv4/IPv6 range handling and benign negatives are covered offline
+    by tests/replay/network_connection.py.
