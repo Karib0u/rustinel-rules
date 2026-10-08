@@ -194,7 +194,7 @@ class PackStagingTests(unittest.TestCase):
                 patch.object(run_atomics, "IS_WINDOWS", True),
                 patch.object(run_atomics.subprocess, "run", fake_run),
             ):
-                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None)
+                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None, "linux")
             ((cmd, contents),) = calls
             self.assertEqual(cmd[0], "icacls")
             self.assertIn("/inheritance:r", cmd)
@@ -211,8 +211,55 @@ class PackStagingTests(unittest.TestCase):
                 patch.object(run_atomics, "IS_WINDOWS", False),
                 patch.object(run_atomics.subprocess, "run") as run,
             ):
-                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None)
+                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None, "linux")
             run.assert_not_called()
+
+
+class FixtureOverlayTests(unittest.TestCase):
+    def test_overlays_only_common_and_current_os_rule_fixtures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            fx = tmp / "fixtures"
+            for kind, scope, name in (
+                ("sigma", "linux", "l.yml"),
+                ("sigma", "windows", "w.yml"),
+                ("yara", "common", "c.yar"),
+            ):
+                (fx / kind / scope).mkdir(parents=True, exist_ok=True)
+                (fx / kind / scope / name).write_text("x")
+            pack = tmp / "pack"
+            added = run_atomics.overlay_rule_fixtures(pack, fx, "linux")
+            self.assertEqual(added, 2)
+            self.assertTrue((pack / "sigma" / "l.yml").exists())
+            self.assertFalse((pack / "sigma" / "w.yml").exists())
+            self.assertTrue((pack / "yara" / "c.yar").exists())
+
+    def test_memory_scanning_is_enabled_in_the_generated_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "dist" / "p").mkdir(parents=True)
+            with patch.object(run_atomics, "IS_WINDOWS", False):
+                run_atomics.setup_engine(tmp / "engine", tmp / "dist", {"id": "p"}, None, "linux")
+            config = (tmp / "engine" / "config.toml").read_text()
+            self.assertIn("yara_memory_enabled = true", config)
+
+
+class ManifestPolicyTests(unittest.TestCase):
+    def _load(self, tests):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "m.json"
+            path.write_text(json.dumps({"tests": tests}))
+            return run_atomics.load_manifest(path)
+
+    def test_allowed_failure_needs_a_reason(self):
+        base = {"id": "i", "name": "n", "platform": "linux", "engine": "sigma", "script": "s"}
+        with self.assertRaises(SystemExit):
+            self._load([{**base, "allow_failure": True}])
+        self._load([{**base, "allow_failure": True, "allow_failure_reason": "flaky"}])
+
+    def test_every_allowed_failure_in_the_shipped_manifest_has_a_reason(self):
+        tests = run_atomics.load_manifest(run_atomics.HARNESS_ROOT / "manifest.json")
+        self.assertTrue(any(t.get("allow_failure") for t in tests))
 
 
 class CanaryBlobTests(unittest.TestCase):

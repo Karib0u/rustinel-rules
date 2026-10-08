@@ -150,6 +150,44 @@ never executed is never hashed, and EICAR cannot become a process image at all.)
 
 ---
 
+## Detector-path smoke coverage
+
+Each detector path has at least one firing test in this suite. Production
+rules exercise Sigma and file-scan YARA; the paths production content has no
+suitable trigger for use test-only fixtures from `preview/`:
+
+| Path | Test | Trigger |
+| --- | --- | --- |
+| Sigma | the per-rule atomics | behavioural |
+| Sigma correlation | `<os>_sigma_correlation_fixture` | an `event_count` correlation (>= 2 in 2m) over a marker rule; the atomic starts the marker process twice |
+| IOC hash | `<os>_canary_ioc` (Linux, Windows) | executes the deterministic canary executable |
+| IOC path | `macos_canary_ioc` | launches a binary from the canary path |
+| IOC IP, domain | `<os>_canary_ioc_ip`, `<os>_canary_ioc_domain` | a short-lived process whose command line carries a TEST-NET-3 URL and a `.invalid` URL (no network) |
+| YARA (disk) | `<os>_*_yara_fixture` | executable carrying the rule's marker strings |
+| YARA (memory) | `<os>_yara_memory_fixture` | a long-lived process assembles a marker at runtime; only a process-memory scan sees it. The harness sets `scanner.yara_memory_enabled = true` |
+
+macOS memory scanning and the macOS coinminer file scan are `allow_failure`
+with a recorded reason until they have a track record on hosted runners.
+
+The fixtures live under `preview/` as `test-only` entries, outside `rules/`, so
+no pack can reference them. `tools/build_packs.py` stages them under
+`build/fixtures/<kind>/<os|common>/` (outside `dist/`) and the runner copies the
+current OS's into its throwaway pack copy. Sigma fixtures match only a unique
+command-line marker, so they cannot compete with a production detection on the
+same event. `--no-fixtures` runs production content alone.
+
+### Reading a run
+
+`report-<platform>.json` and the job summary keep three outcomes apart:
+**required misses** (fail the run), **allowed failures** (manifest
+`allow_failure`, with a mandatory `allow_failure_reason`) and **skips**
+(manifest `skip`, a reason string; the test is not run). A failed test records
+the expected alert, the trigger's exit code and output, and the rule names the
+engine did alert on while waiting (`alerts_seen`); CI uploads the engine logs
+and `engine.stdout.log` beside the report.
+
+---
+
 ## Layout
 
 ```text
