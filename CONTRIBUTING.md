@@ -120,6 +120,10 @@ each line with its source set id for provenance.
 | `advanced`  | Solid production value; may produce environment-dependent false positives.  |
 | `hunting`   | Broad/noisy leads for analysts. Never enabled by default.                   |
 
+Hunting packs set `active_response_eligible: false` in `pack.yml` (validation enforces it).
+The flag is carried into the build index and catalog, so tooling can refuse to wire hunting
+alerts to automated response. Rules that also ship in Advanced stay eligible through Advanced.
+
 Packs are cumulative: don't re-list a rule in Advanced if it's already in Essential - Advanced
 `extends` Essential.
 

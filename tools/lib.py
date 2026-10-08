@@ -458,6 +458,18 @@ def pack_min_engine(
     return minimum, drivers
 
 
+def active_response_eligible(pack: dict) -> bool:
+    """Whether alerts from a pack may drive automated active response.
+
+    Hunting packs are analyst-driven and never eligible; the manifest states it
+    explicitly (validation enforces that), and other levels default to eligible.
+    """
+    declared = pack.get("active_response_eligible")
+    if isinstance(declared, bool):
+        return declared
+    return pack.get("level") != "hunting"
+
+
 def artifact_test_status(artifact: Artifact) -> str | None:
     """Declared test evidence of a rule: Sigma `rustinel.test_status`, YARA
     `test_status` meta. IOC sets carry none and are left out of the roll-up."""
