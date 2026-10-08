@@ -1,0 +1,28 @@
+name: Linux Hunting
+id: linux-hunting
+description: >
+    Linux Advanced plus broad, noisier hunting content intended for analyst-driven
+    investigation. Not enabled by default and not suitable as a standing alert source
+    without tuning.
+os: linux
+level: hunting
+pack_schema_version: 2
+requires_rustinel: ">=1.0.2"
+default: false
+expected_false_positive_level: high
+status: experimental
+license: DRL-1.1
+extends:
+  - linux-advanced
+attack_coverage:
+  - T1059.004
+telemetry_requirements:
+  - process_creation
+test_status: none
+sources:
+    manual:
+      - https://attack.mitre.org/
+rules:
+    has:
+        sigma:
+          - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (Hunting) (sigma)

@@ -11,6 +11,7 @@ references:
   - https://attack.mitre.org/techniques/T1059/004/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
   - attack.execution
@@ -20,20 +21,12 @@ logsource:
   category: process_creation
   product: linux
 detection:
-  selection_b64:
-    CommandLine|contains: 'base64'
-  selection_decode:
-    CommandLine|contains:
-      - ' -d '
-      - ' --decode'
-      - ' -d|'
-  selection_pipe:
-    CommandLine|contains:
-      - '| sh'
-      - '|sh'
-      - '| bash'
-      - '|bash'
-  condition: selection_b64 and selection_decode and selection_pipe
+  # The decode flag must belong to base64 and the shell must be the very next
+  # stage of the same pipeline: `base64 -d | sh`, `base64 --decode | /bin/bash -s`.
+  # A -d on another command, or a shell elsewhere in the line, does not match.
+  selection:
+    CommandLine|re: 'base64(\s+[^|;&]*)?\s(-[a-zA-Z]*[dD][a-zA-Z]*|--decode)(\s[^|;&]*)?\|\s*(\S*/)?(ba|da|z|k)?sh([\s;&|)"'']|$)'
+  condition: selection
 falsepositives:
   - CI systems occasionally decode and run build steps this way.
 level: medium

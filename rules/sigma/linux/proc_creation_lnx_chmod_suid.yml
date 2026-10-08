@@ -9,7 +9,7 @@ references:
   - https://attack.mitre.org/techniques/T1548/001/
 author: rustinel-rules
 date: 2026-07-09
-modified: 2026-10-01
+modified: 2026-10-08
 tags:
   - attack.privilege-escalation
   - attack.persistence
@@ -20,12 +20,14 @@ logsource:
 detection:
   selection:
     Image|endswith: '/chmod'
+    # The mode is chmod's first non-option argument, so a file that merely
+    # looks like a mode (`chmod 644 4755`) or a later argument does not match.
     CommandLine|re:
-      # Symbolic: +s, u+s, g+s, a+s, ug+xs, u=rwxs, ...
-      - '(^|[\s,])[ugoa]*[+=][rwxXt]*s[rwxXst]*([\s,]|$)'
+      # Symbolic: +s, u+s, g+s, a+s, ug+xs, u=rwxs, a-x,u+s, ...
+      - '(^|[\s/])chmod\s+(-\S+\s+)*(\S*,)?[ugoa]*[+=][rwxXt]*s[rwxXst]*(,\S*)?(\s|$)'
       # Octal with a setuid or setgid bit: 2xxx, 4xxx, 6xxx (sticky combos
       # 3xxx, 5xxx, 7xxx included), optionally zero-prefixed.
-      - '(^|\s)0?[2-7][0-7]{3}(\s|$)'
+      - '(^|[\s/])chmod\s+(-\S+\s+)*0?[2-7][0-7]{3}(\s|$)'
   filter_pkg:
     ParentImage|endswith:
       - '/dpkg'
