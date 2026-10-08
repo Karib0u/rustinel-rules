@@ -6,6 +6,9 @@ changelog:
     - title: Breaking Changes
       labels:
         - breaking-change
+    - title: Detection Changes
+      labels:
+        - detections
     - title: Performance
       labels:
         - performance
@@ -20,6 +23,10 @@ changelog:
         - bug
         - fix
         - bugfix
+    - title: Testing
+      labels:
+        - testing
+        - test
     - title: Documentation
       labels:
         - documentation
