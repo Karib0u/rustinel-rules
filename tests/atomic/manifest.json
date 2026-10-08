@@ -990,9 +990,7 @@
           "script": "windows/amsi_provider_removed_negative.ps1",
           "marker": "RustinelAtomicNegative"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "registry_delete telemetry is not yet proven to fire on hosted Windows runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "127db158-346f-4244-b2ad-1522e7c3c2a1",
@@ -1005,9 +1003,7 @@
           "script": "windows/prefetch_deleted_negative.ps1",
           "marker": "rustinel_negative"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "file_delete telemetry is not yet proven to fire on hosted Windows runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "5ffa485e-7667-4ecc-a17c-fc5f9068c0d4",
@@ -1033,9 +1029,7 @@
           "script": "windows/timestomp_script_host_negative.ps1",
           "marker": "rustinel_negative_timestomp"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "file_change telemetry is not yet proven to fire on hosted Windows runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "c2f19723-1801-48d4-a45f-c47f2f9d41b5",
@@ -1048,9 +1042,7 @@
           "script": "windows/dns_tunnel_service_negative.ps1",
           "marker": "rustinel-negative.mytrycloudflare.com"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "dns_query telemetry is not yet proven to fire on hosted Windows runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "d0e8f644-2661-4f99-b1b2-69eb70abe050",
@@ -1063,9 +1055,7 @@
           "script": "windows/ransomware_mass_rename_negative.ps1",
           "marker": "rustinel_negative_mass_rename"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "file_rename telemetry is not yet proven to fire on hosted Windows runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
@@ -1091,9 +1081,7 @@
           "script": "linux/dns_tunnel_service_negative.sh",
           "marker": "rustinel-negative.mytrycloudflare.com"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "dns_query telemetry is not yet proven to fire on hosted Linux runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
@@ -1126,9 +1114,7 @@
           "script": "macos/dns_tunnel_service_negative.sh",
           "marker": "rustinel-negative.mytrycloudflare.com"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "dns_query telemetry is not yet proven to fire on hosted macOS runners; stays non-gating until a CI run records it."
+      ]
     },
     {
       "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
