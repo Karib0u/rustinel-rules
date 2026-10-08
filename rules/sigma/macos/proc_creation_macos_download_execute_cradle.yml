@@ -6,11 +6,15 @@ description: >
   with curl or wget and pipes it directly into an interpreter for execution — a
   common macOS payload-staging and fake-installer technique. Noisier where
   developer install one-liners are common, so placed in the Advanced tier.
+  The pipe target must be a shell as a whole word, so verification pipes such
+  as `curl ... | shasum -a 256` do not match. Command-line evidence only: the
+  download and execution are not observed.
 references:
   - https://attack.mitre.org/techniques/T1105/
   - https://attack.mitre.org/techniques/T1059/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.command-and-control
   - attack.t1105
@@ -30,17 +34,13 @@ detection:
       - 'curl '
       - 'wget '
   selection_pipe:
-    CommandLine|contains:
-      - '| bash'
-      - '| sh'
-      - '| zsh'
-      - '|bash'
-      - '|sh'
-      - '|zsh'
+    # The shell is the pipe target as a whole word, optionally behind sudo or
+    # env. `| sh` must not match `| shasum` or `| sha256sum`.
+    CommandLine|re: '\|\s*(sudo\s+(-\S+\s+)*|env\s+)?(/\S*/)?(ba|z)?sh(\s|$|[;&)''"])'
   condition: selection_shell and selection_download and selection_pipe
 falsepositives:
   - Developer install one-liners (e.g. Homebrew-style bootstraps) that fetch and run scripts.
-level: high
+level: medium
 rustinel:
   telemetry:
     - process_creation

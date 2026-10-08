@@ -1,48 +1,37 @@
-title: Gatekeeper or Quarantine Protection Disabled
+title: Gatekeeper Globally Disabled via spctl
 id: 5c3e4051-6d7f-4082-8c92-3d4e5f601203
 status: experimental
 description: >
-  Detects disabling of macOS Gatekeeper (spctl --master-disable /
-  --global-disable) or removal of the com.apple.quarantine attribute via xattr,
-  either explicitly (-d com.apple.quarantine) or by clearing every attribute
-  (xattr -c / -cr). Both let unsigned or freshly downloaded payloads run without
-  the usual Gatekeeper / quarantine prompts, a common step in fake-installer and
-  infostealer chains; "xattr -c" is the form most such installers tell the
-  victim to paste into Terminal.
+  Detects `spctl --master-disable` or `--global-disable`, which turns off
+  Gatekeeper assessment for the whole system so unsigned or freshly downloaded
+  software runs without the usual prompts. Changing this setting is an
+  administrative action that is rare outside deliberate lab or developer
+  machines, which is why it is the Essential-tier Gatekeeper branch.
+  Removing the quarantine attribute from individual files is a much more common
+  activity and is covered separately, at a lower tier, by
+  0b4db6de-848b-48e5-bebc-9fc4a2e24db2.
 references:
-  - https://attack.mitre.org/techniques/T1553/001/
   - https://attack.mitre.org/techniques/T1562/001/
+  - https://attack.mitre.org/techniques/T1553/001/
 author: rustinel-rules
 date: 2026-06-04
-modified: 2026-10-01
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
-  - attack.t1553.001
   - attack.t1562.001
+  - attack.t1553.001
 logsource:
   category: process_creation
   product: macos
 detection:
-  selection_spctl:
+  selection:
     Image|endswith: '/spctl'
     CommandLine|contains:
-      - 'master-disable'
-      - 'global-disable'
-  selection_xattr:
-    Image|endswith: '/xattr'
-  selection_xattr_delete:
-    CommandLine|contains:
-      - '-d com.apple.quarantine'
-      - '-rd com.apple.quarantine'
-      - '-dr com.apple.quarantine'
-      - '--delete com.apple.quarantine'
-  selection_xattr_clear:
-    # -c clears every extended attribute, quarantine included. Allow it to be
-    # combined with -r, -s, -v or -x (xattr -cr, -rc, -crs ...).
-    CommandLine|re: '(^|\s)-[rsvx]*c[rsvx]*(\s|$)'
-  condition: selection_spctl or (selection_xattr and (selection_xattr_delete or selection_xattr_clear))
+      - '--master-disable'
+      - '--global-disable'
+  condition: selection
 falsepositives:
-  - Developers stripping quarantine from their own builds; rare administrative Gatekeeper changes.
+  - Administrators or developers deliberately relaxing Gatekeeper on a lab machine.
 level: high
 rustinel:
   telemetry:

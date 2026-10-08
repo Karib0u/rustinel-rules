@@ -2,18 +2,22 @@ title: launchctl Load from User-Writable Path
 id: 578195d3-de1a-4c46-84c8-b246a060474c
 status: experimental
 description: >
-  Detects launchctl loading or bootstrapping a launch item from a world-writable
-  or temporary path (/tmp, /private/tmp, /Users/Shared, /var/tmp). This is the
-  execution-side complement to the LaunchAgents/LaunchDaemons plist-creation rule:
-  it catches activation of the agent even when the plist write happened earlier.
+  Detects `launchctl load` or `launchctl bootstrap` of a property list located
+  in a temporary or shared directory (/tmp, /var/tmp, /Users/Shared,
+  /var/folders; /private/ forms included). This is the activation-side
+  complement to the launch-item write rules: it catches a plist being loaded
+  from a staging location even when the earlier write was not seen.
+  `load` and `bootstrap` are matched as subcommands, not as substrings, so
+  `unload`, `launchctl list` and paths containing the word do not match. The
+  command line shows the request, not whether launchd accepted the job.
 references:
   - https://attack.mitre.org/techniques/T1543/001/
   - https://attack.mitre.org/techniques/T1543/004/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.persistence
-  - attack.privilege-escalation
   - attack.t1543.001
   - attack.t1543.004
 logsource:
@@ -22,16 +26,15 @@ logsource:
 detection:
   selection_tool:
     Image|endswith: '/launchctl'
-    CommandLine|contains:
-      - 'load'
-      - 'bootstrap'
+  selection_subcommand:
+    CommandLine|re: '(^|\s)(load|bootstrap)(\s|$)'
   selection_path:
-    CommandLine|contains:
-      - '/tmp/'
-      - '/private/tmp/'
-      - '/Users/Shared/'
-      - '/var/tmp/'
-  condition: selection_tool and selection_path
+    # A staging directory as a path root, not as a component of a project path
+    # such as /Users/dev/tmp/.
+    CommandLine|re: '(\s|["''=])(/private)?/(var/)?tmp/|(\s|["''=])/Users/Shared/|(\s|["''=])(/private)?/var/folders/'
+  selection_plist:
+    CommandLine|contains: '.plist'
+  condition: selection_tool and selection_subcommand and selection_path and selection_plist
 falsepositives:
   - Some developer tooling loads agents from a temporary path during install.
 level: medium

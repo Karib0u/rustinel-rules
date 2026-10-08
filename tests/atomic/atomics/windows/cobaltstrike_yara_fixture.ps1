@@ -10,7 +10,7 @@ $bin = Join-Path $dir 'rustinel_cobaltstrike_fixture.exe'
 try {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
     Copy-Item "$env:SystemRoot\System32\cmd.exe" $bin -Force
-    [IO.File]::AppendAllText($bin, "beacon.dll`nbeacon.x64.dll`n")
+    [IO.File]::AppendAllText($bin, "beacon.dll`ncould not spawn %s`n")
     & $bin /c exit 0 | Out-Null
     # ETW delivery and the YARA worker are asynchronous. Keep the file
     # available after process exit so this tests detection, not a deletion race.

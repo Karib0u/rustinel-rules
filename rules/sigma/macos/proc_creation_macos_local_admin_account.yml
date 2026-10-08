@@ -1,37 +1,33 @@
-title: Local Admin Account Created via Directory Services
+title: Local Account Created via Directory Services
 id: 2f617384-9012-43b5-9fc5-60718293a416
 status: experimental
 description: >
-  Detects creation of a local account or its addition to the admin group via
-  dscl, sysadminctl or dseditgroup. Adversaries use this to establish a
-  persistent privileged account, sometimes hidden from the login window.
+  Detects creation of a local user account with `dscl . -create /Users/...` or
+  `sysadminctl -addUser`. Adversaries create accounts to keep a way back onto
+  the machine. Account creation alone is also what provisioning, MDM and IT
+  tooling do all day, so this is Advanced-tier and says nothing about
+  privilege: adding an account to the admin group
+  (97b0f988-7268-4854-9251-4da5a8397da9) and hiding an account from the login
+  window (55eaad6e-88a1-4eae-8014-24d96a68f965) are separate rules.
 references:
   - https://attack.mitre.org/techniques/T1136/001/
-  - https://attack.mitre.org/techniques/T1098/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.t1136.001
-  - attack.t1098
 logsource:
   category: process_creation
   product: macos
 detection:
   selection_dscl:
     Image|endswith: '/dscl'
-    CommandLine|contains|all:
-      - 'create'
-      - '/Users/'
+    CommandLine|re: '(^|\s)-?create\s+"?/Users/'
   selection_sysadminctl:
     Image|endswith: '/sysadminctl'
-    CommandLine|contains: '-addUser'
-  selection_dseditgroup:
-    Image|endswith: '/dseditgroup'
-    CommandLine|contains|all:
-      - 'admin'
-      - '-a '
-  condition: selection_dscl or selection_sysadminctl or selection_dseditgroup
+    CommandLine|re: '(^|\s)-addUser(\s|$)'
+  condition: selection_dscl or selection_sysadminctl
 falsepositives:
   - Legitimate provisioning, MDM enrollment and IT administration workflows.
 level: medium

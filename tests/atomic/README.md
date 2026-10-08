@@ -81,6 +81,19 @@ host with BTF and is not exercised here.
 python3 tests/replay/linux_detection_logic.py --engine /path/to/rustinel
 ```
 
+`tests/replay/macos_detection_logic.py` is the macOS counterpart and runs in the
+macOS job: the corrected Gatekeeper, quarantine, osascript, `/dev/tcp`, account,
+launchctl, download-cradle, launch-item, `authorized_keys` and signing-aware
+staging-execution rules each have positives and near-miss negatives, including
+Apple platform and Team ID signed binaries that must not match. The engine
+reports one alert per event, so each rule is replayed alone against its own
+cases. Signing context is injected into the events, so this checks rule logic
+only; real Endpoint Security signing values are exercised by the atomics.
+
+```bash
+python3 tests/replay/macos_detection_logic.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;

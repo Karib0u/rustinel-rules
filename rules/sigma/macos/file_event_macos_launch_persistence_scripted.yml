@@ -1,0 +1,56 @@
+title: Launch Agent or Daemon Plist Written by a Shell or Scripting Process
+id: 8da551dd-08cf-4b73-b3cc-a18708f548b4
+status: experimental
+description: >
+  Detects a LaunchAgents or LaunchDaemons property list written by a shell or
+  scripting interpreter (sh, bash, zsh, python, perl, ruby, osascript) or by a
+  copy utility. Installers and management agents write launch items through
+  their own code; a plist produced by a script is how infostealer and implant
+  droppers install persistence, so this is the stronger branch of the generic
+  plist-written rule (4d4f5162-7e80-4193-9da3-4e5f60712304).
+  Provisioning scripts and developer tooling also write launch items from a
+  shell, so it is Advanced-tier. It shows the write, not that the item was
+  loaded.
+references:
+  - https://attack.mitre.org/techniques/T1543/001/
+  - https://attack.mitre.org/techniques/T1543/004/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.t1543.001
+  - attack.t1543.004
+logsource:
+  category: file_event
+  product: macos
+detection:
+  selection_path:
+    TargetFilename|contains:
+      - '/Library/LaunchAgents/'
+      - '/Library/LaunchDaemons/'
+    TargetFilename|endswith: '.plist'
+  selection_writer:
+    Image|endswith:
+      - '/sh'
+      - '/bash'
+      - '/zsh'
+      - '/dash'
+      - '/python'
+      - '/python3'
+      - '/perl'
+      - '/ruby'
+      - '/osascript'
+      - '/cp'
+      - '/cat'
+      - '/tee'
+      - '/ditto'
+      - '/curl'
+  condition: selection_path and selection_writer
+falsepositives:
+  - Provisioning scripts, configuration management and developer tooling that write launch items from a shell.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: atomic

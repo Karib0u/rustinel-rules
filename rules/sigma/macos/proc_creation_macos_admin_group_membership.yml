@@ -1,0 +1,48 @@
+title: Account Added to the macOS Admin Group
+id: 97b0f988-7268-4854-9251-4da5a8397da9
+status: experimental
+description: >
+  Detects a local account being given administrator rights through directory
+  services: `dseditgroup -o edit -a <user> ... admin`, `dscl . -append
+  /Groups/admin GroupMembership <user>`, or `sysadminctl -addUser ... -admin`
+  which creates an account that is an administrator from the start. Adversaries
+  add a controlled account to the admin group to hold privileged access.
+  Granting admin is normal during provisioning and by IT staff, so this is
+  Advanced-tier. The command line names the target group and user; whether the
+  change succeeded is not observed. Account creation and hidden accounts are
+  separate rules (2f617384-9012-43b5-9fc5-60718293a416,
+  55eaad6e-88a1-4eae-8014-24d96a68f965).
+references:
+  - https://attack.mitre.org/techniques/T1098/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1098
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_dseditgroup:
+    Image|endswith: '/dseditgroup'
+    CommandLine|re: '(^|\s)-a\s+\S+.*\s(-t\s+user\s+)?"?admin"?(\s|$)'
+  selection_dscl:
+    Image|endswith: '/dscl'
+    CommandLine|re: '(^|\s)-?(append|merge)\s+"?/Groups/admin"?\s+GroupMembership\s'
+  selection_sysadminctl:
+    Image|endswith: '/sysadminctl'
+    CommandLine|re: '(^|\s)-addUser(\s|$)'
+  selection_admin_flag:
+    # `-admin` as a standalone flag, in any position; `-adminUser` and
+    # `-adminPassword` only authenticate the caller and are not matched.
+    CommandLine|re: '(^|\s)-admin(\s|$)'
+  condition: selection_dseditgroup or selection_dscl or (selection_sysadminctl and selection_admin_flag)
+falsepositives:
+  - Provisioning scripts, MDM enrollment and IT administration granting admin rights.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

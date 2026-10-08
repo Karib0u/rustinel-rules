@@ -1,17 +1,22 @@
-title: SSH authorized_keys Created or Replaced (macOS)
+title: SSH authorized_keys Written (macOS)
 id: c92540cf-466d-4959-ab25-1c456bedf9d5
 status: experimental
 description: >
-  Detects creation or replacement of an SSH authorized_keys file on macOS, a
-  platform-agnostic persistence and remote-access technique that lets an attacker
-  log in with their own key. macOS port of the Linux authorized_keys rule.
+  Detects a write to a user's SSH authorized_keys file on macOS, the file that
+  lets a holder of the matching private key log in over SSH. Endpoint Security
+  reports a Modify when a written file is closed, so this fires for a new file,
+  an appended key and a rewrite alike; it cannot tell a malicious key from an
+  administrator's. `ssh-copy-id`, MDM and configuration management all write
+  this file, so it is Advanced-tier. Writes by known management agents are
+  excluded by writer; an unknown writer is kept.
+  macOS port of the Linux authorized_keys rule.
 references:
   - https://attack.mitre.org/techniques/T1098/004/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.persistence
-  - attack.lateral-movement
   - attack.t1098.004
 logsource:
   category: file_event
@@ -19,14 +24,20 @@ logsource:
 detection:
   selection:
     TargetFilename|endswith:
-      - '/authorized_keys'
-      - '/authorized_keys2'
-  condition: selection
+      - '/.ssh/authorized_keys'
+      - '/.ssh/authorized_keys2'
+  filter_management:
+    Image|contains:
+      - '/jamf'
+      - '/Jamf/'
+      - '/munki/'
+      - '/Homebrew/'
+  condition: selection and not filter_management
 falsepositives:
   - Legitimate key provisioning via ssh-copy-id or configuration management.
-level: high
+level: medium
 rustinel:
   telemetry:
     - file_event
-  expected_false_positive_level: low
+  expected_false_positive_level: medium
   test_status: atomic
