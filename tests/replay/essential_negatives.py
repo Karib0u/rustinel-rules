@@ -19,6 +19,8 @@ import tempfile
 from pathlib import Path
 
 SYS = "C:\\Windows\\System32\\"
+WMI_PUT = r"Start IWbemServices::PutInstance - root\subscription : "
+WMI_QUERY = r"Start IWbemServices::ExecQuery - root\cimv2 : "
 OFFICE = "C:\\Program Files\\Microsoft Office\\root\\Office16\\"
 
 
@@ -156,9 +158,7 @@ CASES = {
         "wmi_event_win_susp_subscription.yml": [
             (
                 True,
-                wmi(
-                    r"Start IWbemServices::PutInstance - root\subscription : CommandLineEventConsumer"
-                ),
+                wmi(WMI_PUT + "CommandLineEventConsumer"),
             ),
             (
                 True,
@@ -166,9 +166,7 @@ CASES = {
             ),
             (
                 False,
-                wmi(
-                    r"Start IWbemServices::ExecQuery - root\cimv2 : SELECT * FROM Win32_OperatingSystem"
-                ),
+                wmi(WMI_QUERY + "SELECT * FROM Win32_OperatingSystem"),
             ),
             (
                 False,
@@ -203,6 +201,7 @@ CASES = {
 }
 
 # Essential Sigma rules whose negative evidence is in another replay or atomic.
+NEG = "tests/atomic/atomics/windows"
 COVERED_ELSEWHERE = {
     "file_event_lnx_ssh_authorized_keys.yml": "tests/replay/linux_detection_logic.py",
     "file_event_lnx_sudoers_tamper.yml": "tests/replay/linux_detection_logic.py",
@@ -220,9 +219,9 @@ COVERED_ELSEWHERE = {
     "proc_creation_win_susp_eventlog_clear.yml": "tests/replay/windows_process.py",
     "proc_creation_win_susp_ntds_dit_extraction.yml": "tests/replay/windows_process.py",
     "proc_creation_win_susp_procdump_lsass.yml": "tests/replay/windows_process.py",
-    "registry_event_win_defender_tamper.yml": "tests/atomic/atomics/windows/defender_registry_tamper_negative.ps1",
-    "registry_event_win_wdigest_cleartext_credentials.yml": "tests/atomic/atomics/windows/wdigest_registry_negative.ps1",
-    "registry_event_win_susp_ifeo_debugger.yml": "tests/atomic/atomics/windows/ifeo_debugger_negative.ps1",
+    "registry_event_win_defender_tamper.yml": f"{NEG}/defender_registry_tamper_negative.ps1",
+    "registry_event_win_wdigest_cleartext_credentials.yml": f"{NEG}/wdigest_registry_negative.ps1",
+    "registry_event_win_susp_ifeo_debugger.yml": f"{NEG}/ifeo_debugger_negative.ps1",
 }
 
 
