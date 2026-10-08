@@ -1,0 +1,53 @@
+title: Service Installed With Suspicious Binary Path (Security 4697)
+id: 2095766d-dd72-41f2-b315-3438406c009a
+status: experimental
+description: >
+  Detects Security event 4697 (a service was installed) whose binary path runs a
+  script host or interpreter, uses %COMSPEC%, or points into a user-writable
+  directory. This is the Security-log view of the service-install technique used
+  by PsExec-style tools and malware loaders, and fires even when the System log
+  7045 event is unavailable. Requires the "Security System Extension" audit
+  subcategory, which Windows leaves off by default: auditpol /set
+  /subcategory:"Security System Extension" /success:enable.
+references:
+  - https://attack.mitre.org/techniques/T1543/003/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4697
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.execution
+  - attack.t1543.003
+  - attack.t1569.002
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_event:
+    EventID: 4697
+  selection_interpreter:
+    ServiceFileName|contains:
+      - 'cmd.exe'
+      - 'powershell.exe'
+      - 'pwsh.exe'
+      - 'rundll32.exe'
+      - 'mshta.exe'
+      - '%COMSPEC%'
+  selection_path:
+    ServiceFileName|contains:
+      - '\Users\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\AppData\'
+      - '\PSEXESVC'
+  condition: selection_event and (selection_interpreter or selection_path)
+falsepositives:
+  - Management agents that install services from ProgramData.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: atomic

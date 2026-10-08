@@ -978,6 +978,34 @@
       ],
       "allow_failure": true,
       "allow_failure_reason": "Process-memory reads on macOS need task_for_pid, which the hardened Python on a hosted runner may refuse; unproven on CI until this test has run there."
+    },
+    {
+      "id": "e813d6f6-5dbb-4587-a60e-20a04481fdc6",
+      "name": "windows_security_log_cleared",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_log_cleared.ps1"
+    },
+    {
+      "id": "5a2fd413-6826-47af-8b6b-9e069058c807",
+      "name": "windows_audit_policy_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/audit_policy_disabled.ps1"
+    },
+    {
+      "id": "859d9985-7720-42b1-a557-c1f6f8972642",
+      "name": "windows_privileged_group_member_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/privileged_group_member_added.ps1"
+    },
+    {
+      "id": "2095766d-dd72-41f2-b315-3438406c009a",
+      "name": "windows_security_service_install",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_service_install.ps1"
     }
   ]
 }

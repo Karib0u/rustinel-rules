@@ -27,6 +27,7 @@ attack_coverage:
   - T1090.001
   - T1098
   - T1105
+  - T1134.005
   - T1136.001
   - T1197
   - T1218
@@ -44,7 +45,9 @@ attack_coverage:
   - T1547.004
   - T1548.002
   - T1562.001
+  - T1562.002
   - T1566.001
+  - T1569.002
 telemetry_requirements:
   - process_creation
   - registry_event
@@ -81,6 +84,12 @@ rules:
           - 6228b718-bcc1-4901-80b9-e2a6fc23a4a6   # NTDS.dit Copied or Accessed with a File Tool (sigma)
           - 59bbd501-1c61-45c9-940d-9465cabd36c4   # File Dropped in Startup Folder (sigma)
           - 717396f6-aff0-49b0-b8f3-53568e276d5c   # Outbound Connection from Script or LOLBin Host (sigma)
+          - e813d6f6-5dbb-4587-a60e-20a04481fdc6   # Security Event Log Cleared (sigma)
+          - 5a2fd413-6826-47af-8b6b-9e069058c807   # Windows Audit Policy Success or Failure Auditing Removed (sigma)
+          - 859d9985-7720-42b1-a557-c1f6f8972642   # Member Added to Privileged Group (sigma)
+          - 2095766d-dd72-41f2-b315-3438406c009a   # Service Installed With Suspicious Binary Path (Security 4697) (sigma)
+          - 619320af-9c50-44b8-8fe6-800b027b4802   # SID History Added to Account (sigma)
+          - 91ecb87b-035a-4745-86b6-7b047feca9b9   # DSRM Administrator Password Set (sigma)
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)
