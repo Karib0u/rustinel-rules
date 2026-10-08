@@ -197,7 +197,7 @@ Use `--baseline none` only for offline checks.
 ## Submitting a PR
 
 Use a conventional title such as `feat(windows): detect suspicious task actions` or `fix(linux): reduce persistence false positives`.
-Add an appropriate label: `enhancement`, `bug`, `performance`, `documentation`, `dependencies`, `refactor`, `ci`, or `chore`.
+Add an appropriate label: `detections` (rule content), `enhancement`, `bug`, `testing`, `performance`, `documentation`, `dependencies`, `refactor`, `ci`, or `chore`.
 Use `breaking-change` for incompatible changes and `skip-changelog` for release preparation or changes with no release-note value.
 [Changelog categories](.github/release.yml) use labels, not title prefixes.
 
