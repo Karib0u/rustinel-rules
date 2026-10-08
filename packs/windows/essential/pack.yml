@@ -29,7 +29,6 @@ attack_coverage:
   - T1070
   - T1546.008
   - T1546.012
-  - T1496
 telemetry_requirements:
   - process_creation
   - registry_event
@@ -62,5 +61,4 @@ rules:
           - cda4a133-fe67-4aa6-815d-f8c69ff16828   # IFEO Debugger or SilentProcessExit Hijack (sigma)
         yara:
           - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
-          - yara-win-xmrig-coinminer   # XMRig / coinminer strings in Windows PE binaries (yara)
           - yara-win-msfvenom-stager   # Metasploit / Meterpreter stager markers in Windows PE (yara)

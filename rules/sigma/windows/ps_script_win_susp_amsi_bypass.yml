@@ -56,9 +56,4 @@ rustinel:
   telemetry:
     - ps_script
   expected_false_positive_level: medium
-  test_status: manual
-  test_reason: >
-    Requires PowerShell ScriptBlock logging to be enabled on the host, which the
-    atomic firing runners do not configure, and AMSI may block the bypass content
-    itself; validated manually with Atomic Red Team T1562.001 AMSI bypass atomics.
-    Positive and negative cases are covered by tests/tools/test_powershell_rules.py.
+  test_status: atomic
