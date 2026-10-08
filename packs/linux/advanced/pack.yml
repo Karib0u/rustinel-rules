@@ -15,6 +15,7 @@ license: DRL-1.1
 extends:
   - linux-essential
 attack_coverage:
+  - T1496
   - T1543.002
   - T1053.003
   - T1546.004
@@ -60,3 +61,4 @@ rules:
           - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
+          - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)

@@ -2,8 +2,8 @@ name: macOS Essential
 id: macos-essential
 description: >
     Low-noise, high-confidence macOS detections for Rustinel, focused on the
-    dominant macOS threats: infostealers, keychain theft, Gatekeeper bypass and
-    cryptominers. Experimental and post-v1 — macOS packs are not yet
+    dominant macOS threats: infostealers, keychain theft and Gatekeeper bypass.
+    Experimental and post-v1 — macOS packs are not yet
     production-ready, so this pack is disabled by default.
 os: macos
 level: essential
@@ -22,7 +22,6 @@ attack_coverage:
   - T1553.001
   - T1562.001
   - T1105
-  - T1496
   - T1555.003
 telemetry_requirements:
   - process_creation
@@ -39,5 +38,3 @@ rules:
           - 5c3e4051-6d7f-4082-8c92-3d4e5f601203   # Gatekeeper or Quarantine Protection Disabled (sigma)
           - be06a6b0-fa9f-4df4-9d4a-9f8794037508   # macOS Reverse Shell via /dev/tcp (sigma)
           - db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8   # Browser Credential Store Targeted on a Command Line (sigma)
-        yara:
-          - yara-macos-coinminer-strings           # Cryptominer Mach-O strings (yara)
