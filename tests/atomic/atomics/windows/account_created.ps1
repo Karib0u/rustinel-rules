@@ -13,7 +13,7 @@ $user = 'rustinel_atomic_cor'
 & auditpol.exe /set /subcategory:'{0CCE9235-69AE-11D9-BED3-505054503030}' /success:enable | Out-Null
 & auditpol.exe /set /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}' /success:enable | Out-Null
 
-& net.exe user $user 'P@ssw0rd-Atomic-123!' /add | Out-Null
+& net.exe user $user 'P@ss-Atom1c-9x' /add | Out-Null
 $sid = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'
 $admins = $sid.Translate([System.Security.Principal.NTAccount]).Value.Split('\')[-1]
 & net.exe localgroup $admins $user /add | Out-Null
