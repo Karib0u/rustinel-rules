@@ -43,3 +43,25 @@ rustinel:
     - security
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "SubjectUserName"
+      guidance: "Filter approved provisioning accounts."
+    - surface: "TargetSid"
+      guidance: "Extend the SID patterns only for another group you treat as privileged."
+  negatives:
+    - reason: "added to local Users"
+      fields:
+        EventID: "4732"
+        TargetSid: "S-1-5-32-545"
+    - reason: "added to a custom domain group"
+      fields:
+        EventID: "4728"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-1105"
+    - reason: "added to Domain Users"
+      fields:
+        EventID: "4756"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-513"
+    - reason: "removed from Domain Admins"
+      fields:
+        EventID: "4729"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-512"

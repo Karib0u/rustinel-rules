@@ -72,3 +72,29 @@ rustinel:
   expected_false_positive_level: medium
   min_engine: '1.7.0'
   test_status: atomic
+  tuning:
+    - surface: "filter_nonpublic"
+      guidance: "Add the CIDRs of internal proxies, package mirrors and monitoring endpoints that scripts reach over /dev/tcp."
+    - surface: "Image"
+      guidance: "Exclude a specific provisioning shell by full path only when it is a known health-check runner."
+  negatives:
+    - reason: "shell connecting to a private RFC 1918 address"
+      fields:
+        Image: "/bin/bash"
+        DestinationIp: "10.0.0.5"
+        DestinationPort: "22"
+    - reason: "shell connecting to loopback"
+      fields:
+        Image: "/bin/zsh"
+        DestinationIp: "127.0.0.1"
+        DestinationPort: "5432"
+    - reason: "shell connecting to IPv6 loopback"
+      fields:
+        Image: "/bin/zsh"
+        DestinationIp: "::1"
+        DestinationPort: "8080"
+    - reason: "curl reaching a public address"
+      fields:
+        Image: "/usr/bin/curl"
+        DestinationIp: "93.184.216.34"
+        DestinationPort: "443"

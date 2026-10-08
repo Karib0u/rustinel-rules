@@ -37,3 +37,21 @@ rustinel:
     - wmi_event
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "ConsumerClass"
+      guidance: "Add a class only for a consumer type that can run code."
+    - surface: "ConsumerName"
+      guidance: "Filter the named subscription of approved management software."
+  negatives:
+    - reason: "event-log consumer"
+      fields:
+        EventID: "5861"
+        ConsumerClass: "NTEventLogEventConsumer"
+    - reason: "SMTP consumer"
+      fields:
+        EventID: "5861"
+        ConsumerClass: "SMTPEventConsumer"
+    - reason: "WMI activity record, not a binding"
+      fields:
+        EventID: "5857"
+        ConsumerClass: "CommandLineEventConsumer"

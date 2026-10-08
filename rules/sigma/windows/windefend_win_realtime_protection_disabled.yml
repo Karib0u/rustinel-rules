@@ -33,3 +33,18 @@ rustinel:
     - windefend
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "EventID"
+      guidance: "5001 is the whole signal; correlate with a change ticket before tuning."
+    - surface: "Channel"
+      guidance: "Keep the rule on the Defender Operational channel."
+  negatives:
+    - reason: "real-time protection enabled"
+      fields:
+        EventID: "5000"
+    - reason: "malware detected"
+      fields:
+        EventID: "1116"
+    - reason: "configuration changed"
+      fields:
+        EventID: "5004"

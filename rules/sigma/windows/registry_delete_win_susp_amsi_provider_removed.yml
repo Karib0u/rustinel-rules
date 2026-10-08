@@ -36,3 +36,21 @@ rustinel:
     - registry_delete
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "TargetObject"
+      guidance: "Filter the CLSID of the security product being retired."
+    - surface: "Image"
+      guidance: "Filter the installer image that replaces an endpoint security product."
+  negatives:
+    - reason: "uninstalling an unrelated product"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{ABC}"
+        Image: "C:\\Windows\\System32\\msiexec.exe"
+    - reason: "sibling AMSI settings key"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\AMSI\\Settings\\x"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    - reason: "vendor key"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Vendor\\Key"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"

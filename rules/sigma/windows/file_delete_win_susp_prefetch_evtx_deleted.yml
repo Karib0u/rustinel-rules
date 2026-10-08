@@ -43,3 +43,29 @@ rustinel:
     - file_delete
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Filter the disk-cleanup, VDI image-prep or log-management tool that purges Prefetch or archived logs."
+    - surface: "filter_os"
+      guidance: "System and svchost are excluded because the OS trims Prefetch and rotates logs itself."
+  negatives:
+    - reason: "operating system trimming an old Prefetch file"
+      fields:
+        TargetFilename: "C:\\Windows\\Prefetch\\OLD.EXE-1A2B3C4D.pf"
+        Image: "System"
+    - reason: "Event Log service rotating an archive"
+      fields:
+        TargetFilename: "C:\\Windows\\System32\\winevt\\Logs\\Archive-Security-2026.evtx"
+        Image: "C:\\Windows\\System32\\svchost.exe"
+    - reason: "non-.pf file in the Prefetch folder"
+      fields:
+        TargetFilename: "C:\\Windows\\Prefetch\\Layout.ini"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    - reason: ".pf file outside the Prefetch folder"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Desktop\\x.pf"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    - reason: "backup copy of an event log with another extension"
+      fields:
+        TargetFilename: "C:\\Windows\\System32\\winevt\\Logs\\Security.evtx.bak"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"

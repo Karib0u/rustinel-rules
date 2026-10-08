@@ -42,3 +42,21 @@ rustinel:
     - service_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ServiceFileName"
+      guidance: "Add the ProgramData or AppData paths of management agents that install services from there."
+    - surface: "ServiceName"
+      guidance: "Filter the exact service names of those agents."
+  negatives:
+    - reason: "svchost-hosted service"
+      fields:
+        ServiceName: "Spooler"
+        ServiceFileName: "C:\\Windows\\System32\\svchost.exe -k netsvcs"
+    - reason: "vendor agent under Program Files"
+      fields:
+        ServiceName: "VendorAgent"
+        ServiceFileName: "\"C:\\Program Files\\Vendor\\agent.exe\""
+    - reason: "kernel driver service"
+      fields:
+        ServiceName: "vendrv"
+        ServiceFileName: "C:\\Windows\\system32\\drivers\\vendrv.sys"

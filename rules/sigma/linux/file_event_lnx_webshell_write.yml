@@ -49,3 +49,25 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "TargetFilename"
+      guidance: "Document webroot cache and upload paths (WordPress, Drupal) per environment and exclude them with a startswith filter."
+    - surface: "Image"
+      guidance: "Exclude deployment processes that legitimately write .php or .war files."
+  negatives:
+    - reason: "nginx writing a cache file"
+      fields:
+        Image: "/usr/sbin/nginx"
+        TargetFilename: "/var/cache/nginx/proxy_temp/0001"
+    - reason: "php-fpm saving an uploaded image"
+      fields:
+        Image: "/usr/sbin/php-fpm8.2"
+        TargetFilename: "/var/www/uploads/photo.jpg"
+    - reason: "a non-web process writing a script"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/var/www/html/index.php"
+    - reason: "java writing a log"
+      fields:
+        Image: "/usr/bin/java"
+        TargetFilename: "/var/log/tomcat/catalina.out"

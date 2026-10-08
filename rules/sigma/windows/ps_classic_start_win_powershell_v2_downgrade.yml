@@ -37,3 +37,15 @@ rustinel:
   test_reason: >
     PowerShell 2.0 needs the optional Windows feature and .NET 3.5, which hosted
     runners do not ship. Logic is covered by unit fixtures in tests/tools.
+  tuning:
+    - surface: "Data"
+      guidance: "Filter by HostName or HostApplication only for legacy tooling that still needs the 2.0 engine."
+    - surface: "selection"
+      guidance: "Keep the match on EngineVersion; HostVersion alone also appears for hosts that load the 5.1 engine."
+  negatives:
+    - reason: "Windows 10 engine start"
+      fields:
+        Data: "NewEngineState=Available\n\tPreviousEngineState=None\n\tSequenceNumber=13\n\tHostName=ConsoleHost\n\tHostVersion=5.1.19041.4170\n\tHostId=0\n\tEngineVersion=5.1.19041.4170\n\tRunspaceId=0\n\tPipelineId=\n\tCommandName=\n\tCommandType=\n\tScriptName=\n\tCommandPath=\n\tCommandLine="
+    - reason: "Windows 11 engine start"
+      fields:
+        Data: "NewEngineState=Available\n\tPreviousEngineState=None\n\tSequenceNumber=13\n\tHostName=ConsoleHost\n\tHostVersion=5.1.22621.2506\n\tHostId=0\n\tEngineVersion=5.1.22621.2506\n\tRunspaceId=0\n\tPipelineId=\n\tCommandName=\n\tCommandType=\n\tScriptName=\n\tCommandPath=\n\tCommandLine="

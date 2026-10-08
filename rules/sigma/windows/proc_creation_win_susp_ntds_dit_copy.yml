@@ -48,3 +48,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude the backup or migration tooling domain controllers run."
+    - surface: "CommandLine"
+      guidance: "Scope to domain controllers; elsewhere the name rarely appears."
+  negatives:
+    - reason: "searching for the name"
+      fields:
+        Image: "C:\\Windows\\System32\\findstr.exe"
+        CommandLine: "findstr.exe ntds.dit notes.txt"
+    - reason: "shell echoing the name"
+      fields:
+        Image: "C:\\Windows\\System32\\cmd.exe"
+        CommandLine: "cmd.exe /c echo ntds.dit"
+    - reason: "esentutl header dump, no copy"
+      fields:
+        Image: "C:\\Windows\\System32\\esentutl.exe"
+        CommandLine: "esentutl.exe /mh C:\\Windows\\NTDS\\ntds.dit"

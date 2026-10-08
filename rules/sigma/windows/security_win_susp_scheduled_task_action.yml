@@ -58,3 +58,21 @@ rustinel:
     - security
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "TaskName"
+      guidance: "Filter the task names of approved automation that runs scripts from user-writable locations."
+    - surface: "TaskContent"
+      guidance: "The rule reads only the action's Command and Arguments, so schema URLs in the XML never match."
+  negatives:
+    - reason: "task running a vendor agent"
+      fields:
+        EventID: "4698"
+        TaskContent: "<Task xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\"><Actions><Exec><Command>C:\\Program Files\\Vendor\\agent.exe</Command></Exec></Actions></Task>"
+    - reason: "task running a signed system tool with no payload"
+      fields:
+        EventID: "4698"
+        TaskContent: "<Actions><Exec><Command>C:\\Windows\\System32\\cleanmgr.exe</Command><Arguments>/autoclean</Arguments></Exec></Actions>"
+    - reason: "task deletion event"
+      fields:
+        EventID: "4699"
+        TaskContent: "<Actions><Exec><Command>powershell.exe</Command><Arguments>-enc AAAA </Arguments></Exec></Actions>"

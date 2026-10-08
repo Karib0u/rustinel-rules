@@ -34,3 +34,21 @@ rustinel:
     - windefend
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "NewValue"
+      guidance: "Filter the excluded value of vetted software."
+    - surface: "EventID"
+      guidance: "Only 5007 with an Exclusions path matches."
+  negatives:
+    - reason: "scan schedule changed"
+      fields:
+        EventID: "5007"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Scan\\ScheduleDay = 0x0"
+    - reason: "signature update interval changed"
+      fields:
+        EventID: "5007"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Signature Updates\\SignatureUpdateInterval = 0x8"
+    - reason: "exclusion path in a different event ID"
+      fields:
+        EventID: "5000"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Exclusions\\Paths\\C:\\Tools = 0x0"

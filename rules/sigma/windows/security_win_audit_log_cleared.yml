@@ -31,3 +31,18 @@ rustinel:
     - security
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "SubjectUserName"
+      guidance: "Filter the account that performs authorised log maintenance or imaging."
+    - surface: "EventID"
+      guidance: "The event ID is the whole signal; do not add other IDs to this rule."
+  negatives:
+    - reason: "logon"
+      fields:
+        EventID: "4624"
+    - reason: "event logging service shutdown"
+      fields:
+        EventID: "1100"
+    - reason: "process creation audit"
+      fields:
+        EventID: "4688"

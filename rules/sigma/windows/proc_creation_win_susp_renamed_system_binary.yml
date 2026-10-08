@@ -101,3 +101,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Filter the path of a product that ships a private renamed copy of a system tool."
+    - surface: "OriginalFileName"
+      guidance: "Add a pair only when a binary legitimately ships under a second name."
+  negatives:
+    - reason: "PowerShell under its own name"
+      fields:
+        OriginalFileName: "PowerShell.EXE"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    - reason: "cmd under its own name"
+      fields:
+        OriginalFileName: "Cmd.Exe"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+    - reason: "32-bit rundll32"
+      fields:
+        OriginalFileName: "RUNDLL32.EXE"
+        Image: "C:\\Windows\\SysWOW64\\rundll32.exe"
+    - reason: "unrelated application"
+      fields:
+        OriginalFileName: "notepad.exe"
+        Image: "C:\\Temp\\notes.exe"

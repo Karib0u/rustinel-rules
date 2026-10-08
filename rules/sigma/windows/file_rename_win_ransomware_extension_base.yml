@@ -34,3 +34,25 @@ rustinel:
   test_reason: >
     Fires on every rename in the mass-rename atomic; the correlation rule's atomic
     exercises it and its negative proves ordinary extensions stay quiet.
+  tuning:
+    - surface: "Image"
+      guidance: "Filter the backup or encryption tool that names its output with a covered extension; the correlation threshold is the main control."
+    - surface: "TargetFilename"
+      guidance: "The extension pattern is a regex; narrow it only after reviewing which names fire in the mass-rename rule."
+  negatives:
+    - reason: "rename to a backup extension"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\report.bak"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+    - reason: "rename of an archive"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\archive.tar.gz"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+    - reason: "extension that merely begins with enc"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\notes.encoding"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+    - reason: "rename to a temp name"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\draft.tmp"
+        Image: "C:\\Windows\\System32\\cmd.exe"

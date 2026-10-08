@@ -54,3 +54,31 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_team_signed"
+      guidance: "Developer Team ID signed builds already pass; add ad-hoc build output paths (a CI workspace) with a startswith filter if they are noisy."
+    - surface: "Image"
+      guidance: "Exclude compiler and test-runner output directories on build hosts."
+  negatives:
+    - reason: "Apple platform binary run from a temp path"
+      fields:
+        Image: "/private/tmp/ls"
+        CommandLine: "ls"
+        IsPlatformBinary: true
+    - reason: "Team ID signed app in Downloads"
+      fields:
+        Image: "/Users/alice/Downloads/Tool.app/Contents/MacOS/Tool"
+        CommandLine: "Tool"
+        IsPlatformBinary: false
+        TeamId: "ABCDE12345"
+    - reason: "Team ID signed binary in a shared folder"
+      fields:
+        Image: "/Users/Shared/vendor/agent"
+        CommandLine: "agent"
+        IsPlatformBinary: false
+        TeamId: "ABCDE12345"
+    - reason: "binary run from a normal install location"
+      fields:
+        Image: "/Applications/Tool.app/Contents/MacOS/Tool"
+        CommandLine: "Tool"
+        IsPlatformBinary: false

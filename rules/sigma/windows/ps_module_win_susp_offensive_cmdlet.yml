@@ -38,3 +38,21 @@ rustinel:
     - ps_module
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "Payload"
+      guidance: "Filter the red-team host once the engagement is authorised; the cmdlet list is anchored to CommandInvocation records."
+    - surface: "User"
+      guidance: "Filter the account that runs approved offensive tooling."
+  negatives:
+    - reason: "ordinary cmdlet"
+      fields:
+        Payload: "CommandInvocation(Get-ChildItem): \"Get-ChildItem\""
+    - reason: "offensive name appearing only as data"
+      fields:
+        Payload: "ParameterBinding(Write-Output): name=\"InputObject\"; value=\"Invoke-Mimikatz\""
+    - reason: "lookalike function name"
+      fields:
+        Payload: "CommandInvocation(Invoke-MimikatzDocs): \"Invoke-MimikatzDocs\""
+    - reason: "process listing"
+      fields:
+        Payload: "CommandInvocation(Get-Process): \"Get-Process\""

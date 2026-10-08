@@ -51,3 +51,21 @@ rustinel:
     - security
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ServiceFileName"
+      guidance: "Filter management agents that legitimately install services from ProgramData."
+    - surface: "SubjectUserName"
+      guidance: "Filter the deployment account for software distribution."
+  negatives:
+    - reason: "vendor agent in Program Files"
+      fields:
+        EventID: "4697"
+        ServiceFileName: "C:\\Program Files\\Vendor\\agent.exe"
+    - reason: "svchost-hosted service"
+      fields:
+        EventID: "4697"
+        ServiceFileName: "C:\\Windows\\System32\\svchost.exe -k netsvcs"
+    - reason: "different event ID with a user-profile path"
+      fields:
+        EventID: "7045"
+        ServiceFileName: "C:\\Users\\alice\\AppData\\Local\\x\\svc.exe"

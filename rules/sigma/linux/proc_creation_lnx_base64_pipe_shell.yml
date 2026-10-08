@@ -35,3 +35,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude CI runners that decode and run build steps this way."
+    - surface: "CommandLine"
+      guidance: "The pipeline must end in a shell as the very next stage; decode-to-file and decode-to-another-tool never match."
+  negatives:
+    - reason: "decoding to a file"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'base64 -d payload.b64 > out.bin'"
+    - reason: "encoding, not decoding"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'echo hello | base64'"
+    - reason: "decode piped to a decompressor"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'base64 -d p.b64 | gunzip > out'"

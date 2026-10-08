@@ -36,3 +36,21 @@ rustinel:
     - registry_set
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude the installers and updaters that register startup entries; the rule does not read the writer by default."
+    - surface: "TargetObject"
+      guidance: "Scope HKCU Run keys on user workstations separately from HKLM on servers."
+  negatives:
+    - reason: "uninstall registration, not a startup key"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Vendor App\\DisplayName"
+        Details: "Vendor App"
+    - reason: "Explorer run history"
+      fields:
+        TargetObject: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\RunMRU\\a"
+        Details: "cmd"
+    - reason: "unrelated Explorer setting"
+      fields:
+        TargetObject: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced\\Hidden"
+        Details: "DWORD (0x00000001)"

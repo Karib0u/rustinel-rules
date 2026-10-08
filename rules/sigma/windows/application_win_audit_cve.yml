@@ -39,3 +39,25 @@ rustinel:
     The event is written only when a patched CVE is actually exploited, which
     cannot be reproduced safely on a hosted runner. Logic is covered by unit
     fixtures in tests/tools.
+  tuning:
+    - surface: "Provider_Name"
+      guidance: "The provider list is the whole signal; do not widen it to other Application providers."
+    - surface: "Data"
+      guidance: "Filter by CVE identifier only for a vulnerability your scanner is known to probe."
+  negatives:
+    - reason: "application crash"
+      fields:
+        EventID: "1000"
+        Provider_Name: "Application Error"
+    - reason: "installer event with a low event ID"
+      fields:
+        EventID: "1"
+        Provider_Name: "MsiInstaller"
+    - reason: "Audit-CVE provider but a different event ID"
+      fields:
+        EventID: "1001"
+        Provider_Name: "Microsoft-Windows-Audit-CVE"
+    - reason: "Windows Error Reporting"
+      fields:
+        EventID: "1001"
+        Provider_Name: "Windows Error Reporting"

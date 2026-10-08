@@ -21,6 +21,7 @@ NTDS_COPY = "NTDS.dit Copied or Accessed with a File Tool"
 ENCODED = "Suspicious Encoded PowerShell Command Line"
 BITS = "BITS Job Download via bitsadmin"
 WMIC = "WMI Process Execution via WMIC"
+LOCALADMIN = "Local Account Created or Added to Administrators"
 
 RULE_FILES = [
     "proc_creation_win_susp_procdump_lsass.yml",
@@ -31,6 +32,7 @@ RULE_FILES = [
     "proc_creation_win_susp_encoded_powershell.yml",
     "proc_creation_win_susp_bitsadmin_download.yml",
     "proc_creation_win_susp_wmic_process_create.yml",
+    "proc_creation_win_susp_local_admin_account_added.yml",
 ]
 
 SYS = "C:\\Windows\\System32\\"
@@ -161,6 +163,15 @@ CASES = [
     (SYS + "wbem\\WMIC.exe", "wmic.exe service call create", None, None),
     (SYS + "wbem\\WMIC.exe", "wmic.exe create call process", None, None),
     (SYS + "cmd.exe", "cmd.exe /c echo process call create", None, None),
+    # Local accounts: `user` is the net subcommand; a group name containing it is not.
+    (SYS + "net.exe", "net.exe user bob P@ssw0rd! /add", None, LOCALADMIN),
+    (SYS + "net1.exe", "net1 user /add bob", None, LOCALADMIN),
+    (SYS + "net.exe", 'net.exe localgroup "Administrators" bob /add', None, LOCALADMIN),
+    (SYS + "net.exe", 'net.exe localgroup "Remote Desktop Users" bob /add', None, None),
+    (SYS + "net.exe", "net.exe localgroup Users bob /add", None, None),
+    (SYS + "net.exe", "net.exe user bob", None, None),
+    (SYS + "net.exe", "net.exe user bob /delete", None, None),
+    (SYS + "cmd.exe", "cmd.exe /c echo net user bob /add", None, None),
 ]
 
 

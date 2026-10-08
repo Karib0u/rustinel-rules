@@ -38,3 +38,15 @@ rustinel:
   test_reason: >
     SID History can only be written on a domain controller, which hosted CI
     runners are not. Logic is covered by unit fixtures in tests/tools.
+  tuning:
+    - surface: "SubjectUserName"
+      guidance: "Filter the migration account during a planned AD migration."
+    - surface: "EventID"
+      guidance: "4765 and 4766 are the whole signal."
+  negatives:
+    - reason: "user account changed"
+      fields:
+        EventID: "4738"
+    - reason: "user account created"
+      fields:
+        EventID: "4720"

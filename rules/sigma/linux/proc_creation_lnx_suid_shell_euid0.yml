@@ -43,3 +43,29 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "filter_real_root"
+      guidance: "Add a RealUserId or ParentImage filter for a site-specific set-uid-root wrapper that execs a shell."
+    - surface: "Image"
+      guidance: "Extend the shell list only for an interpreter that is installed set-uid-root by design."
+  negatives:
+    - reason: "sudo shell: real and effective UID both root"
+      fields:
+        Image: "/bin/bash"
+        EffectiveUserId: "0"
+        RealUserId: "0"
+    - reason: "ordinary user shell"
+      fields:
+        Image: "/bin/bash"
+        EffectiveUserId: "1000"
+        RealUserId: "1000"
+    - reason: "non-shell binary running with effective root"
+      fields:
+        Image: "/usr/bin/passwd"
+        EffectiveUserId: "0"
+        RealUserId: "1000"
+    - reason: "su to root via dash"
+      fields:
+        Image: "/bin/dash"
+        EffectiveUserId: "0"
+        RealUserId: "0"

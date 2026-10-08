@@ -43,3 +43,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude management tooling that hides its own service account."
+    - surface: "CommandLine"
+      guidance: "Filter the service account name your tooling hides."
+  negatives:
+    - reason: "marking an account visible"
+      fields:
+        Image: "/usr/bin/dscl"
+        CommandLine: "dscl . -create /Users/bob IsHidden 0"
+    - reason: "reading the login window preference"
+      fields:
+        Image: "/usr/bin/defaults"
+        CommandLine: "defaults read /Library/Preferences/com.apple.loginwindow Hide500Users"
+    - reason: "an unrelated defaults write"
+      fields:
+        Image: "/usr/bin/defaults"
+        CommandLine: "defaults write com.apple.finder AppleShowAllFiles true"

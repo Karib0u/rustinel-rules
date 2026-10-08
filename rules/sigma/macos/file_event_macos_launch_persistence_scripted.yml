@@ -54,3 +54,21 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude the provisioning and configuration-management scripts that write launch items."
+    - surface: "selection_writer"
+      guidance: "The writer list gates the rule to shells and scripting runtimes; signed installers writing the same plist belong to the non-scripted rule."
+  negatives:
+    - reason: "a shell writing a non-plist file in LaunchAgents"
+      fields:
+        Image: "/bin/sh"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/notes.txt"
+    - reason: "a shell writing a plist outside the launch directories"
+      fields:
+        Image: "/bin/bash"
+        TargetFilename: "/Users/alice/Library/Preferences/com.vendor.app.plist"
+    - reason: "a signed app bundle writing a launch plist"
+      fields:
+        Image: "/Applications/Tool.app/Contents/MacOS/Tool"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/com.vendor.tool.plist"

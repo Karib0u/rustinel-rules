@@ -109,6 +109,28 @@ platforms:
 python3 tests/replay/shell_history.py --engine /path/to/rustinel
 ```
 
+`tests/replay/essential_negatives.py` carries the negative evidence for the
+Essential Sigma rules no other replay covers ([#44](https://github.com/Karib0u/rustinel-rules/issues/44)):
+each rule has positive anchors plus the near misses an administrator, package
+manager or unrelated tool produces. Rules whose negatives live in another replay
+or an atomic `*_negative` script are listed in its `COVERED_ELSEWHERE` map, and
+`tests/tools/test_essential_negatives.py` fails when an Essential Sigma rule is
+in neither place. Essential YARA rules are covered by the near-miss corpus in
+`tests/yara`. It runs in the Linux job for all three platforms:
+
+```bash
+python3 tests/replay/essential_negatives.py --engine /path/to/rustinel
+```
+
+`tests/replay/advanced_negatives.py` replays the `rustinel.negatives` documented on every Advanced
+Sigma rule (next to its `rustinel.tuning`), each against its own rule, and fails when a benign
+example alerts. `tools/validate.py` fails an Advanced rule that lacks either. It needs the repo's
+Python environment (YAML), so run it with `uv run`:
+
+```bash
+uv run python tests/replay/advanced_negatives.py --engine /path/to/rustinel
+```
+
 `tests/replay/expansion_wave1.py` guards the measured-expansion wave 1 rules
 ([#60](https://github.com/Karib0u/rustinel-rules/issues/60)): AMSI provider removal,
 Prefetch and `.evtx` deletion, renamed system binaries, script-host timestomping,

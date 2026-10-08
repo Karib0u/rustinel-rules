@@ -42,3 +42,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude legacy deployment scripts that still use bitsadmin for downloads."
+    - surface: "CommandLine"
+      guidance: "Allowlist the internal distribution hosts by URL prefix."
+  negatives:
+    - reason: "monitoring a job"
+      fields:
+        Image: "C:\\Windows\\System32\\bitsadmin.exe"
+        CommandLine: "bitsadmin.exe /monitor"
+    - reason: "job metadata"
+      fields:
+        Image: "C:\\Windows\\System32\\bitsadmin.exe"
+        CommandLine: "bitsadmin.exe /info job1 /verbose"
+    - reason: "transfer between local paths"
+      fields:
+        Image: "C:\\Windows\\System32\\bitsadmin.exe"
+        CommandLine: "bitsadmin.exe /transfer job1 C:\\src.bin C:\\dst.bin"

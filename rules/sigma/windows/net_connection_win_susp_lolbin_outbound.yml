@@ -80,3 +80,31 @@ rustinel:
     failure (windows_lolbin_outbound_connect) and is not counted as tested.
     Initiated, IPv4/IPv6 range handling and benign negatives are covered offline
     by tests/replay/network_connection.py.
+  tuning:
+    - surface: "filter_nonpublic"
+      guidance: "Add the CIDR of an internet-facing internal proxy these binaries legitimately reach."
+  negatives:
+    - reason: "rundll32 to a private address"
+      fields:
+        Image: "C:\\Windows\\System32\\rundll32.exe"
+        DestinationIp: "10.1.2.3"
+        DestinationPort: "443"
+        Initiated: true
+    - reason: "mshta inbound, not initiated"
+      fields:
+        Image: "C:\\Windows\\System32\\mshta.exe"
+        DestinationIp: "8.8.8.8"
+        DestinationPort: "443"
+        Initiated: false
+    - reason: "a browser to a public address"
+      fields:
+        Image: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        DestinationIp: "8.8.8.8"
+        DestinationPort: "443"
+        Initiated: true
+    - reason: "certutil to a documentation-range address"
+      fields:
+        Image: "C:\\Windows\\System32\\certutil.exe"
+        DestinationIp: "203.0.113.5"
+        DestinationPort: "80"
+        Initiated: true

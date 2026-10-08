@@ -45,3 +45,25 @@ rustinel:
     - dns_query
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude the developer tooling (an ngrok or cloudflared client) on hosts where exposing local services is approved."
+    - surface: "QueryName"
+      guidance: "Drop a vendor-owned tunnel domain only when the organisation runs its own account on that service."
+  negatives:
+    - reason: "ordinary developer site"
+      fields:
+        QueryName: "api.github.com"
+        Image: "C:\\Windows\\System32\\curl.exe"
+    - reason: "the tunnel vendor's marketing site, not a tunnel host"
+      fields:
+        QueryName: "ngrok.com"
+        Image: "C:\\Windows\\System32\\curl.exe"
+    - reason: "lookalike suffix that is not a subdomain"
+      fields:
+        QueryName: "notngrok.io"
+        Image: "C:\\Windows\\System32\\curl.exe"
+    - reason: "another quick-tunnel brand's docs host"
+      fields:
+        QueryName: "docs.pinggy.com"
+        Image: "C:\\Windows\\System32\\curl.exe"

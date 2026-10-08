@@ -34,3 +34,19 @@ rustinel:
     - file_rename
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "gte"
+      guidance: "Raise the count if a bulk-archiving job approaches 50 matching renames a minute; lower it only with the base rule's Image filter in place."
+    - surface: "Image"
+      guidance: "Filter the encryption or backup tool on the base rule, not here: the correlation counts only what the base rule matches."
+  negatives:
+    - reason: "49 ransomware-style renames from one process, one below the threshold"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\doc.locked"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+        count: 49
+    - reason: "many renames to an ordinary extension"
+      fields:
+        TargetFilename: "C:\\Users\\alice\\Documents\\photo.bak"
+        Image: "C:\\Windows\\System32\\cmd.exe"
+        count: 80

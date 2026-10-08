@@ -37,3 +37,21 @@ rustinel:
     - security
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "SubjectUserName"
+      guidance: "Filter the management account that applies group policy audit settings."
+    - surface: "AuditPolicyChanges"
+      guidance: "Only the removal codes %%8448 and %%8450 match; additions never alert."
+  negatives:
+    - reason: "auditing added for success"
+      fields:
+        EventID: "4719"
+        AuditPolicyChanges: "%%8449"
+    - reason: "auditing added for success and failure"
+      fields:
+        EventID: "4719"
+        AuditPolicyChanges: "%%8449, %%8451"
+    - reason: "different event ID with a removal code"
+      fields:
+        EventID: "4907"
+        AuditPolicyChanges: "%%8448"

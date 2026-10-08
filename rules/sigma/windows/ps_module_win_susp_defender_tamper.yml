@@ -39,3 +39,21 @@ rustinel:
     - ps_module
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Payload"
+      guidance: "Filter the excluded path or value of a vetted exclusion once the owner is known."
+    - surface: "User"
+      guidance: "Filter the account that runs approved Defender configuration."
+  negatives:
+    - reason: "disable switch set to false"
+      fields:
+        Payload: "ParameterBinding(Set-MpPreference): name=\"DisableRealtimeMonitoring\"; value=\"False\""
+    - reason: "unrelated preference"
+      fields:
+        Payload: "ParameterBinding(Set-MpPreference): name=\"ScanAvgCPULoadFactor\"; value=\"30\""
+    - reason: "attack surface reduction rule list"
+      fields:
+        Payload: "ParameterBinding(Add-MpPreference): name=\"AttackSurfaceReductionRules_Ids\"; value=\"D4F940AB-401B-4EFC-AADC-AD5F3C50688A\""
+    - reason: "read-only query"
+      fields:
+        Payload: "CommandInvocation(Get-MpPreference): \"Get-MpPreference\""

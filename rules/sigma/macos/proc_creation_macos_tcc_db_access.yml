@@ -51,3 +51,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Add the MDM or fleet-management binary that legitimately queries TCC state."
+    - surface: "selection_tool"
+      guidance: "The tool list gates the rule: a bare mention of TCC.db by a viewer or shell does not alert."
+  negatives:
+    - reason: "listing the file"
+      fields:
+        Image: "/bin/ls"
+        CommandLine: "ls -l '/Library/Application Support/com.apple.TCC/TCC.db'"
+    - reason: "searching text for the file name"
+      fields:
+        Image: "/usr/bin/grep"
+        CommandLine: "grep TCC.db notes.txt"
+    - reason: "sqlite3 on an unrelated database"
+      fields:
+        Image: "/usr/bin/sqlite3"
+        CommandLine: "sqlite3 /Users/alice/app/data.db .tables"
+    - reason: "resetting a permission through the supported tool"
+      fields:
+        Image: "/usr/bin/tccutil"
+        CommandLine: "tccutil reset Camera com.vendor.app"
