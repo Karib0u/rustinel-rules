@@ -1,0 +1,41 @@
+title: Windows CVE Exploitation Attempt Audited
+id: 6c7fb86b-bb5e-4de0-a414-e4865717f926
+status: experimental
+description: >
+  Detects an Application log event from the `Microsoft-Windows-Audit-CVE`
+  provider (event 1). Windows writes it when it detects an attempt to exploit a
+  specific, already-patched vulnerability (for example CVE-2020-0601 certificate
+  spoofing), with the CVE identifier in `Data`. The provider only logs real
+  exploit attempts, so any event is worth investigating. Requires the patch that
+  introduced the audit for the CVE to be installed.
+references:
+  - https://attack.mitre.org/techniques/T1068/
+  - https://msrc.microsoft.com/update-guide
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.privilege-escalation
+  - attack.t1068
+logsource:
+  product: windows
+  service: application
+detection:
+  selection:
+    EventID: 1
+    Provider_Name:
+      - 'Microsoft-Windows-Audit-CVE'
+      - 'Audit-CVE'
+  condition: selection
+falsepositives:
+  - Vulnerability scanners and exploit-test tooling run against the host.
+level: high
+rustinel:
+  telemetry:
+    - application
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    The event is written only when a patched CVE is actually exploited, which
+    cannot be reproduced safely on a hosted runner. Logic is covered by unit
+    fixtures in tests/tools.

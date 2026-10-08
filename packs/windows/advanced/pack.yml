@@ -6,7 +6,7 @@ description: >
 os: windows
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.8.0"
+requires_rustinel: ">=1.9.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -22,6 +22,7 @@ attack_coverage:
   - T1053.005
   - T1059
   - T1059.001
+  - T1068
   - T1070
   - T1070.001
   - T1090.001
@@ -90,6 +91,13 @@ rules:
           - 2095766d-dd72-41f2-b315-3438406c009a   # Service Installed With Suspicious Binary Path (Security 4697) (sigma)
           - 619320af-9c50-44b8-8fe6-800b027b4802   # SID History Added to Account (sigma)
           - 91ecb87b-035a-4745-86b6-7b047feca9b9   # DSRM Administrator Password Set (sigma)
+          - 3781aa92-44a2-4a03-a2d0-c8fb08e1110e   # Microsoft Defender Weakened via PowerShell Cmdlet (sigma)
+          - 92557796-ce11-410a-b976-dd63dd189b82   # Known Offensive PowerShell Cmdlet Invoked (sigma)
+          - 4d591fa3-1112-4336-8bed-64e3b04b6619   # PowerShell Engine Started as Version 2 (Downgrade) (sigma)
+          - e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1   # Microsoft Defender Real-Time Protection Disabled (sigma)
+          - efac4650-a3aa-4dd9-9f6f-679bfcf14c16   # Microsoft Defender Exclusion Added (sigma)
+          - 6c7fb86b-bb5e-4de0-a414-e4865717f926   # Windows CVE Exploitation Attempt Audited (sigma)
+          - e3136f60-ae86-4333-9ea5-64e4664a0bb1   # WMI Permanent Event Consumer Bound (5861) (sigma)
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

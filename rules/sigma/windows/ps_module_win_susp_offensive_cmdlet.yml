@@ -1,0 +1,40 @@
+title: Known Offensive PowerShell Cmdlet Invoked
+id: 92557796-ce11-410a-b976-dd63dd189b82
+status: experimental
+description: >
+  Detects PowerShell Module Logging (4103) recording a command invocation of a
+  well-known offensive-framework cmdlet: PowerSploit, Empire, Nishang or
+  BloodHound/Inveigh collectors (Invoke-Mimikatz, Invoke-Kerberoast,
+  Invoke-ReflectivePEInjection, Invoke-Shellcode, Invoke-TokenManipulation,
+  Get-GPPPassword, Invoke-DCSync, Invoke-BloodHound, Invoke-Inveigh,
+  Invoke-PSInject, Invoke-WMIExec, Invoke-SMBExec, Get-Keystrokes). Matching the
+  command name works even when the payload is loaded in memory and never touches
+  disk. Renamed functions evade it; it complements, not replaces, behavioural
+  rules. Requires PowerShell Module Logging with `ModuleNames` set to `*`.
+  Windows PowerShell 5.1 only.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://github.com/PowerShellMafia/PowerSploit
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: ps_module
+  product: windows
+detection:
+  # Anchored to the CommandInvocation record so the name appearing as data (a
+  # module manifest, help text, a path) does not match.
+  selection:
+    Payload|re: '(?i)CommandInvocation\((Invoke-Mimikatz|Invoke-Kerberoast|Invoke-ReflectivePEInjection|Invoke-Shellcode|Invoke-TokenManipulation|Get-GPPPassword|Invoke-DCSync|Invoke-BloodHound|Invoke-Inveigh|Invoke-PSInject|Invoke-WMIExec|Invoke-SMBExec|Get-Keystrokes)\)'
+  condition: selection
+falsepositives:
+  - Authorized red-team and penetration-test tooling.
+level: high
+rustinel:
+  telemetry:
+    - ps_module
+  expected_false_positive_level: low
+  test_status: atomic

@@ -274,7 +274,15 @@ _CATEGORY_PARENTS = {
 # Log sources that name a Windows event-log service instead of a category. The
 # engine routes `product: windows, service: security` (no category) to the
 # Security channel, which the field contract files under category "security".
-_SERVICE_CATEGORIES = {("windows", "security"): "security"}
+# The other services map the same way; `wmi` (Operational 5857-5861) shares the
+# contract rows of `wmi_event`, and `powershell-classic` is `ps_classic_start`.
+_SERVICE_CATEGORIES = {
+    ("windows", "security"): "security",
+    ("windows", "windefend"): "windefend",
+    ("windows", "application"): "application",
+    ("windows", "wmi"): "wmi_event",
+    ("windows", "powershell-classic"): "ps_classic_start",
+}
 
 
 def is_correlation(meta) -> bool:

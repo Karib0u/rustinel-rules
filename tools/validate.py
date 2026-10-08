@@ -41,7 +41,8 @@ import lib
 # ps_script, ps_module, wmi_event, service_creation and task_creation families
 # are Windows-only; rules using them must set logsource product: windows.
 # "security" is the Windows Security event log, selected in Sigma with
-# `product: windows, service: security` and no category. The file_*
+# `product: windows, service: security` and no category; windefend and
+# application are selected the same way. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
 # the vendored engine field contract).
@@ -62,6 +63,9 @@ SUPPORTED_TELEMETRY = {
     "ps_script",
     "ps_module",
     "security",
+    "windefend",
+    "application",
+    "ps_classic_start",
     "wmi_event",
     "service_creation",
     "task_creation",

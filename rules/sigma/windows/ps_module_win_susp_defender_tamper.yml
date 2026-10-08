@@ -1,0 +1,41 @@
+title: Microsoft Defender Weakened via PowerShell Cmdlet
+id: 3781aa92-44a2-4a03-a2d0-c8fb08e1110e
+status: experimental
+description: >
+  Detects PowerShell Module Logging (4103) showing Add-MpPreference or
+  Set-MpPreference binding a Defender exclusion (ExclusionPath, ExclusionExtension,
+  ExclusionProcess) or switching protection off (DisableRealtimeMonitoring,
+  DisableIOAVProtection, DisableBehaviorMonitoring, DisableScriptScanning set to
+  true). Attackers exclude their staging directory or disable scanning before
+  dropping tools. The match is on the cmdlet parameter binding in `Payload`, so
+  it holds on localized Windows and for every host (console, ISE, remoting, a
+  script file). Requires PowerShell Module Logging with `ModuleNames` set to `*`;
+  without it PowerShell never writes 4103. Windows PowerShell 5.1 only; `pwsh`
+  is not collected.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/powershell/module/defender/add-mppreference
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: ps_module
+  product: windows
+detection:
+  selection_exclusion:
+    Payload|re: '(?i)ParameterBinding\((Add|Set)-MpPreference\):\s*name="Exclusion(Path|Extension|Process)"'
+  selection_disable:
+    Payload|re: '(?i)ParameterBinding\(Set-MpPreference\):\s*name="Disable(RealtimeMonitoring|IOAVProtection|BehaviorMonitoring|ScriptScanning)";\s*value="(True|1|\$true)"'
+  condition: selection_exclusion or selection_disable
+falsepositives:
+  - Administrators adding vetted exclusions for backup, database or developer
+    tooling; filter on the excluded path or on the invoking user.
+level: high
+rustinel:
+  telemetry:
+    - ps_module
+  expected_false_positive_level: medium
+  test_status: atomic

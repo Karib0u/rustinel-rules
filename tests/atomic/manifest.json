@@ -1006,6 +1006,65 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/security_service_install.ps1"
+    },
+    {
+      "id": "3781aa92-44a2-4a03-a2d0-c8fb08e1110e",
+      "name": "windows_ps_module_defender_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection or Module Logging policy timing may also block it."
+    },
+    {
+      "id": "efac4650-a3aa-4dd9-9f6f-679bfcf14c16",
+      "name": "windows_defender_exclusion_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block the exclusion."
+    },
+    {
+      "id": "92557796-ce11-410a-b976-dd63dd189b82",
+      "name": "windows_ps_module_offensive_cmdlet",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_offensive_cmdlet.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+    },
+    {
+      "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
+      "name": "windows_defender_realtime_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/defender_realtime_disabled.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block disabling real-time protection."
+    },
+    {
+      "id": "e3136f60-ae86-4333-9ea5-64e4664a0bb1",
+      "name": "windows_wmi_permanent_consumer_binding",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmi_subscription.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+    },
+    {
+      "id": "3feb077a-6922-4052-93b8-7b95156ca1e5",
+      "name": "windows_user_account_created",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
+    },
+    {
+      "id": "410d4870-cc7e-4cc9-a551-0fb32c136c7e",
+      "name": "windows_account_created_and_privileged",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
     }
   ]
 }
