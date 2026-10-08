@@ -7,7 +7,7 @@
 # (same SubjectLogonId), then removes both and restores the audit policy.
 $ErrorActionPreference = 'SilentlyContinue'
 $backup = Join-Path $env:TEMP 'rustinel_atomic_auditpol_4720.csv'
-$user = 'rustinel_atomic_corruser'
+$user = 'rustinel_atomic_cor'
 
 & auditpol.exe /backup /file:$backup | Out-Null
 & auditpol.exe /set /subcategory:'{0CCE9235-69AE-11D9-BED3-505054503030}' /success:enable | Out-Null
