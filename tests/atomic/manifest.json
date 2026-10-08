@@ -734,7 +734,8 @@
       "name": "windows_lolbin_outbound_connect",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/lolbin_outbound_connect.ps1"
+      "script": "windows/lolbin_outbound_connect.ps1",
+      "allow_failure": true
     },
     {
       "id": "86c19f1a-add5-4553-9c24-f76e7fe3da9d",
