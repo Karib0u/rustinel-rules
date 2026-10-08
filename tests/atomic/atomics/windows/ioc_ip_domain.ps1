@@ -8,6 +8,8 @@
 # The two values must keep matching the ips and domains indicators in
 # preview/ioc/common/ioc_canary_exec.yml.
 $ErrorActionPreference = 'Stop'
-# rem makes cmd treat the URLs as a comment; nothing is contacted.
-& "$env:SystemRoot\System32\cmd.exe" /c 'rem http://203.0.113.61/ http://canary-exec.rustinel-test.invalid/ & ping -n 3 127.0.0.1 >nul' | Out-Null
+# rem makes cmd treat the URLs as a comment; nothing is contacted. They must be
+# separate arguments: inside one quoted argument the engine sees a single token,
+# not a URL.
+& "$env:SystemRoot\System32\cmd.exe" /c rem http://203.0.113.61/ http://canary-exec.rustinel-test.invalid/ | Out-Null
 exit 0

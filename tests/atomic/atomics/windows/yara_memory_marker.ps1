@@ -1,24 +1,19 @@
 # Atomic test - rule yara-fixture-memory-marker  (yara process_memory)
 #
-# A long-lived PowerShell process builds the marker from fragments at runtime and
-# holds it, so the bytes exist only in its heap: not in the image, the script
-# file, or the command line. Only a process-memory scan can see them (the rule
-# matches the UTF-16 form a .NET string uses). The harness enables
-# scanner.yara_memory_enabled for the whole run; the engine waits
-# yara_memory_delay_ms after process start before reading, so stay alive past it.
+# A long-lived cmd.exe builds the marker from fragments at runtime, so the bytes
+# exist only in its memory (its environment block, UTF-16): not in the image or
+# the command line. Only a process-memory scan can see them. cmd runs from a temp
+# copy because the engine does not scan trusted system paths such as System32.
+# The harness enables scanner.yara_memory_enabled for the whole run; the engine
+# waits yara_memory_delay_ms after process start before reading, so cmd must
+# outlive it.
 $ErrorActionPreference = 'Stop'
 $dir = Join-Path $env:TEMP 'rustinel-memory-atomic'
-$child = Join-Path $dir 'hold.ps1'
+$bin = Join-Path $dir 'rustinel_memory_fixture.exe'
 try {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    Set-Content -Path $child -Encoding ASCII -Value @'
-$parts = @('RUSTINEL', 'MEMORY', 'FIXTURE', 'b83e41c7')
-$marker = $parts -join '-'
-$held = @($marker, $marker.ToCharArray(), [Text.Encoding]::ASCII.GetBytes($marker))
-Start-Sleep -Seconds 8
-$held.Count | Out-Null
-'@
-    & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $child | Out-Null
+    Copy-Item "$env:SystemRoot\System32\cmd.exe" $bin -Force
+    & $bin /v:on /c 'set a=RUSTINEL&set b=MEMORY&set c=FIXTURE&set d=b83e41c7&set m=!a!-!b!-!c!-!d!&ping -n 12 127.0.0.1 >nul' | Out-Null
 } finally {
     Remove-Item $dir -Recurse -Force -ErrorAction SilentlyContinue
 }
