@@ -256,6 +256,7 @@ def build_catalog(version: str) -> dict:
                 "status": pack.get("status"),
                 "requires_rustinel": pack.get("requires_rustinel"),
                 "expected_false_positive_level": pack.get("expected_false_positive_level"),
+                "active_response_eligible": lib.active_response_eligible(pack),
                 "extends": as_list(pack.get("extends")),
                 "attack_coverage": as_list(pack.get("attack_coverage")),
                 "telemetry_requirements": as_list(pack.get("telemetry_requirements")),
@@ -277,6 +278,11 @@ def build_catalog(version: str) -> dict:
     rules = [
         rule_record(a, rule_packs.get(a.id, []), attack_map, artifacts_by_id) for a in artifacts
     ]
+    # A rule is eligible for active response only if some pack that ships it is.
+    # Advanced rules also ride inside Hunting, but stay eligible via Advanced.
+    eligible_packs = {p["id"] for p in pack_entries if p["active_response_eligible"]}
+    for r in rules:
+        r["active_response_eligible"] = any(pid in eligible_packs for pid in r["packs"])
 
     # Warn (don't fail) on any technique missing from the curated ATT&CK map so
     # the build still succeeds but a maintainer notices the gap.

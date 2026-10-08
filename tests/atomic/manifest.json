@@ -978,6 +978,243 @@
       ],
       "allow_failure": true,
       "allow_failure_reason": "Process-memory reads on macOS need task_for_pid, which the hardened Python on a hosted runner may refuse; unproven on CI until this test has run there."
+    },
+    {
+      "id": "35866351-9855-465f-9927-d10eef7c8aea",
+      "name": "windows_amsi_provider_removed",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/amsi_provider_removed.ps1",
+      "negatives": [
+        {
+          "script": "windows/amsi_provider_removed_negative.ps1",
+          "marker": "RustinelAtomicNegative"
+        }
+      ]
+    },
+    {
+      "id": "127db158-346f-4244-b2ad-1522e7c3c2a1",
+      "name": "windows_prefetch_deleted",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/prefetch_deleted.ps1",
+      "negatives": [
+        {
+          "script": "windows/prefetch_deleted_negative.ps1",
+          "marker": "rustinel_negative"
+        }
+      ]
+    },
+    {
+      "id": "5ffa485e-7667-4ecc-a17c-fc5f9068c0d4",
+      "name": "windows_renamed_system_binary",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/renamed_system_binary.ps1",
+      "negatives": [
+        {
+          "script": "windows/renamed_system_binary_negative.ps1",
+          "marker": "rustinel_negative_renamed"
+        }
+      ]
+    },
+    {
+      "id": "ad5acb04-ea4e-4d6d-9719-85042d2963b5",
+      "name": "windows_timestomp_script_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/timestomp_script_host.ps1",
+      "negatives": [
+        {
+          "script": "windows/timestomp_script_host_negative.ps1",
+          "marker": "rustinel_negative_timestomp"
+        }
+      ]
+    },
+    {
+      "id": "c2f19723-1801-48d4-a45f-c47f2f9d41b5",
+      "name": "windows_dns_tunnel_service",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dns_tunnel_service.ps1",
+      "negatives": [
+        {
+          "script": "windows/dns_tunnel_service_negative.ps1",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "d0e8f644-2661-4f99-b1b2-69eb70abe050",
+      "name": "windows_ransomware_mass_rename",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ransomware_mass_rename.ps1",
+      "negatives": [
+        {
+          "script": "windows/ransomware_mass_rename_negative.ps1",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
+      "name": "linux_suid_shell_euid0",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/suid_shell_euid0.sh",
+      "negatives": [
+        {
+          "script": "linux/suid_shell_euid0_negative.sh",
+          "marker": "rustinel_negative_suid"
+        }
+      ]
+    },
+    {
+      "id": "300f4d0e-79ef-4c53-9461-7b3f4e468537",
+      "name": "linux_dns_tunnel_service",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "linux/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
+      "name": "linux_ransomware_mass_rename",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "linux/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "e6aa2995-f56a-454a-af2c-14db0ec296ee",
+      "name": "macos_shell_outbound_connect",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_outbound_connect.sh"
+    },
+    {
+      "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
+      "name": "macos_dns_tunnel_service",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "macos/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
+      "name": "macos_ransomware_mass_rename",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "macos/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "e813d6f6-5dbb-4587-a60e-20a04481fdc6",
+      "name": "windows_security_log_cleared",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_log_cleared.ps1"
+    },
+    {
+      "id": "5a2fd413-6826-47af-8b6b-9e069058c807",
+      "name": "windows_audit_policy_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/audit_policy_disabled.ps1"
+    },
+    {
+      "id": "859d9985-7720-42b1-a557-c1f6f8972642",
+      "name": "windows_privileged_group_member_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/privileged_group_member_added.ps1"
+    },
+    {
+      "id": "2095766d-dd72-41f2-b315-3438406c009a",
+      "name": "windows_security_service_install",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_service_install.ps1"
+    },
+    {
+      "id": "3781aa92-44a2-4a03-a2d0-c8fb08e1110e",
+      "name": "windows_ps_module_defender_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection or Module Logging policy timing may also block it."
+    },
+    {
+      "id": "efac4650-a3aa-4dd9-9f6f-679bfcf14c16",
+      "name": "windows_defender_exclusion_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block the exclusion."
+    },
+    {
+      "id": "92557796-ce11-410a-b976-dd63dd189b82",
+      "name": "windows_ps_module_offensive_cmdlet",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_offensive_cmdlet.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+    },
+    {
+      "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
+      "name": "windows_defender_realtime_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/defender_realtime_disabled.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block disabling real-time protection."
+    },
+    {
+      "id": "e3136f60-ae86-4333-9ea5-64e4664a0bb1",
+      "name": "windows_wmi_permanent_consumer_binding",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmi_subscription.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+    },
+    {
+      "id": "3feb077a-6922-4052-93b8-7b95156ca1e5",
+      "name": "windows_user_account_created",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
+    },
+    {
+      "id": "410d4870-cc7e-4cc9-a551-0fb32c136c7e",
+      "name": "windows_account_created_and_privileged",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
     }
   ]
 }

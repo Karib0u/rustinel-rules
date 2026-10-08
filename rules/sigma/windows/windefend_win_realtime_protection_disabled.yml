@@ -1,0 +1,50 @@
+title: Microsoft Defender Real-Time Protection Disabled
+id: e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1
+status: experimental
+description: >
+  Detects Microsoft Defender Operational event 5001, written when real-time
+  protection is disabled. Attackers and malware switch it off (Set-MpPreference,
+  registry, Group Policy) before running tools. The event is written however the
+  protection was disabled, including by a user in the Windows Security app.
+  Reads the `Microsoft-Windows-Windows Defender/Operational` channel; check it
+  is enabled with `wevtutil gl "Microsoft-Windows-Windows Defender/Operational"`.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-microsoft-defender-antivirus
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  product: windows
+  service: windefend
+detection:
+  selection:
+    EventID: 5001
+  condition: selection
+falsepositives:
+  - Administrators temporarily disabling protection for troubleshooting, or a
+    third-party AV registering itself and switching Defender to passive mode.
+level: high
+rustinel:
+  telemetry:
+    - windefend
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: "EventID"
+      guidance: "5001 is the whole signal; correlate with a change ticket before tuning."
+    - surface: "Channel"
+      guidance: "Keep the rule on the Defender Operational channel."
+  negatives:
+    - reason: "real-time protection enabled"
+      fields:
+        EventID: "5000"
+    - reason: "malware detected"
+      fields:
+        EventID: "1116"
+    - reason: "configuration changed"
+      fields:
+        EventID: "5004"

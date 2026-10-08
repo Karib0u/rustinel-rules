@@ -1,0 +1,57 @@
+title: WMI Permanent Event Consumer Bound (5861)
+id: e3136f60-ae86-4333-9ea5-64e4664a0bb1
+status: experimental
+description: >
+  Detects WMI-Activity Operational event 5861, which reports a new permanent
+  filter-to-consumer binding, where the consumer is a CommandLineEventConsumer
+  or ActiveScriptEventConsumer. Those consumers run a command or script whenever
+  the filter fires and are a stealthy, fileless persistence mechanism. This is
+  the Operational-log view of the binding, complementing the subscription rule
+  that watches WMI operations. The sensor sees new bindings only; bindings that
+  existed before it started are not enumerated.
+references:
+  - https://attack.mitre.org/techniques/T1546/003/
+  - https://learn.microsoft.com/en-us/windows/win32/wmisdk/receiving-a-wmi-event
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.003
+logsource:
+  product: windows
+  service: wmi
+detection:
+  selection:
+    EventID: 5861
+    ConsumerClass:
+      - 'CommandLineEventConsumer'
+      - 'ActiveScriptEventConsumer'
+  condition: selection
+falsepositives:
+  - Rare management software that registers permanent WMI subscriptions.
+level: high
+rustinel:
+  telemetry:
+    - wmi_event
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: "ConsumerClass"
+      guidance: "Add a class only for a consumer type that can run code."
+    - surface: "ConsumerName"
+      guidance: "Filter the named subscription of approved management software."
+  negatives:
+    - reason: "event-log consumer"
+      fields:
+        EventID: "5861"
+        ConsumerClass: "NTEventLogEventConsumer"
+    - reason: "SMTP consumer"
+      fields:
+        EventID: "5861"
+        ConsumerClass: "SMTPEventConsumer"
+    - reason: "WMI activity record, not a binding"
+      fields:
+        EventID: "5857"
+        ConsumerClass: "CommandLineEventConsumer"

@@ -131,6 +131,19 @@ Python environment (YAML), so run it with `uv run`:
 uv run python tests/replay/advanced_negatives.py --engine /path/to/rustinel
 ```
 
+`tests/replay/expansion_wave1.py` guards the measured-expansion wave 1 rules
+([#60](https://github.com/Karib0u/rustinel-rules/issues/60)): AMSI provider removal,
+Prefetch and `.evtx` deletion, renamed system binaries, script-host timestomping,
+SUID shells, the shell outbound connection on macOS, tunnel-service DNS queries
+and the mass-rename ransomware correlation. Each platform replays positives next to
+near-misses (a rename to `.bak`, a `sudo` shell, a lookalike domain), and the
+correlation is replayed at 49, 50 and split-across-processes counts. It runs in the
+Linux job for all three platforms:
+
+```bash
+python3 tests/replay/expansion_wave1.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;

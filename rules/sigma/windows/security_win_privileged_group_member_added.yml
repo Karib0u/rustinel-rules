@@ -1,0 +1,67 @@
+title: Member Added to Privileged Group
+id: 859d9985-7720-42b1-a557-c1f6f8972642
+status: experimental
+description: >
+  Detects a member added to a privileged group in the Security log: the local
+  Administrators group (4732, group SID S-1-5-32-544) or the Domain Admins,
+  Schema Admins or Enterprise Admins groups (4728 or 4756, group SID ending in
+  -512, -518 or -519). Adding an account to an administrative group is a common
+  privilege-escalation and persistence step. The match is on the group SID, so it
+  holds on localized Windows. Requires the "Security Group Management" audit
+  subcategory (on by default for success).
+references:
+  - https://attack.mitre.org/techniques/T1098/
+  - https://attack.mitre.org/techniques/T1136/001/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4732
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1098
+  - attack.t1136.001
+logsource:
+  product: windows
+  service: security
+detection:
+  selection_local:
+    EventID: 4732
+    TargetSid: 'S-1-5-32-544'
+  selection_domain:
+    EventID:
+      - 4728
+      - 4756
+    TargetSid|re: '^S-1-5-21-[0-9-]+-(512|518|519)$'
+  condition: selection_local or selection_domain
+falsepositives:
+  - Legitimate administration and onboarding; filter on SubjectUserName for
+    approved provisioning accounts.
+level: medium
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: "SubjectUserName"
+      guidance: "Filter approved provisioning accounts."
+    - surface: "TargetSid"
+      guidance: "Extend the SID patterns only for another group you treat as privileged."
+  negatives:
+    - reason: "added to local Users"
+      fields:
+        EventID: "4732"
+        TargetSid: "S-1-5-32-545"
+    - reason: "added to a custom domain group"
+      fields:
+        EventID: "4728"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-1105"
+    - reason: "added to Domain Users"
+      fields:
+        EventID: "4756"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-513"
+    - reason: "removed from Domain Admins"
+      fields:
+        EventID: "4729"
+        TargetSid: "S-1-5-21-1111111111-2222222222-3333333333-512"

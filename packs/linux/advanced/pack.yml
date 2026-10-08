@@ -7,7 +7,7 @@ description: >
 os: linux
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.4.1"
+requires_rustinel: ">=1.6.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -22,10 +22,12 @@ attack_coverage:
   - T1070.002
   - T1070.003
   - T1071
+  - T1090
   - T1098.004
   - T1105
   - T1136.001
   - T1219
+  - T1486
   - T1496
   - T1505.003
   - T1543.002
@@ -35,6 +37,7 @@ attack_coverage:
   - T1548.001
   - T1548.003
   - T1562.001
+  - T1572
   - T1574.006
 telemetry_requirements:
   - file_event
@@ -43,7 +46,7 @@ telemetry_requirements:
   - process_creation
   - network_connection
   - file_scan
-test_status: atomic
+test_status: mixed
 sources:
     manual:
       - https://attack.mitre.org/
@@ -64,6 +67,10 @@ rules:
           - e96a9b85-26f6-4251-a26b-361d4b6761ef   # Webshell Written by Web-Server Process (sigma)
           - d24c4943-3e22-481f-99ee-ca631b8a77af   # Base64-Decode Piped to Shell (sigma)
           - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
+          - b5df6758-24ff-49c0-ba6e-c67760177ddb   # Shell Running as Root Through a SUID Binary (sigma)
+          - 300f4d0e-79ef-4c53-9461-7b3f4e468537   # DNS Query to Tunnel Service (Linux) (sigma)
+          - 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb   # File Renamed to Ransomware-Style Extension (Linux) (sigma)
+          - ae619e3b-9950-4cec-89f0-8874c142197b   # Mass File Rename to Ransomware-Style Extension (Linux) (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
           - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)

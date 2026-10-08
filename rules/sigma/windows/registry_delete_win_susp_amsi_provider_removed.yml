@@ -1,0 +1,56 @@
+title: AMSI Provider Registration Removed
+id: 35866351-9855-465f-9927-d10eef7c8aea
+status: experimental
+description: >
+  Detects deletion of a registry key or value under
+  HKLM\SOFTWARE\Microsoft\AMSI\Providers. Each subkey is a CLSID that registers
+  an Antimalware Scan Interface provider (Microsoft Defender or a third-party
+  AV); removing it makes the host stop sending script and memory content to
+  that engine, so later PowerShell, VBScript or .NET payloads go unscanned. The
+  removal only takes effect for processes started afterwards, which is why
+  attackers do it early.
+  Rustinel reports the removal on the registry_delete channel with TargetObject
+  set to the deleted key path (or key path plus value name for a value).
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/windows/win32/amsi/dev-audience
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: registry_delete
+  product: windows
+detection:
+  selection:
+    TargetObject|contains: '\Microsoft\AMSI\Providers\'
+  condition: selection
+falsepositives:
+  - Uninstalling or replacing an endpoint security product removes its AMSI
+    provider; filter the CLSID of the product being retired, or the installer
+    Image, as tuning.
+level: medium
+rustinel:
+  telemetry:
+    - registry_delete
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: "TargetObject"
+      guidance: "Filter the CLSID of the security product being retired."
+    - surface: "Image"
+      guidance: "Filter the installer image that replaces an endpoint security product."
+  negatives:
+    - reason: "uninstalling an unrelated product"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{ABC}"
+        Image: "C:\\Windows\\System32\\msiexec.exe"
+    - reason: "sibling AMSI settings key"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\AMSI\\Settings\\x"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+    - reason: "vendor key"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Vendor\\Key"
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"

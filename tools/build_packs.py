@@ -194,6 +194,7 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         "pack_schema_version": manifest.get("pack_schema_version"),
         "status": manifest.get("status"),
         "expected_false_positive_level": manifest.get("expected_false_positive_level"),
+        "active_response_eligible": lib.active_response_eligible(manifest),
         "attack_coverage": manifest.get("attack_coverage", []),
         "telemetry_requirements": manifest.get("telemetry_requirements", []),
         "rule_count": manifest["resolved_rule_count"],
