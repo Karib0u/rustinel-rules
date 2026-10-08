@@ -8,10 +8,11 @@ rule macos_susp_coinminer_strings
         reference = "https://attack.mitre.org/software/S0658/"
         software = "S0658"
         attack = "T1496"
-        level = "medium"
+        level = "low"
+        severity = "low"
         os = "macos"
         telemetry = "file_scan"
-        expected_false_positive_level = "medium"
+        expected_false_positive_level = "low"
         test_status = "atomic"
 
     strings:

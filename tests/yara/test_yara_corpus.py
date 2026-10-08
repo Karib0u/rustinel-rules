@@ -82,3 +82,13 @@ def test_wrong_format_does_not_match(stem):
     magic, positives, _ = CASES[stem]
     other = b"\0\0\0\0" if magic != b"\0\0\0\0" else MZ
     assert not _scanner(stem).scan(_blob(other, positives[0])).matching_rules
+
+
+
+
+@pytest.mark.parametrize("stem", sorted(CASES))
+def test_severity_is_explicit_and_miners_are_not_response_eligible(stem):
+    text = next(ROOT.glob(f"*/{stem}.yar")).read_text()
+    miner = "xmrig" in stem or "coinminer" in stem
+    expected = "low" if miner else "high"
+    assert f'severity = "{expected}"' in text
