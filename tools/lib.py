@@ -254,6 +254,17 @@ PLATFORM_BASELINE_ENGINES: dict[str, tuple[str, str]] = {
 # v1.5.0, whatever their referenced rules select on.
 CORRELATION_MIN_ENGINE = ("1.5.0", "Sigma correlation rules need v1.5.0")
 
+# Channels that arrived in one release. A rule on them needs that release even
+# when it selects only on EventID, which has no field-contract row.
+CHANNEL_MIN_ENGINES: dict[tuple[str, str], tuple[str, str]] = {
+    ("windows", "windefend"): ("1.9.0", "the Defender Operational channel arrived in v1.9.0"),
+    ("windows", "application"): ("1.9.0", "the Application channel arrived in v1.9.0"),
+    ("windows", "ps_classic_start"): (
+        "1.9.0",
+        "classic PowerShell engine-start events arrived in v1.9.0",
+    ),
+}
+
 # Field -> first release that populates it comes from the vendored engine
 # field contract (`since`, schema 2 and later); see engine_contract.py. Platform
 # baselines above stay here because the contract does not express when a
@@ -274,7 +285,17 @@ _CATEGORY_PARENTS = {
 # Log sources that name a Windows event-log service instead of a category. The
 # engine routes `product: windows, service: security` (no category) to the
 # Security channel, which the field contract files under category "security".
-_SERVICE_CATEGORIES = {("windows", "security"): "security"}
+# Since v1.9.0 it routes `service: windefend` (Defender Operational) and
+# `service: application` the same way, and `service: powershell-classic` with
+# no category to the classic engine-start events (`ps_classic_start`).
+# `wmi` (Operational 5857-5861) shares the contract rows of `wmi_event`.
+_SERVICE_CATEGORIES = {
+    ("windows", "security"): "security",
+    ("windows", "windefend"): "windefend",
+    ("windows", "application"): "application",
+    ("windows", "wmi"): "wmi_event",
+    ("windows", "powershell-classic"): "ps_classic_start",
+}
 
 
 def is_correlation(meta) -> bool:
@@ -396,6 +417,10 @@ def artifact_min_engine(
             if platform_reason:
                 reasons.append(platform_reason)
         category = contract_category(logsource)
+        channel_minimum = CHANNEL_MIN_ENGINES.get((product, category))
+        if channel_minimum and parse_version(channel_minimum[0]) > parse_version(minimum):
+            minimum = channel_minimum[0]
+            reasons.append(channel_minimum[1])
         used = detection_fields(artifact.meta.get("detection") or {})
 
         available = field_since.get((product, category), {})
@@ -433,6 +458,18 @@ def pack_min_engine(
         if reasons:
             drivers[artifact_id] = reasons
     return minimum, drivers
+
+
+def active_response_eligible(pack: dict) -> bool:
+    """Whether alerts from a pack may drive automated active response.
+
+    Hunting packs are analyst-driven and never eligible; the manifest states it
+    explicitly (validation enforces that), and other levels default to eligible.
+    """
+    declared = pack.get("active_response_eligible")
+    if isinstance(declared, bool):
+        return declared
+    return pack.get("level") != "hunting"
 
 
 def artifact_test_status(artifact: Artifact) -> str | None:

@@ -1,0 +1,40 @@
+title: SID History Added to Account
+id: 619320af-9c50-44b8-8fe6-800b027b4802
+status: experimental
+description: >
+  Detects Security events 4765 (SID History added to an account) and 4766 (an
+  attempt to add SID History failed). SID History injection grants an account the
+  privileges of another identity and is used for domain privilege escalation and
+  persistence (mimikatz sid::patch, golden-ticket variants). Outside a domain
+  migration, either event is a strong signal. Domain controllers only; requires
+  the "User Account Management" audit subcategory.
+references:
+  - https://attack.mitre.org/techniques/T1134/005/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4765
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.privilege-escalation
+  - attack.persistence
+  - attack.t1134.005
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID:
+      - 4765
+      - 4766
+  condition: selection
+falsepositives:
+  - Active Directory migrations that intentionally preserve SID History.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    SID History can only be written on a domain controller, which hosted CI
+    runners are not. Logic is covered by unit fixtures in tests/tools.

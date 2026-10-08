@@ -1,0 +1,33 @@
+title: Security Event Log Cleared
+id: e813d6f6-5dbb-4587-a60e-20a04481fdc6
+status: experimental
+description: >
+  Detects Security event 1102, written when the Security event log is cleared.
+  Adversaries clear the log to destroy evidence. Unlike the command-line rule,
+  this fires however the log was cleared (wevtutil, PowerShell, the Event Viewer
+  GUI or an API call). 1102 is written regardless of audit policy, so it needs no
+  extra configuration. The Subject* fields identify who cleared it.
+references:
+  - https://attack.mitre.org/techniques/T1070/001/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-1102
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1070.001
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 1102
+  condition: selection
+falsepositives:
+  - Authorized log maintenance or imaging workflows; filter on SubjectUserName.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: low
+  test_status: atomic

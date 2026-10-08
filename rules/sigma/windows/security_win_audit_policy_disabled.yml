@@ -1,0 +1,39 @@
+title: Windows Audit Policy Success or Failure Auditing Removed
+id: 5a2fd413-6826-47af-8b6b-9e069058c807
+status: experimental
+description: >
+  Detects Security event 4719 where success or failure auditing was removed from
+  an audit subcategory (AuditPolicyChanges %%8448 "Success removed" or %%8450
+  "Failure removed"). Attackers disable auditing, for example with
+  "auditpol /set /subcategory:... /success:disable", so later activity leaves no
+  Security events. Only changes that remove auditing match; added auditing does
+  not. 4719 is written under the "Audit Policy Change" subcategory, which is
+  enabled for success by default.
+references:
+  - https://attack.mitre.org/techniques/T1562/002/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4719
+  - https://github.com/Karib0u/rustinel/blob/v1.8.0/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1562.002
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4719
+    AuditPolicyChanges|contains:
+      - '%%8448'
+      - '%%8450'
+  condition: selection
+falsepositives:
+  - Administrators or GPO refreshes that deliberately retune the audit policy;
+    filter on SubjectUserName for known management accounts.
+level: medium
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: atomic
