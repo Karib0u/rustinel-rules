@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Positive/negative fixtures for the PowerShell and scheduled-task rules.
 
 A minimal Sigma evaluator (contains / startswith / endswith / re, `and`, `or`,
