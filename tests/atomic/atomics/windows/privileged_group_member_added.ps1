@@ -16,6 +16,8 @@ $sid = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'
 $admins = $sid.Translate([System.Security.Principal.NTAccount]).Value.Split('\')[-1]
 & net.exe localgroup $admins $user /add | Out-Null
 Start-Sleep -Seconds 2
+# DEBUG-4732
+Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4728,4732,4720} -MaxEvents 5 | ForEach-Object { $_.ToXml() }
 
 & net.exe localgroup $admins $user /delete | Out-Null
 & net.exe user $user /delete | Out-Null
