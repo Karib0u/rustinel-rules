@@ -3,15 +3,21 @@ id: c3d4e5f6-9012-4234-9c5d-6e7f8a901a12
 status: experimental
 description: >
   Detects in-memory PowerShell download-and-execute cradles in script block
-  logging, where remote content is fetched (Net.WebClient / Invoke-WebRequest /
-  BITS) and immediately executed via Invoke-Expression. A core staging technique
-  for fileless payload delivery. Noisier in dev/admin environments where install
-  one-liners (e.g. "iwr ... | iex") are common, so placed in the Advanced tier.
+  logging: remote content fetched with Net.WebClient, Invoke-WebRequest (iwr),
+  Invoke-RestMethod (irm) or BITS and then executed, either piped into
+  Invoke-Expression (iex) or passed to it as a parenthesised expression. A core
+  staging technique for fileless payload delivery. Mentioning the download and
+  execution cmdlets is not enough: module manifests, help text and wrapper
+  modules list those names without invoking them, so the rule requires the
+  invocation syntax. Noisier in dev/admin environments where install one-liners
+  (e.g. "iwr https://... | iex") are common, so placed in the Advanced tier.
+  Requires PowerShell ScriptBlock logging (ps_script telemetry).
 references:
   - https://attack.mitre.org/techniques/T1059/001/
   - https://attack.mitre.org/techniques/T1105/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.execution
   - attack.t1059.001
@@ -21,20 +27,21 @@ logsource:
   category: ps_script
   product: windows
 detection:
-  selection_download:
+  selection_remote:
     ScriptBlockText|contains:
-      - 'Net.WebClient'
-      - 'DownloadString'
-      - 'DownloadFile'
-      - 'DownloadData'
-      - 'Invoke-WebRequest'
-      - 'Start-BitsTransfer'
-  selection_exec:
-    ScriptBlockText|contains:
-      - 'IEX'
-      - 'Invoke-Expression'
-      - '| iex'
-  condition: selection_download and selection_exec
+      - 'http://'
+      - 'https://'
+      - 'ftp://'
+  # Download expression piped straight into iex, on one line.
+  selection_pipe:
+    ScriptBlockText|re: '(?i)(Net\.WebClient|DownloadString|DownloadData|Invoke-WebRequest|Invoke-RestMethod|\biwr\b|\birm\b)[^\r\n]*\|\s*(iex|invoke-expression)\b'
+  # iex / Invoke-Expression called on a parenthesised download expression.
+  selection_wrap:
+    ScriptBlockText|re: '(?i)\b(iex|invoke-expression)\s*\(+\s*(\(?\s*New-Object|\[?System\.Net|Invoke-WebRequest|Invoke-RestMethod|\biwr\b|\birm\b|\$[a-z_]\w*\.Download(String|Data))'
+  # File download followed by execution of what was fetched, in the same block.
+  selection_fetch_run:
+    ScriptBlockText|re: '(?i)(DownloadFile|Start-BitsTransfer)\b[\s\S]{0,400}\b(Start-Process|Invoke-Item|iex|Invoke-Expression)\b'
+  condition: selection_remote and (selection_pipe or selection_wrap or selection_fetch_run)
 falsepositives:
   - Legitimate package/install one-liners and automation that fetch and run scripts.
 level: high

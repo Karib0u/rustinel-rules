@@ -2,15 +2,20 @@ title: AMSI Bypass Pattern in PowerShell ScriptBlock
 id: 31ddbaff-1a32-4eb6-b7ce-647b59aeb901
 status: experimental
 description: >
-  Detects PowerShell ScriptBlock content that references the internal AMSI
-  objects and fields used by nearly every published AMSI bypass (patching
-  amsiInitFailed, reflecting into AmsiUtils, or targeting AmsiScanBuffer /
-  AmsiOpenSession). Almost every PowerShell offensive framework disables AMSI
-  first, so catching the bypass catches the family rather than the sample.
+  Detects PowerShell ScriptBlock content that combines an internal AMSI object or
+  field with the operation used to tamper with it: setting amsiInitFailed or
+  amsiContext through reflection, reflecting into AmsiUtils, or patching
+  AmsiScanBuffer / AmsiOpenSession in memory. Almost every PowerShell offensive
+  framework disables AMSI first, so catching the bypass catches the family
+  rather than the sample. A bare mention of these names is not enough: defensive
+  scripts, detection content and security documentation use the same tokens, so
+  the rule requires the name together with a reflection or memory-write call.
+  Requires PowerShell ScriptBlock logging (ps_script telemetry).
 references:
   - https://attack.mitre.org/techniques/T1562/001/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
   - attack.t1562.001
@@ -18,17 +23,34 @@ logsource:
   category: ps_script
   product: windows
 detection:
-  selection:
+  # Reflection onto the amsi fields: GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)
+  field_name:
     ScriptBlockText|contains:
       - 'amsiInitFailed'
-      - 'AmsiUtils'
-      - 'AmsiScanBuffer'
       - 'amsiContext'
+      - 'AmsiUtils'
+  field_tamper:
+    ScriptBlockText|contains:
+      - 'SetValue('
+      - 'NonPublic,Static'
+      - 'NonPublic, Static'
+      - 'WriteInt32'
+      - 'WriteInt64'
+  # In-memory patch of the scan entry points.
+  patch_name:
+    ScriptBlockText|contains:
+      - 'AmsiScanBuffer'
       - 'AmsiOpenSession'
-  condition: selection
+  patch_tamper:
+    ScriptBlockText|contains:
+      - 'VirtualProtect'
+      - 'WriteProcessMemory'
+      - 'GetProcAddress'
+      - 'Marshal]::Copy'
+      - 'Marshal.Copy'
+  condition: (field_name and field_tamper) or (patch_name and patch_tamper)
 falsepositives:
-  - Security tooling and red-team frameworks; content-wise near zero, but
-    ScriptBlock volume argues for Advanced until burn-in.
+  - Security tooling, red-team frameworks and AMSI test harnesses.
 level: high
 rustinel:
   telemetry:
@@ -37,5 +59,6 @@ rustinel:
   test_status: manual
   test_reason: >
     Requires PowerShell ScriptBlock logging to be enabled on the host, which the
-    atomic firing runners do not configure; validated manually with Atomic Red
-    Team T1562.001 AMSI bypass atomics.
+    atomic firing runners do not configure, and AMSI may block the bypass content
+    itself; validated manually with Atomic Red Team T1562.001 AMSI bypass atomics.
+    Positive and negative cases are covered by tests/tools/test_powershell_rules.py.

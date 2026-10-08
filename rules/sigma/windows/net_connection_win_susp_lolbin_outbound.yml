@@ -2,26 +2,30 @@ title: Outbound Connection from Script or LOLBin Host
 id: 717396f6-aff0-49b0-b8f3-53568e276d5c
 status: experimental
 description: >
-  Detects a public-internet outbound connection made by a scripting or LOLBin
-  host (rundll32, mshta, regsvr32, certutil, wscript, cscript). This behavioral
-  net catches C2 from these binaries regardless of command line, complementing
-  the process-creation rules for the same tools and defeating command-line
-  obfuscation. Add internal proxy CIDRs to the private-network filter as needed.
+  Detects an outbound connection initiated by a scripting or LOLBin host
+  (rundll32, mshta, regsvr32, certutil, wscript, cscript) to a public address.
+  This behavioral net catches network use by these binaries regardless of
+  command line, complementing the process-creation rules for the same tools
+  and defeating command-line obfuscation. Requires Initiated=true so inbound
+  connections cannot match. The event proves only that the process opened a
+  connection; it does not prove the protocol, a successful connect, any data
+  transfer, or command and control (Windows reports connection attempts from
+  the kernel network provider, including ones that later fail). The event has
+  no parent or command line, so lineage context is unavailable. Add internal
+  proxy ranges to the non-public filter as needed.
 references:
-  - https://attack.mitre.org/techniques/T1071/
   - https://attack.mitre.org/techniques/T1218/
 author: rustinel-rules
 date: 2026-07-09
 tags:
-  - attack.command-and-control
   - attack.defense-evasion
-  - attack.t1071
   - attack.t1218
 logsource:
   category: network_connection
   product: windows
 detection:
   selection:
+    Initiated: 'true'
     Image|endswith:
       - '\rundll32.exe'
       - '\mshta.exe'
@@ -29,16 +33,36 @@ detection:
       - '\certutil.exe'
       - '\wscript.exe'
       - '\cscript.exe'
-  filter_private:
+  filter_nonpublic:
     DestinationIp|cidr:
+      - '0.0.0.0/8'
       - '10.0.0.0/8'
-      - '172.16.0.0/12'
-      - '192.168.0.0/16'
+      - '100.64.0.0/10'
       - '127.0.0.0/8'
       - '169.254.0.0/16'
+      - '172.16.0.0/12'
+      - '192.0.0.0/24'
+      - '192.0.2.0/24'
+      - '192.168.0.0/16'
+      - '198.18.0.0/15'
+      - '198.51.100.0/24'
+      - '203.0.113.0/24'
+      - '224.0.0.0/4'
+      - '240.0.0.0/4'
+      - '::/128'
       - '::1/128'
+      - '::ffff:0.0.0.0/104'
+      - '::ffff:10.0.0.0/104'
+      - '::ffff:127.0.0.0/104'
+      - '::ffff:169.254.0.0/112'
+      - '::ffff:172.16.0.0/108'
+      - '::ffff:192.168.0.0/112'
+      - '100::/64'
+      - '2001:db8::/32'
+      - 'fc00::/7'
       - 'fe80::/10'
-  condition: selection and not filter_private
+      - 'ff00::/8'
+  condition: selection and not filter_nonpublic
 falsepositives:
   - Environments where these binaries reach an internet-facing internal proxy;
     add the proxy CIDR to the filter.
@@ -49,6 +73,6 @@ rustinel:
   expected_false_positive_level: medium
   test_status: manual
   test_reason: >
-    Windows network_connection firing is not yet exercised by the atomic harness
-    (no Windows network rule has a fixture); validated manually with a rundll32
-    beacon to a lab endpoint.
+    An atomic needs a public destination (loopback is filtered as non-public).
+    Initiated, IPv4/IPv6 range handling and benign negatives are covered offline
+    by tests/replay/network_connection.py.

@@ -27,7 +27,6 @@ attack_coverage:
   - T1059.001
   - T1090.001
   - T1197
-  - T1071
   - T1218
   - T1219
 telemetry_requirements:
