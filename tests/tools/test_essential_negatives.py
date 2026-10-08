@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "tests" / "replay"))
 import essential_negatives  # noqa: E402
+
 import lib  # noqa: E402
 
 
