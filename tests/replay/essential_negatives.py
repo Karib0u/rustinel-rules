@@ -36,7 +36,7 @@ def file(image, path):
 
 
 def wmi(operation):
-    return {"category": "Wmi", "event_id": 5861, "fields": {"Operation": operation}}
+    return {"category": "Wmi", "event_id": 5858, "fields": {"Operation": operation}}
 
 
 def win(parent, image):
