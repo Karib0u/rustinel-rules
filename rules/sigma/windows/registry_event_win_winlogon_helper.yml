@@ -49,3 +49,21 @@ rustinel:
     - registry_set
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_shell_default"
+      guidance: "Kiosk and VDI products replace the Shell value; add their value to the filter on those hosts."
+    - surface: "filter_userinit_default"
+      guidance: "Add other Userinit values your image sets, if any."
+  negatives:
+    - reason: "Shell set to the default"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Shell"
+        Details: "explorer.exe"
+    - reason: "Userinit set to the default"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\Userinit"
+        Details: "C:\\Windows\\system32\\userinit.exe,"
+    - reason: "an unrelated Winlogon value"
+      fields:
+        TargetObject: "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Winlogon\\DefaultUserName"
+        Details: "alice"

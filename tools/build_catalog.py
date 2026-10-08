@@ -138,6 +138,11 @@ def rule_record(
         telemetry = as_list(rustinel.get("telemetry"))
         efp = str(rustinel.get("expected_false_positive_level") or "").strip().lower() or None
         test_status = str(rustinel.get("test_status") or "").strip().lower() or None
+        tuning = [
+            {"surface": str(t["surface"]), "guidance": str(t["guidance"])}
+            for t in (rustinel.get("tuning") or [])
+            if isinstance(t, dict) and t.get("surface") and t.get("guidance")
+        ]
         os_name = product or "windows"
         for tag in as_list(meta.get("tags")):
             tactic_match = _TACTIC_NAME_RE.match(tag)
@@ -162,6 +167,7 @@ def rule_record(
         telemetry = as_list(meta.get("telemetry") or "file_scan")
         efp = (meta.get("expected_false_positive_level") or "").strip().lower() or None
         test_status = (meta.get("test_status") or "").strip().lower() or None
+        tuning = []
         os_name = product or "windows"
         source_lang = "yara"
 
@@ -181,6 +187,7 @@ def rule_record(
         telemetry = ["file_scan"]
         efp = None
         test_status = None
+        tuning = []
         os_name = product
         source_lang = "yaml"
 
@@ -213,6 +220,7 @@ def rule_record(
         "telemetry": telemetry,
         "expected_false_positive_level": efp,
         "test_status": test_status,
+        "tuning": tuning,
         "author": author,
         "date": date,
         "packs": pack_ids,

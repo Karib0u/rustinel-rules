@@ -46,3 +46,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude MDM enrollment and provisioning that grant admin to a managed account."
+    - surface: "CommandLine"
+      guidance: "Filter the managed admin account name your provisioning adds."
+  negatives:
+    - reason: "reading the admin group"
+      fields:
+        Image: "/usr/sbin/dseditgroup"
+        CommandLine: "dseditgroup -o read admin"
+    - reason: "reading group membership with dscl"
+      fields:
+        Image: "/usr/bin/dscl"
+        CommandLine: "dscl . -read /Groups/admin GroupMembership"
+    - reason: "adding a user to a non-admin group"
+      fields:
+        Image: "/usr/sbin/dseditgroup"
+        CommandLine: "dseditgroup -o edit -a bob -t user staff"
+    - reason: "authenticating as an admin without granting it"
+      fields:
+        Image: "/usr/sbin/sysadminctl"
+        CommandLine: "sysadminctl -adminUser root -adminPassword - -resetPasswordFor bob"

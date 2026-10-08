@@ -165,6 +165,11 @@ jobs:
         run: python3 tests/replay/essential_negatives.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check Advanced rule negative examples
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/advanced_negatives.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Check network_connection replay regressions
         if: matrix.platform == 'linux'
         run: python3 tests/replay/network_connection.py --engine tests/atomic/.engine/rustinel

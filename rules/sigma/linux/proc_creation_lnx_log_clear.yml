@@ -34,3 +34,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude disk-space cleanup jobs (logrotate wrappers, cron) that vacuum journals."
+    - surface: "CommandLine"
+      guidance: "Scope the /var/log branch to rm/truncate/shred of live logs; allowlist rotation paths your jobs use."
+  negatives:
+    - reason: "reading the journal"
+      fields:
+        Image: "/usr/bin/journalctl"
+        CommandLine: "journalctl --since today -u ssh"
+    - reason: "reading a log file"
+      fields:
+        Image: "/usr/bin/tail"
+        CommandLine: "tail -f /var/log/syslog"
+    - reason: "deleting a temp file outside /var/log"
+      fields:
+        Image: "/usr/bin/rm"
+        CommandLine: "rm -f /tmp/build.log"
+    - reason: "truncating an application file outside /var/log"
+      fields:
+        Image: "/usr/bin/truncate"
+        CommandLine: "truncate -s 0 /srv/app/app.log"

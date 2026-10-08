@@ -73,6 +73,27 @@ rustinel:
   test_status: atomic                # none | atomic | manual | dynamic
 ```
 
+Rules in an Advanced pack (that are not Essential) also document how to tune them
+and what they must ignore. `tools/validate.py` requires both:
+
+```yaml
+rustinel:
+  tuning:
+    - surface: filter_pkg            # a selection, field or filter an operator edits
+      guidance: Extend ParentImage with the package tooling your fleet uses.
+  negatives:
+    - reason: dpkg post-install script restoring a setuid helper
+      fields:                        # a benign event for the rule's logsource
+        Image: /usr/bin/chmod
+        CommandLine: chmod 4755 /usr/bin/sudo
+        ParentImage: /usr/bin/dpkg
+```
+
+Every negative is replayed against its own rule by `tests/replay/advanced_negatives.py`
+and must not alert. Essential rules carry their negatives in
+`tests/replay/essential_negatives.py` (or the replay/atomic noted in its
+`COVERED_ELSEWHERE` map); a unit test fails when an Essential Sigma rule has none.
+
 ## Adding an IOC set
 
 IOCs are stored as **typed sets**, not one file per indicator. A set groups

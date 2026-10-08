@@ -70,3 +70,33 @@ rustinel:
     - network_connection
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_nonpublic"
+      guidance: "Add the CIDRs of internal proxies, package mirrors and monitoring endpoints that scripts reach over /dev/tcp."
+    - surface: "Image"
+      guidance: "Exclude a specific provisioning shell by full path only when it is a known health-check runner."
+  negatives:
+    - reason: "shell connecting to a private RFC 1918 address"
+      fields:
+        Image: "/usr/bin/bash"
+        DestinationIp: "10.0.0.5"
+        DestinationPort: "22"
+        Initiated: true
+    - reason: "shell connecting to loopback"
+      fields:
+        Image: "/usr/bin/bash"
+        DestinationIp: "127.0.0.1"
+        DestinationPort: "5432"
+        Initiated: true
+    - reason: "inbound connection accepted by a shell"
+      fields:
+        Image: "/usr/bin/bash"
+        DestinationIp: "8.8.8.8"
+        DestinationPort: "443"
+        Initiated: false
+    - reason: "a browser-class client reaching a public address"
+      fields:
+        Image: "/usr/bin/curl"
+        DestinationIp: "8.8.8.8"
+        DestinationPort: "443"
+        Initiated: true

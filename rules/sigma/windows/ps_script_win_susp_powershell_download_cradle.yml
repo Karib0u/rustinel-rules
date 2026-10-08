@@ -50,3 +50,21 @@ rustinel:
     - ps_script
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ScriptBlockText"
+      guidance: "Allowlist the vendor install hosts your automation uses by URL prefix."
+    - surface: "Path"
+      guidance: "Exclude the signed automation scripts that fetch and run content on a schedule."
+  negatives:
+    - reason: "download to disk with no execution"
+      fields:
+        ScriptBlockText: "Invoke-WebRequest https://example.test/a.zip -OutFile C:\\Temp\\a.zip"
+    - reason: "a documentation URL in output text"
+      fields:
+        ScriptBlockText: "Write-Host 'see https://example.test/docs for usage'"
+    - reason: "local content piped to Invoke-Expression"
+      fields:
+        ScriptBlockText: "Get-Content .\\setup.ps1 | Invoke-Expression"
+    - reason: "a REST call that parses JSON"
+      fields:
+        ScriptBlockText: "Invoke-RestMethod https://example.test/api/v1/status | ConvertTo-Json"

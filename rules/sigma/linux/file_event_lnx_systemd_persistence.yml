@@ -47,3 +47,27 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude approved configuration-management agents (ansible, puppet, chef, salt) that deploy units on a schedule."
+    - surface: "TargetFilename"
+      guidance: "Package managers write units constantly; scope to hosts where unit changes are unexpected, or filter on the unit name of known-good software."
+    - surface: "filter_container_unpack"
+      guidance: "Extend the startswith list when containerd or dockerd use a custom storage root."
+  negatives:
+    - reason: "containerd unpacking an image layer that ships a unit file"
+      fields:
+        Image: "/usr/bin/containerd"
+        TargetFilename: "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs/etc/systemd/system/app.service"
+    - reason: "dockerd extracting a layer under its storage root"
+      fields:
+        Image: "/usr/bin/dockerd"
+        TargetFilename: "/var/lib/docker/overlay2/ab12/diff/etc/systemd/system/web.service"
+    - reason: "a unit-looking file outside every systemd directory"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/home/alice/notes/backup.service"
+    - reason: "a non-unit file inside a systemd directory"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/etc/systemd/system/README.txt"

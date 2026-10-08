@@ -37,3 +37,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude legacy systems-management scripts that still launch processes through WMIC."
+    - surface: "CommandLine"
+      guidance: "Filter the /node targets of your management servers."
+  negatives:
+    - reason: "reading OS information"
+      fields:
+        Image: "C:\\Windows\\System32\\wbem\\WMIC.exe"
+        CommandLine: "wmic.exe os get caption"
+    - reason: "listing processes"
+      fields:
+        Image: "C:\\Windows\\System32\\wbem\\WMIC.exe"
+        CommandLine: "wmic.exe process list brief"
+    - reason: "process query with a where clause"
+      fields:
+        Image: "C:\\Windows\\System32\\wbem\\WMIC.exe"
+        CommandLine: "wmic.exe process where name=\"notepad.exe\" get processid"

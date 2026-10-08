@@ -48,3 +48,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "systemctl_service"
+      guidance: "The service list is the tuning surface; add or remove agents to match your estate."
+    - surface: "ParentImage"
+      guidance: "Exclude orchestrators and maintenance tooling that stop agents during approved windows."
+  negatives:
+    - reason: "checking the status of a security service"
+      fields:
+        Image: "/usr/bin/systemctl"
+        CommandLine: "systemctl status auditd"
+    - reason: "starting a security service"
+      fields:
+        Image: "/usr/bin/systemctl"
+        CommandLine: "systemctl start auditd"
+    - reason: "stopping an unrelated service"
+      fields:
+        Image: "/usr/bin/systemctl"
+        CommandLine: "systemctl stop nginx"
+    - reason: "setting SELinux to enforcing"
+      fields:
+        Image: "/usr/sbin/setenforce"
+        CommandLine: "setenforce 1"

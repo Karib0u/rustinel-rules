@@ -43,3 +43,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "CommandLine"
+      guidance: "Developer tooling that loads agents from a temporary path during install; filter the specific plist label."
+    - surface: "ParentImage"
+      guidance: "Exclude the installer or package manager that performs the load."
+  negatives:
+    - reason: "loading a plist from the system library"
+      fields:
+        Image: "/bin/launchctl"
+        CommandLine: "launchctl load /Library/LaunchDaemons/com.vendor.helper.plist"
+    - reason: "listing loaded jobs"
+      fields:
+        Image: "/bin/launchctl"
+        CommandLine: "launchctl list"
+    - reason: "unloading a plist from a temp path"
+      fields:
+        Image: "/bin/launchctl"
+        CommandLine: "launchctl unload /tmp/com.vendor.helper.plist"
+    - reason: "a project directory that happens to be named tmp"
+      fields:
+        Image: "/bin/launchctl"
+        CommandLine: "launchctl load /Users/dev/tmp/project/com.dev.agent.plist"

@@ -36,3 +36,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude MDM enrollment agents and IT onboarding scripts that create the local admin."
+    - surface: "CommandLine"
+      guidance: "Match on the account name your provisioning creates and filter that exact value."
+  negatives:
+    - reason: "reading a user record"
+      fields:
+        Image: "/usr/bin/dscl"
+        CommandLine: "dscl . -read /Users/alice"
+    - reason: "listing users"
+      fields:
+        Image: "/usr/bin/dscl"
+        CommandLine: "dscl . -list /Users"
+    - reason: "creating a group, not a user"
+      fields:
+        Image: "/usr/bin/dscl"
+        CommandLine: "dscl . -create /Groups/developers"
+    - reason: "checking secure token status"
+      fields:
+        Image: "/usr/sbin/sysadminctl"
+        CommandLine: "sysadminctl -secureTokenStatus alice"

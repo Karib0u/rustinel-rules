@@ -34,3 +34,21 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_installer"
+      guidance: "Add the installer images your estate uses to register startup entries."
+    - surface: "TargetFilename"
+      guidance: "Per-user StartUp folders are the common developer case; scope to servers if volume is high."
+  negatives:
+    - reason: "MSI installer registering an entry"
+      fields:
+        Image: "C:\\Windows\\System32\\msiexec.exe"
+        TargetFilename: "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp\\vendor.lnk"
+    - reason: "desktop.ini folder metadata"
+      fields:
+        Image: "C:\\Windows\\explorer.exe"
+        TargetFilename: "C:\\Users\\alice\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp\\desktop.ini"
+    - reason: "a shortcut in a normal Start Menu folder"
+      fields:
+        Image: "C:\\Windows\\explorer.exe"
+        TargetFilename: "C:\\Users\\alice\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\tool.lnk"

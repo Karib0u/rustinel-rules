@@ -44,3 +44,21 @@ rustinel:
     - file_delete
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude dotfile managers and provisioning tools that replace a home directory wholesale."
+    - surface: "TargetFilename"
+      guidance: "Build containers delete history as cleanup; scope the rule to interactive hosts."
+  negatives:
+    - reason: "a history backup that is not a shell history file"
+      fields:
+        Image: "/usr/bin/rm"
+        TargetFilename: "/home/alice/.bash_history.bak"
+    - reason: "deleting an unrelated dotfile"
+      fields:
+        Image: "/usr/bin/rm"
+        TargetFilename: "/home/alice/.viminfo"
+    - reason: "deleting an ordinary file"
+      fields:
+        Image: "/usr/bin/rm"
+        TargetFilename: "/tmp/build.log"

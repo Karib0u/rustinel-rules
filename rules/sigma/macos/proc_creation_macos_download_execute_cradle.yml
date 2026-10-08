@@ -46,3 +46,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude developer bootstrap tooling and CI runners that pipe vendor installers into a shell."
+    - surface: "CommandLine"
+      guidance: "Allowlist the install hosts you trust by URL prefix instead of disabling the rule."
+  negatives:
+    - reason: "download piped to a checksum tool"
+      fields:
+        Image: "/bin/zsh"
+        CommandLine: "zsh -c 'curl -fsSL https://example.test/a.pkg | shasum -a 256'"
+    - reason: "download saved to disk"
+      fields:
+        Image: "/bin/bash"
+        CommandLine: "bash -c 'curl -fsSL https://example.test/a.pkg -o /tmp/a.pkg'"
+    - reason: "download piped to a pager-like tool"
+      fields:
+        Image: "/bin/zsh"
+        CommandLine: "zsh -c 'curl -s https://example.test/notes | tee /tmp/notes'"

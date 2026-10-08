@@ -34,3 +34,19 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Filter the parent of the specific product that starts a bare rundll32.exe."
+  negatives:
+    - reason: "rundll32 loading a control panel applet"
+      fields:
+        Image: "C:\\Windows\\System32\\rundll32.exe"
+        CommandLine: "rundll32.exe shell32.dll,Control_RunDLL desk.cpl"
+    - reason: "rundll32 opening a URL handler"
+      fields:
+        Image: "C:\\Windows\\System32\\rundll32.exe"
+        CommandLine: "\"C:\\Windows\\System32\\rundll32.exe\" url.dll,FileProtocolHandler https://example.test"
+    - reason: "rundll32 with a printer entry point"
+      fields:
+        Image: "C:\\Windows\\System32\\rundll32.exe"
+        CommandLine: "rundll32.exe printui.dll,PrintUIEntry /?"

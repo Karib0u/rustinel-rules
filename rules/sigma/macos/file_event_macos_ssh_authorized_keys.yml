@@ -41,3 +41,21 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_management"
+      guidance: "Add the install paths of your configuration-management and MDM agents that provision keys."
+    - surface: "Image"
+      guidance: "Exclude ssh-copy-id wrappers used by a known provisioning script."
+  negatives:
+    - reason: "Jamf provisioning a key"
+      fields:
+        Image: "/usr/local/jamf/bin/jamf"
+        TargetFilename: "/Users/alice/.ssh/authorized_keys"
+    - reason: "known_hosts update"
+      fields:
+        Image: "/usr/bin/ssh"
+        TargetFilename: "/Users/alice/.ssh/known_hosts"
+    - reason: "a backup copy outside .ssh"
+      fields:
+        Image: "/bin/cp"
+        TargetFilename: "/Users/alice/backup/authorized_keys"

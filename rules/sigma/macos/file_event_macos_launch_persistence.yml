@@ -56,3 +56,25 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_managed_writer"
+      guidance: "Add the paths of your MDM, package and deployment tools (Jamf, Munki, Kandji, Intune) to the writer filter."
+    - surface: "TargetFilename"
+      guidance: "Per-user LaunchAgents are the common developer case; scope to /Library/LaunchDaemons first if the volume is high."
+  negatives:
+    - reason: "system installer writing a daemon plist"
+      fields:
+        Image: "/System/Library/PrivateFrameworks/Install.framework/Support/installd"
+        TargetFilename: "/Library/LaunchDaemons/com.vendor.helper.plist"
+    - reason: "Homebrew registering a service plist"
+      fields:
+        Image: "/opt/homebrew/Homebrew/Library/Homebrew/brew.rb"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/homebrew.mxcl.postgresql.plist"
+    - reason: "Apple-owned launch daemon path"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/System/Library/LaunchDaemons/com.apple.example.plist"
+    - reason: "a non-plist file in the LaunchAgents directory"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/README.txt"

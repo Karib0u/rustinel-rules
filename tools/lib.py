@@ -435,6 +435,25 @@ def pack_min_engine(
     return minimum, drivers
 
 
+def advanced_sigma_rules(packs: list[dict], artifacts: list[Artifact]) -> list[Artifact]:
+    """Sigma rules that ship in an Advanced pack and are not already Essential."""
+    by_id = {p["id"]: p for p in packs if "id" in p}
+    index = {a.id: a for a in artifacts if a.id}
+    essential: set[str] = set()
+    for pack in packs:
+        if pack.get("level") == "essential":
+            essential |= set(resolve_pack_rules(pack, by_id))
+    found: dict[str, Artifact] = {}
+    for pack in packs:
+        if pack.get("level") != "advanced":
+            continue
+        for rule_id in resolve_pack_rules(pack, by_id):
+            artifact = index.get(rule_id)
+            if artifact is not None and artifact.kind == "sigma" and rule_id not in essential:
+                found[rule_id] = artifact
+    return sorted(found.values(), key=lambda a: a.rel_path)
+
+
 def artifact_test_status(artifact: Artifact) -> str | None:
     """Declared test evidence of a rule: Sigma `rustinel.test_status`, YARA
     `test_status` meta. IOC sets carry none and are left out of the roll-up."""

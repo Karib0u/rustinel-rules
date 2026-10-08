@@ -52,3 +52,21 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude signed installers and helper apps that request elevation through AppleScript."
+    - surface: "selection_staging"
+      guidance: "The staging list narrows an otherwise common prompt; tune it for the tooling your installers run."
+  negatives:
+    - reason: "privileged command with no staging indicator"
+      fields:
+        Image: "/usr/bin/osascript"
+        CommandLine: "osascript -e 'do shell script \"ls /\" with administrator privileges'"
+    - reason: "staging command without elevation"
+      fields:
+        Image: "/usr/bin/osascript"
+        CommandLine: "osascript -e 'do shell script \"curl https://example.test/a\"'"
+    - reason: "dialog only"
+      fields:
+        Image: "/usr/bin/osascript"
+        CommandLine: "osascript -e 'display dialog \"hello\"'"

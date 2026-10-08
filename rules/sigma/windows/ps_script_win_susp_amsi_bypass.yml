@@ -57,3 +57,16 @@ rustinel:
     - ps_script
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ScriptBlockText"
+      guidance: "Security tooling and AMSI test harnesses trigger the rule; exclude by script path or hash on those hosts."
+  negatives:
+    - reason: "tamper primitive with no AMSI target"
+      fields:
+        ScriptBlockText: "$obj.GetType().GetField('x','NonPublic,Static').SetValue($null,$true)"
+    - reason: "AMSI name in a comment only"
+      fields:
+        ScriptBlockText: "# amsiContext is documented at https://learn.example.test"
+    - reason: "memory API with no AMSI target"
+      fields:
+        ScriptBlockText: "Add-Type -MemberDefinition '[DllImport(\"kernel32\")] public static extern bool VirtualProtect(IntPtr a,UIntPtr b,uint c,out uint d);' -Name K -Namespace W"

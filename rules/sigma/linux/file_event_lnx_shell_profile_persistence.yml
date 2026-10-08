@@ -51,3 +51,27 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude dotfile managers, provisioning tools and package managers that write profile files."
+    - surface: "TargetFilename"
+      guidance: "Developer workstations edit .bashrc and .zshrc constantly; scope user rc files to servers, or alert only on /etc/profile.d and system files there."
+    - surface: "filter_container_unpack"
+      guidance: "Extend the startswith list when container runtimes use a custom storage root."
+  negatives:
+    - reason: "containerd unpacking an image layer that ships /root/.bashrc"
+      fields:
+        Image: "/usr/bin/containerd"
+        TargetFilename: "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs/root/.bashrc"
+    - reason: "dockerd extracting a layer under its storage root"
+      fields:
+        Image: "/usr/bin/dockerd"
+        TargetFilename: "/var/lib/docker/overlay2/ab12/diff/etc/profile"
+    - reason: "shell history, not a startup file"
+      fields:
+        Image: "/usr/bin/bash"
+        TargetFilename: "/home/alice/.bash_history"
+    - reason: "a profile backup that is never sourced"
+      fields:
+        Image: "/usr/bin/cp"
+        TargetFilename: "/home/alice/.bashrc.bak"

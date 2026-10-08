@@ -447,6 +447,40 @@ REQUIRED_PACK_FIELDS = [
 ]
 
 
+def check_advanced_documentation(packs, artifacts, rep: Report):
+    """Advanced rules must document how to tune them and what they must not match."""
+    for art in lib.advanced_sigma_rules(packs, artifacts):
+        rustinel = art.meta.get("rustinel") or {}
+        where = art.rel_path
+        tuning = rustinel.get("tuning")
+        if not isinstance(tuning, list) or not tuning:
+            rep.error(
+                where, "Advanced rule needs rustinel.tuning (the surfaces an operator filters)"
+            )
+        else:
+            for item in tuning:
+                if not (
+                    isinstance(item, dict)
+                    and str(item.get("surface") or "").strip()
+                    and str(item.get("guidance") or "").strip()
+                ):
+                    rep.error(where, "each rustinel.tuning entry needs 'surface' and 'guidance'")
+        negatives = rustinel.get("negatives")
+        if not isinstance(negatives, list) or not negatives:
+            rep.error(
+                where, "Advanced rule needs rustinel.negatives (benign events it must ignore)"
+            )
+        else:
+            for item in negatives:
+                if not (
+                    isinstance(item, dict)
+                    and str(item.get("reason") or "").strip()
+                    and isinstance(item.get("fields"), dict)
+                    and item["fields"]
+                ):
+                    rep.error(where, "each rustinel.negatives entry needs 'reason' and 'fields'")
+
+
 def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
     schema_validate = load_schema_validator(lib.PACK_SCHEMA_PATH)
     if schema_validate is None:
@@ -671,6 +705,7 @@ def main() -> int:
 
     packs = lib.load_packs()
     check_packs(packs, artifacts, rep, preview_by_id)
+    check_advanced_documentation(packs, artifacts, rep)
 
     counts = {k: sum(1 for a in artifacts if a.kind == k) for k in ("sigma", "yara", "ioc")}
     print(

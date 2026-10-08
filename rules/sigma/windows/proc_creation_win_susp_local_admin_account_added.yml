@@ -23,9 +23,10 @@ detection:
       - '\net.exe'
       - '\net1.exe'
   selection_useradd:
-    CommandLine|contains|all:
-      - 'user'
-      - '/add'
+    # `net user <name> ... /add`: `user` is the subcommand, so a group name that
+    # merely contains it (`net localgroup "Remote Desktop Users" bob /add`) does
+    # not match.
+    CommandLine|re: '(?i)\suser\s+(\S+\s+)*?/add(\s|$)'
   selection_groupadd:
     CommandLine|contains|all:
       - 'localgroup'
@@ -42,3 +43,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude onboarding and provisioning scripts that create local accounts."
+    - surface: "CommandLine"
+      guidance: "Filter the service account names your tooling creates."
+  negatives:
+    - reason: "listing local accounts"
+      fields:
+        Image: "C:\\Windows\\System32\\net.exe"
+        CommandLine: "net.exe user"
+    - reason: "listing the Administrators group"
+      fields:
+        Image: "C:\\Windows\\System32\\net.exe"
+        CommandLine: "net.exe localgroup administrators"
+    - reason: "adding a user to a non-admin group"
+      fields:
+        Image: "C:\\Windows\\System32\\net.exe"
+        CommandLine: "net.exe localgroup \"Remote Desktop Users\" bob /add"
+    - reason: "shell echoing the command"
+      fields:
+        Image: "C:\\Windows\\System32\\cmd.exe"
+        CommandLine: "cmd.exe /c echo net user bob /add"

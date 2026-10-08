@@ -46,3 +46,27 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude configuration-management agents and package managers that maintain cron entries."
+    - surface: "TargetFilename"
+      guidance: "Narrow to /var/spool/cron and /etc/cron.d on hosts where scheduled jobs are expected only from change tickets."
+    - surface: "filter_container_unpack"
+      guidance: "Extend the startswith list when container runtimes use a custom storage root."
+  negatives:
+    - reason: "containerd unpacking an image layer that ships a cron file"
+      fields:
+        Image: "/usr/bin/containerd"
+        TargetFilename: "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs/etc/cron.d/logrotate"
+    - reason: "dockerd extracting a layer under its storage root"
+      fields:
+        Image: "/usr/bin/dockerd"
+        TargetFilename: "/var/lib/docker/overlay2/ab12/diff/etc/crontab"
+    - reason: "cron access control file that does not schedule anything"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/etc/cron.allow"
+    - reason: "a crontab backup in a home directory"
+      fields:
+        Image: "/usr/bin/cp"
+        TargetFilename: "/home/alice/etc/crontab.bak"

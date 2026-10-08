@@ -42,3 +42,26 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_pkg"
+      guidance: "Extend ParentImage with other package tooling in use (dnf, yum, apt, apk, pacman)."
+    - surface: "CommandLine"
+      guidance: "Allowlist known-good setuid helpers (a full path) that your configuration management sets."
+  negatives:
+    - reason: "dpkg post-install script restoring a setuid helper"
+      fields:
+        Image: "/usr/bin/chmod"
+        CommandLine: "chmod 4755 /usr/bin/sudo"
+        ParentImage: "/usr/bin/dpkg"
+    - reason: "ordinary executable bit"
+      fields:
+        Image: "/usr/bin/chmod"
+        CommandLine: "chmod u+x deploy.sh"
+    - reason: "plain permissive mode without a special bit"
+      fields:
+        Image: "/usr/bin/chmod"
+        CommandLine: "chmod 755 /usr/local/bin/tool"
+    - reason: "sticky bit only"
+      fields:
+        Image: "/usr/bin/chmod"
+        CommandLine: "chmod 1777 /tmp/shared"

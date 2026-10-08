@@ -60,3 +60,27 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_managed"
+      guidance: "Add the parent images of your package manager, installer and MDM agent; they strip quarantine as part of a normal install."
+    - surface: "CommandLine"
+      guidance: "Developers stripping quarantine from their own builds; scope to user-facing hosts."
+  negatives:
+    - reason: "listing attributes"
+      fields:
+        Image: "/usr/bin/xattr"
+        CommandLine: "xattr -l /Users/alice/Downloads/a.dmg"
+    - reason: "removing a different attribute"
+      fields:
+        Image: "/usr/bin/xattr"
+        CommandLine: "xattr -d com.apple.metadata:kMDItemWhereFroms /Users/alice/a"
+    - reason: "Homebrew stripping quarantine during a cask install"
+      fields:
+        Image: "/usr/bin/xattr"
+        CommandLine: "xattr -d com.apple.quarantine /Applications/Tool.app"
+        ParentImage: "/opt/homebrew/Homebrew/Library/Homebrew/brew.rb"
+    - reason: "installer stripping quarantine"
+      fields:
+        Image: "/usr/bin/xattr"
+        CommandLine: "xattr -cr /Applications/Tool.app"
+        ParentImage: "/usr/sbin/installer"

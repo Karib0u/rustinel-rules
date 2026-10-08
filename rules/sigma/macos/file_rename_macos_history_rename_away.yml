@@ -36,3 +36,24 @@ rustinel:
     - file_rename
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude backup and dotfile tooling that rotates history files."
+    - surface: "SourceFilename"
+      guidance: "zsh renames a temp file onto the history file; only the source side is matched, so that stays quiet."
+  negatives:
+    - reason: "zsh renaming its temp file onto the history file"
+      fields:
+        Image: "/bin/zsh"
+        SourceFilename: "/Users/alice/.zsh_history.new"
+        TargetFilename: "/Users/alice/.zsh_history"
+    - reason: "renaming an unrelated dotfile"
+      fields:
+        Image: "/bin/mv"
+        SourceFilename: "/Users/alice/.zshrc"
+        TargetFilename: "/Users/alice/.zshrc.old"
+    - reason: "renaming an ordinary file"
+      fields:
+        Image: "/bin/mv"
+        SourceFilename: "/tmp/a.txt"
+        TargetFilename: "/tmp/b.txt"

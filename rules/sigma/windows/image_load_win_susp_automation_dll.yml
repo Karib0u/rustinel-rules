@@ -41,3 +41,19 @@ rustinel:
     - image_load
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_hosts"
+      guidance: "Add administration and backup tools that embed the PowerShell runtime to the host filter."
+  negatives:
+    - reason: "powershell.exe loading the runtime"
+      fields:
+        Image: "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        ImageLoaded: "C:\\Windows\\assembly\\NativeImages_v4.0.30319_64\\System.Management.Automation\\System.Management.Automation.ni.dll"
+    - reason: "remoting host loading the runtime"
+      fields:
+        Image: "C:\\Windows\\System32\\wsmprovhost.exe"
+        ImageLoaded: "C:\\Windows\\assembly\\GAC_MSIL\\System.Management.Automation\\System.Management.Automation.dll"
+    - reason: "an unrelated library in a foreign process"
+      fields:
+        Image: "C:\\Windows\\System32\\notepad.exe"
+        ImageLoaded: "C:\\Windows\\System32\\kernel32.dll"
