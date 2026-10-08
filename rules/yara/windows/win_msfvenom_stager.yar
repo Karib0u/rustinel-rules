@@ -8,6 +8,7 @@ rule win_msfvenom_meterpreter_stager
         reference = "https://docs.metasploit.com/docs/using-metasploit/advanced/meterpreter/meterpreter.html"
         attack = "T1105"
         level = "high"
+        severity = "high"
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"

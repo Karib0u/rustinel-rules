@@ -9,6 +9,7 @@ rule win_susp_mimikatz_strings
         software = "S0002"
         attack = "T1003.001"
         level = "high"
+        severity = "high"
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"

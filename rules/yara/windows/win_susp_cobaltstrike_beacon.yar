@@ -9,6 +9,7 @@ rule win_susp_cobaltstrike_beacon
         software = "S0154"
         attack = "T1219"
         level = "high"
+        severity = "high"
         os = "windows"
         telemetry = "file_scan"
         expected_false_positive_level = "low"

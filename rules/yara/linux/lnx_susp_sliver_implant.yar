@@ -9,6 +9,7 @@ rule lnx_susp_sliver_implant
         software = "S0633"
         attack = "T1219"
         level = "high"
+        severity = "high"
         os = "linux"
         telemetry = "file_scan"
         expected_false_positive_level = "low"
