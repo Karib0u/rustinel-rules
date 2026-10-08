@@ -17,6 +17,7 @@ license: DRL-1.1
 extends:
   - macos-essential
 attack_coverage:
+  - T1496
   - T1543.001
   - T1543.004
   - T1105
@@ -50,3 +51,5 @@ rules:
           - 457c6ee7-e5d8-4f06-b25e-a7a3d40e354d   # Shell History File Renamed Away (macOS) (sigma)
           - 40b5bf5b-055e-4db2-90df-bd2968ddad9f   # Shell History Destroyed in Place (macOS) (sigma)
           - 829cee70-a60f-4e8a-8b2f-38e1fff83e61   # TCC Privacy Database Targeted on a Command Line (sigma)
+        yara:
+          - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)

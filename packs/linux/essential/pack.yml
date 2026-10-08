@@ -18,7 +18,6 @@ attack_coverage:
   - T1105
   - T1505.003
   - T1562.001
-  - T1496
   - T1071
   - T1547.006
   - T1014
@@ -44,5 +43,4 @@ rules:
           - 3f32d825-006a-45e9-b5a9-6e7edeeff13c   # Kernel Module Load from Suspicious Path (sigma)
           - 66fd4673-d86b-41d1-ba33-60d7c66dc962   # Backdoor Account Creation (Duplicate UID 0) (sigma)
         yara:
-          - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
           - yara-lnx-msfvenom-stager   # Metasploit / Mettle stager markers in ELF binaries (yara)

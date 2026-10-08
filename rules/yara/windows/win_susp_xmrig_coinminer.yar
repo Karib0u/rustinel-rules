@@ -2,33 +2,40 @@ rule win_susp_xmrig_coinminer
 {
     meta:
         id = "yara-win-xmrig-coinminer"
-        description = "Detects characteristic XMRig and Monero coinminer strings in Windows PE binaries. Windows parity for the existing Linux and macOS coinminer rules."
+        description = "Detects the presence of an XMRig-style cryptominer (Windows PE binaries) from at least two independent marker classes (identity, pool protocol, algorithm, public pool). A match shows miner software is on disk; it does not prove unauthorized or malicious use, so triage against approved mining before escalating."
         author = "rustinel-rules"
         date = "2026-07-09"
-        reference = "https://attack.mitre.org/software/S0597/"
+        reference = "https://attack.mitre.org/software/S0658/"
+        software = "S0658"
         attack = "T1496"
-        level = "high"
+        level = "medium"
         os = "windows"
         telemetry = "file_scan"
-        expected_false_positive_level = "low"
+        expected_false_positive_level = "medium"
         test_status = "atomic"
 
     strings:
-        $xmrig = "xmrig" ascii wide nocase
-        $miner1 = "stratum+tcp://" ascii nocase
-        $miner2 = "stratum+ssl://" ascii nocase
-        $miner3 = "donate-level" ascii nocase
-        $miner4 = "randomx" ascii nocase
-        $miner5 = "cryptonight" ascii nocase
-        $miner6 = "monero" ascii nocase
+        // Software identity: the miner names itself.
+        $id1 = "xmrig" ascii wide nocase
+        $id2 = "donate-level" ascii nocase
+        // Pool protocol.
+        $proto1 = "stratum+tcp://" ascii nocase
+        $proto2 = "stratum+ssl://" ascii nocase
+        // Mining algorithm or coin.
+        $algo1 = "randomx" ascii nocase
+        $algo2 = "cryptonight" ascii nocase
+        $algo3 = "monero" ascii nocase
+        // Well-known public pools.
         $pool1 = "pool.minexmr" ascii nocase
         $pool2 = "supportxmr" ascii nocase
 
     condition:
-        uint16(0) == 0x5A4D and
+        uint16(0) == 0x5A4D and filesize < 100MB and
+        // Two independent marker classes; no single string is sufficient.
         (
-            $xmrig or
-            4 of ($miner*) or
-            (2 of ($miner*) and 1 of ($pool*))
+            (any of ($id*) and any of ($proto*)) or
+            (any of ($id*) and any of ($algo*)) or
+            (any of ($proto*) and any of ($algo*)) or
+            (any of ($pool*) and any of ($proto*))
         )
 }
