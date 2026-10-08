@@ -19,9 +19,11 @@ attack_coverage:
   - T1033
   - T1482
   - T1069.002
+  - T1053.005
 telemetry_requirements:
   - process_creation
   - image_load
+  - task_creation
 test_status: none
 sources:
     manual:
@@ -32,3 +34,4 @@ rules:
         sigma:
           - 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10   # Certutil Used to Download Remote Content (Hunting)
           - 4aae4b03-4807-428a-ac89-5c5f3cda65e4   # Reconnaissance Command Burst (Hunting)
+          - ac8bc6a3-2d35-431b-97ac-2a430a83558b   # Scheduled Task Registered With Generic System-Looking Name (Hunting)

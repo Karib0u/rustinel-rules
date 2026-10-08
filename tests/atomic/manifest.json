@@ -265,6 +265,20 @@
       "script": "windows/wmic_process_create.ps1"
     },
     {
+      "id": "a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22",
+      "name": "windows_ntds_ifm",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ntds_ifm.ps1"
+    },
+    {
+      "id": "6228b718-bcc1-4901-80b9-e2a6fc23a4a6",
+      "name": "windows_ntds_dit_copy",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ntds_dit_copy.ps1"
+    },
+    {
       "id": "yara-win-mimikatz-strings",
       "name": "windows_mimikatz_yara_fixture",
       "platform": "windows",

@@ -4,11 +4,15 @@ status: experimental
 description: >
   Detects wmic.exe launching a process through the WMI process call create
   method. This living-off-the-land technique is used for local execution,
-  lateral movement and post-exploitation automation.
+  lateral movement and post-exploitation automation. WMIC is deprecated and is
+  not installed by default on current Windows 11 builds (it is an optional
+  feature there), so this rule applies to hosts that still ship or have
+  re-enabled wmic.exe: Windows 10, Windows Server, and older Windows 11.
 references:
   - https://attack.mitre.org/techniques/T1047/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.execution
   - attack.lateral-movement
@@ -18,12 +22,12 @@ logsource:
   product: windows
 detection:
   selection_img:
-    Image|endswith: '\wmic.exe'
+    - Image|endswith: '\wmic.exe'
+    - OriginalFileName: 'wmic.exe'
   selection_exec:
-    CommandLine|contains|all:
-      - 'process'
-      - 'call'
-      - 'create'
+    # Ordered as WMIC requires: the process alias, then the call verb, then
+    # the create method.
+    CommandLine|re: '(?i)\sprocess\s+call\s+create(\s|$)'
   condition: selection_img and selection_exec
 falsepositives:
   - Legacy systems-management scripts that still use WMIC for remote or local process launch.
