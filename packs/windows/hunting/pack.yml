@@ -15,16 +15,45 @@ license: DRL-1.1
 extends:
   - windows-advanced
 attack_coverage:
-  - T1105
+  - T1003.001
+  - T1003.002
+  - T1003.003
+  - T1027
   - T1033
-  - T1482
-  - T1069.002
+  - T1047
   - T1053.005
+  - T1059
+  - T1059.001
+  - T1069.002
+  - T1070
+  - T1070.001
+  - T1090.001
+  - T1098
+  - T1105
+  - T1136.001
+  - T1197
+  - T1218
+  - T1218.005
+  - T1218.010
+  - T1218.011
+  - T1219
+  - T1482
+  - T1490
+  - T1496
+  - T1543.003
+  - T1546.003
+  - T1546.008
+  - T1546.012
+  - T1547.001
+  - T1547.004
+  - T1548.002
+  - T1562.001
+  - T1566.001
 telemetry_requirements:
   - process_creation
   - image_load
   - task_creation
-test_status: none
+test_status: mixed
 sources:
     manual:
       - https://attack.mitre.org/

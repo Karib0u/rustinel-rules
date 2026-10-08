@@ -178,7 +178,7 @@ rules:
 ```
 
 See [the pack schema](schemas/pack.schema.json) for inheritance, inclusion, and exclusion options.
-Update `attack_coverage` with membership changes; validation rejects coverage drift and insufficient `requires_rustinel` floors.
+After membership or rule metadata changes, run `uv run python tools/sync_packs.py` to regenerate each pack's `attack_coverage` and `test_status` from its member rules. Validation rejects drift in either, and insufficient `requires_rustinel` floors.
 
 ```bash
 uv run python tools/build_packs.py

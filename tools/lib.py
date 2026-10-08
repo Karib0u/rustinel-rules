@@ -435,6 +435,42 @@ def pack_min_engine(
     return minimum, drivers
 
 
+def artifact_test_status(artifact: Artifact) -> str | None:
+    """Declared test evidence of a rule: Sigma `rustinel.test_status`, YARA
+    `test_status` meta. IOC sets carry none and are left out of the roll-up."""
+    if artifact.kind == "sigma":
+        value = (artifact.meta.get("rustinel") or {}).get("test_status")
+    elif artifact.kind == "yara":
+        match = re.search(r'^\s*test_status\s*=\s*"([^"]*)"', artifact.raw, re.MULTILINE)
+        value = match.group(1) if match else None
+    else:
+        return None
+    return str(value or "none").strip().lower()
+
+
+def derive_pack_summary(resolved_ids, artifact_index) -> dict:
+    """What a pack's manifest should declare, computed from its members:
+    the union of their ATT&CK techniques and the roll-up of their test status
+    (one shared value, otherwise `mixed`)."""
+    techniques: set[str] = set()
+    statuses: set[str] = set()
+    for artifact_id in resolved_ids:
+        artifact = artifact_index.get(artifact_id)
+        if artifact is None:
+            continue
+        techniques |= artifact_attack_techniques(artifact)
+        status = artifact_test_status(artifact)
+        if status is not None:
+            statuses.add(status)
+    if not statuses:
+        test_status = "none"
+    elif len(statuses) == 1:
+        test_status = next(iter(statuses))
+    else:
+        test_status = "mixed"
+    return {"attack_coverage": sorted(techniques), "test_status": test_status}
+
+
 # --------------------------------------------------------------------------- #
 # Packs
 # --------------------------------------------------------------------------- #
