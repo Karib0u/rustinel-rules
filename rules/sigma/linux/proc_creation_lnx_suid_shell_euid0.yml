@@ -1,0 +1,45 @@
+title: Shell Running as Root Through a SUID Binary
+id: b5df6758-24ff-49c0-ba6e-c67760177ddb
+status: experimental
+description: >
+  Detects a shell started with an effective UID of 0 while its real UID is not
+  root. That combination only arises when a set-uid-root shell copy (the classic
+  `cp /bin/bash /tmp/x; chmod u+s /tmp/x; /tmp/x -p`) is executed by an
+  unprivileged user, or when a vulnerable set-uid binary hands over a root
+  shell. It is the execution half of the SUID persistence/escalation pair whose
+  creation half is the `chmod +s` rule. Ordinary `sudo` and `su` set the real UID
+  to root as well, so they do not match.
+  Requires the credential fields Rustinel populates from v1.6.0.
+references:
+  - https://attack.mitre.org/techniques/T1548/001/
+  - https://gtfobins.github.io/gtfobins/bash/#suid
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.privilege-escalation
+  - attack.persistence
+  - attack.t1548.001
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    Image|endswith:
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+    EffectiveUserId: '0'
+  filter_real_root:
+    RealUserId: '0'
+  condition: selection and not filter_real_root
+falsepositives:
+  - Site-specific set-uid-root wrapper scripts or login helpers that exec a
+    shell with the caller's real UID. Filter the Image or ParentImage.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

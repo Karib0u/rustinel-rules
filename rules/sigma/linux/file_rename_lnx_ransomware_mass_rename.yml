@@ -1,0 +1,36 @@
+title: Mass File Rename to Ransomware-Style Extension (Linux)
+id: ae619e3b-9950-4cec-89f0-8874c142197b
+status: experimental
+description: >
+  Detects one process renaming at least 50 files to a ransomware-style extension
+  within a minute, the signature of file-encrypting ransomware stamping its
+  extension on victim files. A single rename or a handful (an encryption
+  utility, a backup job) stays below the threshold. Correlates the matches of
+  "File Renamed to Ransomware-Style Extension (Linux)" per process ID.
+  Raise or lower the threshold to tune; ransomware that renames to a random or
+  unlisted extension is not seen.
+references:
+  - https://attack.mitre.org/techniques/T1486/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.impact
+  - attack.t1486
+correlation:
+  type: event_count
+  rules:
+    - 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb
+  group-by:
+    - ProcessId
+  timespan: 1m
+  condition:
+    gte: 50
+falsepositives:
+  - Bulk encryption or archiving jobs that name every output .enc or .crypt.
+    Filter the process image on the base rule.
+level: high
+rustinel:
+  telemetry:
+    - file_rename
+  expected_false_positive_level: medium
+  test_status: atomic

@@ -7,7 +7,7 @@ description: >
 os: linux
 level: hunting
 pack_schema_version: 2
-requires_rustinel: ">=1.4.1"
+requires_rustinel: ">=1.6.0"
 default: false
 active_response_eligible: false
 expected_false_positive_level: high
@@ -23,10 +23,12 @@ attack_coverage:
   - T1070.002
   - T1070.003
   - T1071
+  - T1090
   - T1098.004
   - T1105
   - T1136.001
   - T1219
+  - T1486
   - T1496
   - T1505.003
   - T1543.002
@@ -36,10 +38,11 @@ attack_coverage:
   - T1548.001
   - T1548.003
   - T1562.001
+  - T1572
   - T1574.006
 telemetry_requirements:
   - process_creation
-test_status: atomic
+test_status: mixed
 sources:
     manual:
       - https://attack.mitre.org/

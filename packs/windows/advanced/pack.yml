@@ -18,6 +18,7 @@ attack_coverage:
   - T1003.002
   - T1003.003
   - T1027
+  - T1036.003
   - T1047
   - T1053.005
   - T1059
@@ -25,6 +26,8 @@ attack_coverage:
   - T1068
   - T1070
   - T1070.001
+  - T1070.004
+  - T1090
   - T1090.001
   - T1098
   - T1105
@@ -36,6 +39,7 @@ attack_coverage:
   - T1218.010
   - T1218.011
   - T1219
+  - T1486
   - T1490
   - T1496
   - T1543.003
@@ -49,6 +53,7 @@ attack_coverage:
   - T1562.002
   - T1566.001
   - T1569.002
+  - T1572
 telemetry_requirements:
   - process_creation
   - registry_event
@@ -85,6 +90,12 @@ rules:
           - 6228b718-bcc1-4901-80b9-e2a6fc23a4a6   # NTDS.dit Copied or Accessed with a File Tool (sigma)
           - 59bbd501-1c61-45c9-940d-9465cabd36c4   # File Dropped in Startup Folder (sigma)
           - 717396f6-aff0-49b0-b8f3-53568e276d5c   # Outbound Connection from Script or LOLBin Host (sigma)
+          - 35866351-9855-465f-9927-d10eef7c8aea   # AMSI Provider Registration Removed (sigma)
+          - 127db158-346f-4244-b2ad-1522e7c3c2a1   # Prefetch or Event Log File Deleted (sigma)
+          - 5ffa485e-7667-4ecc-a17c-fc5f9068c0d4   # Renamed System Binary Execution (sigma)
+          - c2f19723-1801-48d4-a45f-c47f2f9d41b5   # DNS Query to Tunnel Service (sigma)
+          - 67826ffc-22c4-4418-a5c4-27da63f13306   # File Renamed to Ransomware-Style Extension (sigma)
+          - d0e8f644-2661-4f99-b1b2-69eb70abe050   # Mass File Rename to Ransomware-Style Extension (sigma)
           - e813d6f6-5dbb-4587-a60e-20a04481fdc6   # Security Event Log Cleared (sigma)
           - 5a2fd413-6826-47af-8b6b-9e069058c807   # Windows Audit Policy Success or Failure Auditing Removed (sigma)
           - 859d9985-7720-42b1-a557-c1f6f8972642   # Member Added to Privileged Group (sigma)

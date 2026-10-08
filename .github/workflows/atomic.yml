@@ -170,6 +170,11 @@ jobs:
         run: python3 tests/replay/shell_history.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check measured-expansion wave 1 replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/expansion_wave1.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Run atomic tests (Linux)
         if: matrix.platform == 'linux'
         run: |

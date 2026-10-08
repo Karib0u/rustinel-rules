@@ -1,0 +1,45 @@
+title: Prefetch or Event Log File Deleted
+id: 127db158-346f-4244-b2ad-1522e7c3c2a1
+status: experimental
+description: >
+  Detects deletion of a Windows Prefetch file (.pf under C:\Windows\Prefetch) or
+  of an event log file (.evtx under System32\winevt\Logs). Prefetch records which
+  programs ran and when, and the .evtx files hold the audit trail, so removing
+  either is a file-based form of indicator removal that leaves no
+  event-log-cleared event. The operating system trims old Prefetch files itself
+  from the System process and the Event Log service rotates archives; both are
+  excluded so a user-mode process performing the delete stands out.
+references:
+  - https://attack.mitre.org/techniques/T1070/004/
+  - https://attack.mitre.org/techniques/T1070/001/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1070.004
+  - attack.t1070.001
+logsource:
+  category: file_delete
+  product: windows
+detection:
+  selection_prefetch:
+    TargetFilename|contains: '\Windows\Prefetch\'
+    TargetFilename|endswith: '.pf'
+  selection_evtx:
+    TargetFilename|contains: '\System32\winevt\Logs\'
+    TargetFilename|endswith: '.evtx'
+  filter_os:
+    Image:
+      - 'System'
+      - 'C:\Windows\System32\svchost.exe'
+  condition: (selection_prefetch or selection_evtx) and not filter_os
+falsepositives:
+  - Disk-cleanup and system-tuning tools that purge Prefetch (Disk Cleanup,
+    CCleaner, some VDI image-prep scripts); filter their Image.
+  - Archived event logs removed by log-management agents.
+level: medium
+rustinel:
+  telemetry:
+    - file_delete
+  expected_false_positive_level: medium
+  test_status: atomic

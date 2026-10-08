@@ -980,6 +980,156 @@
       "allow_failure_reason": "Process-memory reads on macOS need task_for_pid, which the hardened Python on a hosted runner may refuse; unproven on CI until this test has run there."
     },
     {
+      "id": "35866351-9855-465f-9927-d10eef7c8aea",
+      "name": "windows_amsi_provider_removed",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/amsi_provider_removed.ps1",
+      "negatives": [
+        {
+          "script": "windows/amsi_provider_removed_negative.ps1",
+          "marker": "RustinelAtomicNegative"
+        }
+      ]
+    },
+    {
+      "id": "127db158-346f-4244-b2ad-1522e7c3c2a1",
+      "name": "windows_prefetch_deleted",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/prefetch_deleted.ps1",
+      "negatives": [
+        {
+          "script": "windows/prefetch_deleted_negative.ps1",
+          "marker": "rustinel_negative"
+        }
+      ]
+    },
+    {
+      "id": "5ffa485e-7667-4ecc-a17c-fc5f9068c0d4",
+      "name": "windows_renamed_system_binary",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/renamed_system_binary.ps1",
+      "negatives": [
+        {
+          "script": "windows/renamed_system_binary_negative.ps1",
+          "marker": "rustinel_negative_renamed"
+        }
+      ]
+    },
+    {
+      "id": "ad5acb04-ea4e-4d6d-9719-85042d2963b5",
+      "name": "windows_timestomp_script_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/timestomp_script_host.ps1",
+      "negatives": [
+        {
+          "script": "windows/timestomp_script_host_negative.ps1",
+          "marker": "rustinel_negative_timestomp"
+        }
+      ]
+    },
+    {
+      "id": "c2f19723-1801-48d4-a45f-c47f2f9d41b5",
+      "name": "windows_dns_tunnel_service",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dns_tunnel_service.ps1",
+      "negatives": [
+        {
+          "script": "windows/dns_tunnel_service_negative.ps1",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "d0e8f644-2661-4f99-b1b2-69eb70abe050",
+      "name": "windows_ransomware_mass_rename",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ransomware_mass_rename.ps1",
+      "negatives": [
+        {
+          "script": "windows/ransomware_mass_rename_negative.ps1",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
+      "name": "linux_suid_shell_euid0",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/suid_shell_euid0.sh",
+      "negatives": [
+        {
+          "script": "linux/suid_shell_euid0_negative.sh",
+          "marker": "rustinel_negative_suid"
+        }
+      ]
+    },
+    {
+      "id": "300f4d0e-79ef-4c53-9461-7b3f4e468537",
+      "name": "linux_dns_tunnel_service",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "linux/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
+      "name": "linux_ransomware_mass_rename",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "linux/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "e6aa2995-f56a-454a-af2c-14db0ec296ee",
+      "name": "macos_shell_outbound_connect",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_outbound_connect.sh"
+    },
+    {
+      "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
+      "name": "macos_dns_tunnel_service",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "macos/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
+      "name": "macos_ransomware_mass_rename",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "macos/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
       "id": "e813d6f6-5dbb-4587-a60e-20a04481fdc6",
       "name": "windows_security_log_cleared",
       "platform": "windows",
