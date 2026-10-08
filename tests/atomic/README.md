@@ -109,6 +109,19 @@ platforms:
 python3 tests/replay/shell_history.py --engine /path/to/rustinel
 ```
 
+`tests/replay/essential_negatives.py` carries the negative evidence for the
+Essential Sigma rules no other replay covers ([#44](https://github.com/Karib0u/rustinel-rules/issues/44)):
+each rule has positive anchors plus the near misses an administrator, package
+manager or unrelated tool produces. Rules whose negatives live in another replay
+or an atomic `*_negative` script are listed in its `COVERED_ELSEWHERE` map, and
+`tests/tools/test_essential_negatives.py` fails when an Essential Sigma rule is
+in neither place. Essential YARA rules are covered by the near-miss corpus in
+`tests/yara`. It runs in the Linux job for all three platforms:
+
+```bash
+python3 tests/replay/essential_negatives.py --engine /path/to/rustinel
+```
+
 Every job also runs `tools/sigma_doctor.py`, which asks the pinned engine's
 `rustinel sigma doctor` whether each built pack for that platform can fire. It
 fails on a parse or compile error and on any `can-never-fire` production rule;
