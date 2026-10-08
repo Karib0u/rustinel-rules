@@ -41,7 +41,11 @@ import lib
 # ps_script, ps_module, wmi_event, service_creation and task_creation families
 # are Windows-only; rules using them must set logsource product: windows.
 # "security" is the Windows Security event log, selected in Sigma with
-# `product: windows, service: security` and no category. The file_*
+# `product: windows, service: security` and no category; "windefend" (Defender
+# Operational) and "application" follow the same pattern with their own
+# service names. "ps_classic_start" is classic PowerShell engine start (400),
+# selected by that category or by `service: powershell-classic` alone. These
+# three arrived in v1.9.0. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
 # the vendored engine field contract).
@@ -62,6 +66,9 @@ SUPPORTED_TELEMETRY = {
     "ps_script",
     "ps_module",
     "security",
+    "windefend",
+    "application",
+    "ps_classic_start",
     "wmi_event",
     "service_creation",
     "task_creation",
@@ -72,7 +79,7 @@ SUPPORTED_TELEMETRY = {
 # collect can never match. Sysmon-style categories are left out: the engine
 # maps their Sysmon event IDs onto its own sources (DNS EventID 22 still
 # matches the DNS Client's 3006/3008).
-EVENT_ID_ROUTED_CATEGORIES = {"security"}
+EVENT_ID_ROUTED_CATEGORIES = {"security", "windefend", "application", "ps_classic_start"}
 
 
 def _detection_fields(detection: dict) -> set[str]:
