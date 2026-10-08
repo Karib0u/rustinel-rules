@@ -2,16 +2,19 @@ title: BITS Job Download via bitsadmin
 id: d97177dd-c74f-465e-96c1-194cc1dd681d
 status: experimental
 description: >
-  Detects bitsadmin.exe creating a background transfer that downloads a remote
-  URL. BITS is a long-lived ingress-tool-transfer LOLBin that survives reboots
-  and runs outside the requesting process; pairs with the certutil hunting rule
-  to cover the two most common download LOLBins.
+  Detects bitsadmin.exe starting a direct transfer (/transfer) or adding a file
+  (/addfile) whose source is a remote http, https or ftp URL. BITS is a
+  long-lived ingress-tool-transfer LOLBin that survives reboots and runs
+  outside the requesting process; pairs with the certutil hunting rule to
+  cover the two most common download LOLBins. Job management without a remote
+  source (/create, /list, /resume, /complete, /cancel) does not match.
 references:
   - https://attack.mitre.org/techniques/T1197/
   - https://attack.mitre.org/techniques/T1105/
   - https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
   - attack.command-and-control
@@ -22,17 +25,15 @@ logsource:
   product: windows
 detection:
   selection_tool:
-    Image|endswith: '\bitsadmin.exe'
+    - Image|endswith: '\bitsadmin.exe'
+    - OriginalFileName: 'bitsadmin.exe'
   selection_transfer:
     CommandLine|contains|windash:
-      - '/transfer'
-      - '/create'
-      - '/addfile'
-  selection_url:
-    CommandLine|contains:
-      - 'http'
-      - 'ftp'
-  condition: selection_tool and selection_transfer and selection_url
+      - ' -transfer '
+      - ' -addfile '
+  selection_remote_source:
+    CommandLine|re: '(?i)\s(https?|ftp)://'
+  condition: selection_tool and selection_transfer and selection_remote_source
 falsepositives:
   - Some legacy deployment scripts still use bitsadmin for downloads.
 level: medium

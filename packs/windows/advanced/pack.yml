@@ -62,6 +62,7 @@ rules:
           - 86c19f1a-add5-4553-9c24-f76e7fe3da9d   # Unmanaged PowerShell via Automation DLL in Foreign Host (sigma)
           - 6c46cc68-2e66-4834-b058-0a2cfd115409   # Netsh Port-Proxy Tunnel Configuration (sigma)
           - d97177dd-c74f-465e-96c1-194cc1dd681d   # BITS Job Download via bitsadmin (sigma)
+          - 6228b718-bcc1-4901-80b9-e2a6fc23a4a6   # NTDS.dit Copied or Accessed with a File Tool (sigma)
           - 59bbd501-1c61-45c9-940d-9465cabd36c4   # File Dropped in Startup Folder (sigma)
           - 717396f6-aff0-49b0-b8f3-53568e276d5c   # Outbound Connection from Script or LOLBin Host (sigma)
         yara:
