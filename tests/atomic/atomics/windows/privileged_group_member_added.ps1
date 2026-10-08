@@ -8,19 +8,19 @@ $ErrorActionPreference = 'SilentlyContinue'
 $backup = Join-Path $env:TEMP 'rustinel_atomic_auditpol_4732.csv'
 $user = 'rustinel_atomic_grpuser'
 
-& auditpol.exe /backup /file:$backup | Out-Null
-& auditpol.exe /set /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}' /success:enable | Out-Null
+& auditpol.exe /backup /file:$backup 2>&1 | Out-Null
+& auditpol.exe /set /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}' /success:enable 2>&1 | Out-Null
 
-& net.exe user $user 'P@ssw0rd-Atomic-123!' /add | Out-Null
+& net.exe user $user 'P@ssw0rd-Atomic-123!' /add 2>&1 | Out-Null
 $sid = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'
 $admins = $sid.Translate([System.Security.Principal.NTAccount]).Value.Split('\')[-1]
-& net.exe localgroup $admins $user /add | Out-Null
+& net.exe localgroup $admins $user /add 2>&1 | Out-Null
 Start-Sleep -Seconds 2
 
-& net.exe localgroup $admins $user /delete | Out-Null
-& net.exe user $user /delete | Out-Null
+& net.exe localgroup $admins $user /delete 2>&1 | Out-Null
+& net.exe user $user /delete 2>&1 | Out-Null
 if (Test-Path $backup) {
-  & auditpol.exe /restore /file:$backup | Out-Null
+  & auditpol.exe /restore /file:$backup 2>&1 | Out-Null
   Remove-Item $backup -Force
 }
 # DEBUG-4732
