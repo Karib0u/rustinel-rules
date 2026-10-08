@@ -27,7 +27,7 @@ if (Test-Path $backup) {
 'admins=' + $admins
 auditpol.exe /get /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}','{0CCE9235-69AE-11D9-BED3-505054503030}'
 $ErrorActionPreference = 'Continue'
-$ev = Get-WinEvent -LogName Security -MaxEvents 40 -ErrorAction Continue 2>&1
-$ev | ForEach-Object { if ($_.Id) { "$($_.Id) $($_.TimeCreated.ToString('HH:mm:ss'))" } else { "ERR $_" } }
+$ev = Get-WinEvent -LogName Security -FilterXPath "*[System[(EventID=4720 or EventID=4732 or EventID=4733 or EventID=4726 or EventID=4722 or EventID=4738)]]" -MaxEvents 8 -ErrorAction Continue 2>&1
+$ev | ForEach-Object { if ($_.Id) { "$($_.Id) $($_.TimeCreated.ToString('HH:mm:ss')) " + (($_.Properties | ForEach-Object { $_.Value }) -join '|') } else { "ERR $_" } }
 (Get-Date).ToString('HH:mm:ss')
 exit 0
