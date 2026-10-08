@@ -1113,9 +1113,7 @@
       "name": "macos_shell_outbound_connect",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/shell_outbound_connect.sh",
-      "allow_failure": true,
-      "allow_failure_reason": "network_connection telemetry is not yet proven to fire on hosted macOS runners; stays non-gating until a CI run records it."
+      "script": "macos/shell_outbound_connect.sh"
     },
     {
       "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
