@@ -11,10 +11,10 @@ $user = 'rustinel_atomic_grp'
 & auditpol.exe /backup /file:$backup | Out-Null
 & auditpol.exe /set /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}' /success:enable | Out-Null
 
-& net.exe user $user 'P@ssw0rd-Atomic-123!' /add | Out-Null
+$o1 = (& net.exe user $user 'P@ssw0rd-Atomic-123!' /add 2>&1 | Out-String); $c1 = $LASTEXITCODE
 $sid = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'
 $admins = $sid.Translate([System.Security.Principal.NTAccount]).Value.Split('\')[-1]
-& net.exe localgroup $admins $user /add | Out-Null
+$o2 = (& net.exe localgroup $admins $user /add 2>&1 | Out-String); $c2 = $LASTEXITCODE
 Start-Sleep -Seconds 2
 
 & net.exe localgroup $admins $user /delete | Out-Null
@@ -23,4 +23,5 @@ if (Test-Path $backup) {
   & auditpol.exe /restore /file:$backup | Out-Null
   Remove-Item $backup -Force
 }
+"DEBUG c1=$c1 c2=$c2"; $o1; $o2
 exit 0
