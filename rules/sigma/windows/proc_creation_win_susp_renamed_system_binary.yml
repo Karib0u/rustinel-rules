@@ -1,0 +1,100 @@
+title: Renamed System Binary Execution
+id: 5ffa485e-7667-4ecc-a17c-fc5f9068c0d4
+status: experimental
+description: >
+  Detects a well-abused Windows system binary running under a different file
+  name. The PE version resource (OriginalFileName) is baked in at build time and
+  survives a copy or rename, so a process whose OriginalFileName is PowerShell,
+  cmd, wscript, mshta, rundll32 or similar while its Image has another name is
+  evading name-based detections (and often application control) with a renamed
+  copy. Each pair is matched separately so a binary is only compared with the
+  names it legitimately ships under.
+references:
+  - https://attack.mitre.org/techniques/T1036/003/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1036.003
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_powershell:
+    OriginalFileName: 'PowerShell.EXE'
+  ok_powershell:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\powershell_ise.exe'
+  selection_cmd:
+    OriginalFileName: 'Cmd.Exe'
+  ok_cmd:
+    Image|endswith: '\cmd.exe'
+  selection_wscript:
+    OriginalFileName: 'wscript.exe'
+  ok_wscript:
+    Image|endswith: '\wscript.exe'
+  selection_cscript:
+    OriginalFileName: 'cscript.exe'
+  ok_cscript:
+    Image|endswith: '\cscript.exe'
+  selection_mshta:
+    OriginalFileName: 'MSHTA.EXE'
+  ok_mshta:
+    Image|endswith: '\mshta.exe'
+  selection_rundll32:
+    OriginalFileName: 'RUNDLL32.EXE'
+  ok_rundll32:
+    Image|endswith: '\rundll32.exe'
+  selection_regsvr32:
+    OriginalFileName: 'REGSVR32.EXE'
+  ok_regsvr32:
+    Image|endswith: '\regsvr32.exe'
+  selection_certutil:
+    OriginalFileName: 'CertUtil.exe'
+  ok_certutil:
+    Image|endswith: '\certutil.exe'
+  selection_bitsadmin:
+    OriginalFileName: 'bitsadmin.exe'
+  ok_bitsadmin:
+    Image|endswith: '\bitsadmin.exe'
+  selection_wmic:
+    OriginalFileName: 'wmic.exe'
+  ok_wmic:
+    Image|endswith: '\wmic.exe'
+  selection_msiexec:
+    OriginalFileName: 'msiexec.exe'
+  ok_msiexec:
+    Image|endswith: '\msiexec.exe'
+  selection_installutil:
+    OriginalFileName: 'InstallUtil.exe'
+  ok_installutil:
+    Image|endswith: '\installutil.exe'
+  selection_msbuild:
+    OriginalFileName: 'MSBuild.exe'
+  ok_msbuild:
+    Image|endswith: '\msbuild.exe'
+  condition: >
+    (selection_powershell and not ok_powershell)
+    or (selection_cmd and not ok_cmd)
+    or (selection_wscript and not ok_wscript)
+    or (selection_cscript and not ok_cscript)
+    or (selection_mshta and not ok_mshta)
+    or (selection_rundll32 and not ok_rundll32)
+    or (selection_regsvr32 and not ok_regsvr32)
+    or (selection_certutil and not ok_certutil)
+    or (selection_bitsadmin and not ok_bitsadmin)
+    or (selection_wmic and not ok_wmic)
+    or (selection_msiexec and not ok_msiexec)
+    or (selection_installutil and not ok_installutil)
+    or (selection_msbuild and not ok_msbuild)
+falsepositives:
+  - Software that bundles a renamed copy of a system tool (some installers ship
+    a private cmd.exe or msiexec.exe copy). Filter the Image path of the product.
+  - Chocolatey and Scoop shims; they launch the real binary and keep its name.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

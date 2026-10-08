@@ -1,0 +1,47 @@
+title: DNS Query to Tunnel Service (Linux)
+id: 300f4d0e-79ef-4c53-9461-7b3f4e468537
+status: experimental
+description: >
+  Detects a DNS lookup for a public tunnelling or reverse-proxy service (ngrok,
+  Cloudflare quick tunnels, serveo, localtunnel, pinggy, bore). These services
+  publish an internal host or a reverse shell under a throwaway public name and
+  are a common way to expose C2, exfiltrate data or reach a foothold through a
+  firewall. The query shows the name was resolved, not that traffic followed;
+  developers legitimately use these services, so scope the rule to hosts where
+  that is not expected.
+references:
+  - https://attack.mitre.org/techniques/T1572/
+  - https://attack.mitre.org/techniques/T1090/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.command-and-control
+  - attack.t1572
+  - attack.t1090
+logsource:
+  category: dns_query
+  product: linux
+detection:
+  selection:
+    QueryName|endswith:
+      - '.ngrok.io'
+      - '.ngrok.app'
+      - '.ngrok.dev'
+      - '.ngrok-free.app'
+      - '.ngrok-free.dev'
+      - '.trycloudflare.com'
+      - '.serveo.net'
+      - '.loca.lt'
+      - '.pinggy.io'
+      - '.pinggy.link'
+      - '.bore.pub'
+  condition: selection
+falsepositives:
+  - Developers and QA staff exposing local services for demos or webhooks. Add
+    an Image or host filter for the teams that do.
+level: medium
+rustinel:
+  telemetry:
+    - dns_query
+  expected_false_positive_level: medium
+  test_status: atomic

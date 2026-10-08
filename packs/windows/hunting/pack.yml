@@ -20,6 +20,7 @@ attack_coverage:
   - T1003.003
   - T1027
   - T1033
+  - T1036.003
   - T1047
   - T1053.005
   - T1059
@@ -27,6 +28,9 @@ attack_coverage:
   - T1069.002
   - T1070
   - T1070.001
+  - T1070.004
+  - T1070.006
+  - T1090
   - T1090.001
   - T1098
   - T1105
@@ -38,6 +42,7 @@ attack_coverage:
   - T1218.011
   - T1219
   - T1482
+  - T1486
   - T1490
   - T1496
   - T1543.003
@@ -49,6 +54,7 @@ attack_coverage:
   - T1548.002
   - T1562.001
   - T1566.001
+  - T1572
 telemetry_requirements:
   - process_creation
   - image_load
@@ -64,3 +70,4 @@ rules:
           - 3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10   # Certutil Used to Download Remote Content (Hunting)
           - 4aae4b03-4807-428a-ac89-5c5f3cda65e4   # Reconnaissance Command Burst (Hunting)
           - ac8bc6a3-2d35-431b-97ac-2a430a83558b   # Scheduled Task Registered With Generic System-Looking Name (Hunting)
+          - ad5acb04-ea4e-4d6d-9719-85042d2963b5   # File Timestamp Changed by Script Host (sigma)

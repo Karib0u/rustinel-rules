@@ -1,0 +1,36 @@
+title: File Renamed to Ransomware-Style Extension (Linux)
+id: 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb
+status: experimental
+description: >
+  Base rule for the mass-rename correlation: a file renamed so that it ends in
+  an extension typical of ransomware (.locked, .encrypted, .crypted, .crypt,
+  .enc, .ransom, .lockbit, .wncry or a variant embedding one of those words).
+  One match is ordinary (a user can name a file anything), so this rule is
+  informational on its own; the correlation "Mass File Rename to Ransomware-Style
+  Extension (Linux)" is the detection. Both load together.
+references:
+  - https://attack.mitre.org/techniques/T1486/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.impact
+  - attack.t1486
+logsource:
+  category: file_rename
+  product: linux
+detection:
+  selection:
+    TargetFilename|re: '(?i)\.([a-z0-9_-]*(locked|encrypted|crypted|ransom)[a-z0-9_-]*|crypt|enc|lockbit|wncry)$'
+  condition: selection
+falsepositives:
+  - Encryption tools that rename output to .enc or .crypt (gpg, openssl wrappers,
+    backup software); the correlation threshold keeps these quiet.
+level: informational
+rustinel:
+  telemetry:
+    - file_rename
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    Fires on every rename in the mass-rename atomic; the correlation rule's atomic
+    exercises it and its negative proves ordinary extensions stay quiet.
