@@ -495,7 +495,10 @@
       "name": "macos_reverse_shell_dev_tcp",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/reverse_shell_dev_tcp.sh"
+      "script": "macos/reverse_shell_dev_tcp.sh",
+      "negatives": [
+        {"script": "macos/reverse_shell_dev_tcp_apple_bash_negative.sh", "marker": "rustinel_atomic_neg"}
+      ]
     },
     {
       "id": "7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01",
@@ -512,14 +515,14 @@
       "script": "macos/osascript_admin_prompt.sh"
     },
     {
-      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
       "name": "macos_gatekeeper_bypass",
       "platform": "macos",
       "engine": "sigma",
       "script": "macos/gatekeeper_bypass.sh"
     },
     {
-      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
       "name": "macos_gatekeeper_bypass_clear",
       "platform": "macos",
       "engine": "sigma",
@@ -537,7 +540,10 @@
       "name": "macos_download_execute_cradle",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/download_execute_cradle.sh"
+      "script": "macos/download_execute_cradle.sh",
+      "negatives": [
+        {"script": "macos/download_execute_checksum_negative.sh", "marker": "rustinel_atomic_neg"}
+      ]
     },
     {
       "id": "2f617384-9012-43b5-9fc5-60718293a416",
@@ -644,7 +650,45 @@
       "name": "macos_launchctl_susp_load",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/launchctl_susp_load.sh"
+      "script": "macos/launchctl_susp_load.sh",
+      "negatives": [
+        {"script": "macos/launchctl_unload_negative.sh", "marker": "rustinel_atomic_launch_neg"}
+      ]
+    },
+    {
+      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "name": "macos_gatekeeper_global_disable",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_global_disable.sh"
+    },
+    {
+      "id": "d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd",
+      "name": "macos_osascript_admin_shell",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/osascript_admin_shell.sh"
+    },
+    {
+      "id": "97b0f988-7268-4854-9251-4da5a8397da9",
+      "name": "macos_account_admin_group",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/account_admin_group.sh"
+    },
+    {
+      "id": "55eaad6e-88a1-4eae-8014-24d96a68f965",
+      "name": "macos_hidden_user_account",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/hidden_user_account.sh"
+    },
+    {
+      "id": "8da551dd-08cf-4b73-b3cc-a18708f548b4",
+      "name": "macos_launch_persistence_scripted",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launch_persistence_scripted.sh"
     }
   ]
 }

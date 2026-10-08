@@ -16,15 +16,15 @@ description: >
   Essential pack. It is tier Advanced now, and the title says what is observed.
 references:
   - https://attack.mitre.org/techniques/T1005/
-  - https://attack.mitre.org/techniques/T1548/
+  - https://attack.mitre.org/techniques/T1548/006/
 author: rustinel-rules
 date: 2026-07-09
-modified: 2026-09-12
+modified: 2026-10-08
 tags:
   - attack.collection
   - attack.privilege-escalation
   - attack.t1005
-  - attack.t1548
+  - attack.t1548.006
 logsource:
   category: process_creation
   product: macos

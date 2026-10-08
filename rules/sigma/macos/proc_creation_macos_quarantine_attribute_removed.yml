@@ -1,0 +1,62 @@
+title: Quarantine Attribute Removed via xattr
+id: 0b4db6de-848b-48e5-bebc-9fc4a2e24db2
+status: experimental
+description: >
+  Detects `xattr` removing the com.apple.quarantine attribute, either by name
+  (`xattr -d com.apple.quarantine`) or by clearing every extended attribute
+  (`xattr -c` / `-cr`). The quarantine attribute is what makes Gatekeeper
+  prompt for downloaded software, so removing it is a common step in
+  fake-installer and infostealer chains, and `xattr -c` is the form such
+  installers tell the victim to paste into Terminal.
+  The same command is routine for developers, package managers and device
+  management, so this rule is Advanced-tier and excludes launchers that are
+  known to do it. It sees the command line only: whether the attribute was
+  present, and what the file was, are not observed.
+  The system-wide `spctl --master-disable` change is a separate, rarer action
+  covered by 5c3e4051-6d7f-4082-8c92-3d4e5f601203.
+references:
+  - https://attack.mitre.org/techniques/T1553/001/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1553.001
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_xattr:
+    Image|endswith: '/xattr'
+  selection_delete:
+    CommandLine|contains:
+      - '-d com.apple.quarantine'
+      - '-rd com.apple.quarantine'
+      - '-dr com.apple.quarantine'
+      - '--delete com.apple.quarantine'
+  selection_clear:
+    # -c clears every extended attribute, quarantine included. Allow it to be
+    # combined with -r, -s, -v or -x (xattr -cr, -rc, -crs ...).
+    CommandLine|re: '(^|\s)-[rsvx]*c[rsvx]*(\s|$)'
+  filter_managed:
+    # Package managers, installers and MDM agents that strip quarantine as part
+    # of a normal install. Parent attribution is best effort: when the parent is
+    # unknown the filter does not apply and the event is kept.
+    ParentImage|contains:
+      - '/Homebrew/'
+      - '/usr/sbin/installer'
+      - '/PackageKit.framework/'
+      - '/jamf'
+      - '/Jamf/'
+      - '/munki/'
+      - '/Kandji'
+      - '/mdmclient'
+  condition: selection_xattr and (selection_delete or selection_clear) and not filter_managed
+falsepositives:
+  - Developers stripping quarantine from their own builds or from downloaded tools.
+  - Package managers and device-management agents not covered by the parent filter.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic

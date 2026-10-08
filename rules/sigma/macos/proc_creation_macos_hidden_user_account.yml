@@ -1,0 +1,45 @@
+title: Local Account Hidden from the Login Window
+id: 55eaad6e-88a1-4eae-8014-24d96a68f965
+status: experimental
+description: >
+  Detects configuration that hides a local account from the macOS login window
+  and user lists: `dscl . -create /Users/<name> IsHidden 1`, or `defaults
+  write` of the `Hide500Users` / `HiddenUsersList` loginwindow keys. Hiding an
+  account is used to keep a backdoor account out of sight; a hidden account is
+  also what some management and service accounts legitimately use, so the
+  signal is the act of hiding, which the command line shows directly.
+  This rule is independent of account creation and of admin-group membership
+  (2f617384-9012-43b5-9fc5-60718293a416,
+  97b0f988-7268-4854-9251-4da5a8397da9).
+references:
+  - https://attack.mitre.org/techniques/T1564/002/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.t1564.002
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_dscl:
+    Image|endswith: '/dscl'
+    CommandLine|re: '(^|\s)IsHidden\s+"?(1|true|yes)"?(\s|$)'
+  selection_defaults:
+    Image|endswith: '/defaults'
+    CommandLine|contains|all:
+      - 'write'
+      - 'loginwindow'
+    CommandLine|contains:
+      - 'Hide500Users'
+      - 'HiddenUsersList'
+  condition: selection_dscl or selection_defaults
+falsepositives:
+  - Management tooling that hides its service account from the login window.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic

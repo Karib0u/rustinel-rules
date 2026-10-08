@@ -2,14 +2,15 @@ name: macOS Advanced
 id: macos-advanced
 description: >
     macOS Essential plus broader detections: launch-item persistence, shell
-    download cradles, privileged account creation and execution from temporary
-    paths. More false positives may occur — notably from application installers —
+    download cradles, account creation, admin-group and hidden-account changes,
+    quarantine-attribute removal, privileged osascript shells and unsigned
+    execution from staging paths. More false positives may occur — notably from application installers —
     so tune per environment before relying on by default. Experimental and
     post-v1; disabled by default.
 os: macos
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.1.0"
+requires_rustinel: ">=1.6.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -21,13 +22,16 @@ attack_coverage:
   - T1543.004
   - T1105
   - T1059.004
-  - T1036
+  - T1204.002
+  - T1553.001
+  - T1059.002
+  - T1564.002
   - T1136.001
   - T1098
   - T1098.004
   - T1070.003
   - T1005
-  - T1548
+  - T1548.006
 telemetry_requirements:
   - process_creation
   - file_event
@@ -50,3 +54,8 @@ rules:
           - 457c6ee7-e5d8-4f06-b25e-a7a3d40e354d   # Shell History File Renamed Away (macOS) (sigma)
           - 40b5bf5b-055e-4db2-90df-bd2968ddad9f   # Shell History Destroyed in Place (macOS) (sigma)
           - 829cee70-a60f-4e8a-8b2f-38e1fff83e61   # TCC Privacy Database Targeted on a Command Line (sigma)
+          - 0b4db6de-848b-48e5-bebc-9fc4a2e24db2   # Quarantine Attribute Removed via xattr (sigma)
+          - d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd   # osascript Privileged Shell Command with Staging Indicators (sigma)
+          - 97b0f988-7268-4854-9251-4da5a8397da9   # Account Added to the macOS Admin Group (sigma)
+          - 55eaad6e-88a1-4eae-8014-24d96a68f965   # Local Account Hidden from the Login Window (sigma)
+          - 8da551dd-08cf-4b73-b3cc-a18708f548b4   # Launch Agent or Daemon Plist Written by a Shell or Scripting Process (sigma)

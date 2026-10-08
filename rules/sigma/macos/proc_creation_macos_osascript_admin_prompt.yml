@@ -1,55 +1,40 @@
-title: osascript Credential Prompt or Suspicious Admin Shell
+title: osascript Hidden-Answer Password Prompt
 id: 6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012
 status: experimental
 description: >
-  Detects AppleScript executed via osascript that either presents a hidden-answer
-  dialog prompting for a password or runs a suspicious administrator shell
-  command. Both are hallmark macOS infostealer behaviours used to phish the
-  user's login password and stage payloads through native-looking prompts.
+  Detects AppleScript run through osascript that shows a `display dialog` with a
+  hidden answer, the masked-input prompt macOS infostealers use to phish the
+  user's login password with a native-looking window. Legitimate software
+  almost always requests elevation through the system authorization prompt, not
+  a hand-built password dialog.
+  The command line shows the prompt being requested, not what the user typed or
+  where it goes. A script that runs a privileged shell command instead of
+  asking for a password is a different behaviour, covered separately by
+  d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd.
 references:
-  - https://attack.mitre.org/techniques/T1059/002/
   - https://attack.mitre.org/techniques/T1056/002/
+  - https://attack.mitre.org/techniques/T1059/002/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
-  - attack.execution
-  - attack.t1059.002
   - attack.credential-access
   - attack.t1056.002
+  - attack.execution
+  - attack.t1059.002
 logsource:
   category: process_creation
   product: macos
 detection:
   selection_img:
     Image|endswith: '/osascript'
-  selection_admin:
-    CommandLine|contains|all:
-      - 'do shell script'
-      - 'with administrator privileges'
-  selection_admin_suspicious:
-    CommandLine|contains:
-      - 'curl '
-      - 'wget '
-      - 'chmod '
-      - 'xattr '
-      - 'base64'
-      - '/tmp/'
-      - '/private/tmp/'
-      - '/Users/Shared/'
-      - '/var/folders/'
-      - 'security '
-      - 'sqlite3'
-      - 'osascript '
-      - 'python'
-      - 'bash'
-      - 'zsh'
   selection_phish:
     CommandLine|contains|all:
       - 'display dialog'
       - 'hidden answer'
-  condition: selection_img and (selection_phish or (selection_admin and selection_admin_suspicious))
+  condition: selection_img and selection_phish
 falsepositives:
-  - Legitimate helper apps and installers that request elevation via AppleScript and run shell-based setup commands.
+  - Administrative scripts that deliberately prompt for a secret with a hidden-answer dialog.
 level: high
 rustinel:
   telemetry:

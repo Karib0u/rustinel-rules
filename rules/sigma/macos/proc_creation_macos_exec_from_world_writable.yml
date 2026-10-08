@@ -1,36 +1,53 @@
-title: Execution from World-Writable or Temporary Directory
+title: Unsigned or Ad-Hoc Signed Binary Executed from a Staging Directory
 id: 1a728495-a123-44c6-8ad6-718293a4b527
 status: experimental
 description: >
-  Detects a process executing from a world-writable or temporary location
-  (/tmp, /var/tmp, /Users/Shared). Common for dropped payloads and fake
-  installers staged from disk images, though build tooling also runs helpers
-  from these paths, so intended for the Advanced tier.
-  Note: macOS resolves /tmp and /var/tmp to /private/..., so both forms are matched.
+  Detects a process started from a staging location (/tmp, /var/tmp,
+  /Users/Shared, or a Downloads folder) whose code signature is neither Apple's
+  nor a developer team's: it is not an Apple platform binary and carries no
+  Team ID. That is the shape of a dropped stealer or fake-installer payload,
+  which is ad-hoc signed or unsigned. Endpoint Security supplies the signing
+  context at exec time.
+  Compilers on Apple silicon ad-hoc sign everything they link, so build output
+  run from a temporary directory also matches; this is Advanced-tier and
+  expects tuning on developer machines. A binary signed by an identified
+  developer or Apple is excluded, which also means a payload signed with a
+  stolen or purchased developer certificate is not caught here.
+  macOS resolves /tmp and /var/tmp to /private/..., so both forms are matched.
+  The earlier version of this rule matched any process image under these paths
+  regardless of signing and also claimed masquerading (T1036), which the
+  telemetry does not show.
 references:
+  - https://attack.mitre.org/techniques/T1204/002/
   - https://attack.mitre.org/techniques/T1059/004/
-  - https://attack.mitre.org/techniques/T1036/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.execution
+  - attack.t1204.002
   - attack.t1059.004
-  - attack.defense-evasion
-  - attack.t1036
 logsource:
   category: process_creation
   product: macos
 detection:
-  selection:
+  selection_path:
     Image|startswith:
       - '/tmp/'
       - '/private/tmp/'
       - '/var/tmp/'
       - '/private/var/tmp/'
       - '/Users/Shared/'
-  condition: selection
+  selection_downloads:
+    Image|contains: '/Downloads/'
+  filter_platform:
+    IsPlatformBinary: 'true'
+  filter_team_signed:
+    TeamId|re: '.+'
+  condition: (selection_path or selection_downloads) and not filter_platform and not filter_team_signed
 falsepositives:
-  - Build systems, package managers and installers that execute helper binaries from temp paths.
+  - Build systems, compilers and developer tooling that run ad-hoc signed output from temporary or Downloads paths.
+  - Open-source tools distributed unsigned and run from Downloads.
 level: medium
 rustinel:
   telemetry:
