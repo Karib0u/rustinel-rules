@@ -41,8 +41,11 @@ detection:
       - '/usr/libexec/'
       - '/usr/sbin/installer'
   filter_managed_writer:
+    # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
+    # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
+    # case, so that also matched every /opt/homebrew/ shell and interpreter.
     Image|contains:
-      - '/Homebrew/'
+      - '/Library/Homebrew/'
       - '/PackageKit.framework/'
       - '/jamf'
       - '/Jamf/'
@@ -68,7 +71,7 @@ rustinel:
         TargetFilename: "/Library/LaunchDaemons/com.vendor.helper.plist"
     - reason: "Homebrew registering a service plist"
       fields:
-        Image: "/opt/homebrew/Homebrew/Library/Homebrew/brew.rb"
+        Image: "/opt/homebrew/Library/Homebrew/vendor/portable-ruby/3.4.5/bin/ruby"
         TargetFilename: "/Users/alice/Library/LaunchAgents/homebrew.mxcl.postgresql.plist"
     - reason: "Apple-owned launch daemon path"
       fields:

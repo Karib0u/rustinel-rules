@@ -27,11 +27,14 @@ detection:
       - '/.ssh/authorized_keys'
       - '/.ssh/authorized_keys2'
   filter_management:
+    # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
+    # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
+    # case, so that also matched every /opt/homebrew/ shell and interpreter.
     Image|contains:
       - '/jamf'
       - '/Jamf/'
       - '/munki/'
-      - '/Homebrew/'
+      - '/Library/Homebrew/'
   condition: selection and not filter_management
 falsepositives:
   - Legitimate key provisioning via ssh-copy-id or configuration management.

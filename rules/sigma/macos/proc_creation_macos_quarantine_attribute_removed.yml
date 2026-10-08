@@ -41,8 +41,11 @@ detection:
     # Package managers, installers and MDM agents that strip quarantine as part
     # of a normal install. Parent attribution is best effort: when the parent is
     # unknown the filter does not apply and the event is kept.
+    # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
+    # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
+    # case, so that also matched every /opt/homebrew/ shell and interpreter.
     ParentImage|contains:
-      - '/Homebrew/'
+      - '/Library/Homebrew/'
       - '/usr/sbin/installer'
       - '/PackageKit.framework/'
       - '/jamf'
@@ -78,7 +81,7 @@ rustinel:
       fields:
         Image: "/usr/bin/xattr"
         CommandLine: "xattr -d com.apple.quarantine /Applications/Tool.app"
-        ParentImage: "/opt/homebrew/Homebrew/Library/Homebrew/brew.rb"
+        ParentImage: "/opt/homebrew/Library/Homebrew/vendor/portable-ruby/3.4.5/bin/ruby"
     - reason: "installer stripping quarantine"
       fields:
         Image: "/usr/bin/xattr"
