@@ -16,8 +16,6 @@ $sid = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-544'
 $admins = $sid.Translate([System.Security.Principal.NTAccount]).Value.Split('\')[-1]
 & net.exe localgroup $admins $user /add | Out-Null
 Start-Sleep -Seconds 2
-# DEBUG-4732
-Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4728,4732,4720} -MaxEvents 5 | ForEach-Object { $_.ToXml() }
 
 & net.exe localgroup $admins $user /delete | Out-Null
 & net.exe user $user /delete | Out-Null
@@ -25,4 +23,8 @@ if (Test-Path $backup) {
   & auditpol.exe /restore /file:$backup | Out-Null
   Remove-Item $backup -Force
 }
+# DEBUG-4732
+'admins=' + $admins
+auditpol.exe /get /subcategory:'{0CCE9237-69AE-11D9-BED3-505054503030}','{0CCE9235-69AE-11D9-BED3-505054503030}'
+Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4720,4728,4732,4733,4726} -MaxEvents 6 | ForEach-Object { "$($_.Id) $($_.TimeCreated) $(($_.Properties | ForEach-Object { $_.Value }) -join '|')" }
 exit 0
