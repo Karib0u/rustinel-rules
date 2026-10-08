@@ -15,20 +15,27 @@ license: DRL-1.1
 extends:
   - linux-essential
 attack_coverage:
-  - T1496
-  - T1543.002
-  - T1053.003
-  - T1546.004
-  - T1059.004
-  - T1105
-  - T1070.003
-  - T1070.002
-  - T1548.001
-  - T1547
-  - T1505.003
+  - T1014
   - T1027
-  - T1562.001
+  - T1053.003
+  - T1059.004
+  - T1070.002
+  - T1070.003
+  - T1071
+  - T1098.004
+  - T1105
+  - T1136.001
   - T1219
+  - T1496
+  - T1505.003
+  - T1543.002
+  - T1546.004
+  - T1547
+  - T1547.006
+  - T1548.001
+  - T1548.003
+  - T1562.001
+  - T1574.006
 telemetry_requirements:
   - file_event
   - file_delete
@@ -36,7 +43,7 @@ telemetry_requirements:
   - process_creation
   - network_connection
   - file_scan
-test_status: none
+test_status: atomic
 sources:
     manual:
       - https://attack.mitre.org/
