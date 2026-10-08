@@ -10,7 +10,7 @@ Mandatory v1 checks:
   - Rustinel telemetry compatibility
   - IOC value sanity (hash/ip/domain/regex well-formed)
   - pack manifest validation (schema + referential integrity)
-  - pack attack_coverage drift guard (declared vs. derived)
+  - pack attack_coverage and test_status match what member rules derive
   - no production rule selects on a field the engine never populates
   - each pack's requires_rustinel covers what its own content needs
   - preview / test-only content is registered, and no pack references it
@@ -549,15 +549,21 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
                         f"correlation '{rule_id}' references '{ref}', which is not in this pack",
                     )
 
-        # Drift guard: declared attack_coverage should be backed by member content.
+        # Drift guard: coverage and test status are derived from member rules,
+        # so the manifest must say exactly what the content supports.
+        summary = lib.derive_pack_summary(resolved, artifact_index)
         declared = {str(t).upper() for t in pack.get("attack_coverage") or []}
-        derived: set = set()
-        for rule_id in resolved:
-            art = artifact_index.get(rule_id)
-            if art is not None:
-                derived |= lib.artifact_attack_techniques(art)
-        for technique in sorted(declared - derived):
-            rep.warn(where, f"attack_coverage '{technique}' not found in any member artifact")
+        derived_techniques = set(summary["attack_coverage"])
+        for technique in sorted(declared - derived_techniques):
+            rep.error(where, f"attack_coverage '{technique}' not found in any member artifact")
+        for technique in sorted(derived_techniques - declared):
+            rep.error(where, f"attack_coverage is missing '{technique}', covered by a member rule")
+        if pack.get("test_status") != summary["test_status"]:
+            rep.error(
+                where,
+                f"test_status is {pack.get('test_status')!r} but member rules roll up to "
+                f"{summary['test_status']!r}",
+            )
 
 
 def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_yara):
