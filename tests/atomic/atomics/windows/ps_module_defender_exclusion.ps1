@@ -7,7 +7,7 @@
 # modules, runs Add-MpPreference in a *new* powershell.exe (the policy is read at
 # engine start), then removes the exclusion and restores the policy. The exclusion
 # is a never-used folder name. Tamper Protection can block the change on some
-# images; the manifest marks this test allow_failure until a run proves it.
+# images; CI has shown it fires on hosted runners.
 $ErrorActionPreference = 'SilentlyContinue'
 $key = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging'
 $existed = Test-Path $key
