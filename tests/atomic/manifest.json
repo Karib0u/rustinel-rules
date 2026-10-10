@@ -630,9 +630,7 @@
       "name": "macos_coinminer_yara_fixture",
       "platform": "macos",
       "engine": "yara",
-      "script": "macos/coinminer_yara_fixture.sh",
-      "allow_failure": true,
-      "allow_failure_reason": "Mach-O with an appended overlay invalidates its code signature, so AMFI can kill the exec before the file scan resolves it; timing is nondeterministic on hosted runners."
+      "script": "macos/coinminer_yara_fixture.sh"
     },
     {
       "id": "ioc-canary-exec",
@@ -781,7 +779,7 @@
       "engine": "sigma",
       "script": "windows/lolbin_outbound_connect.ps1",
       "allow_failure": true,
-      "allow_failure_reason": "network_connection telemetry is not proven to fire on hosted Windows runners, and the rule excludes loopback targets."
+      "allow_failure_reason": "The rule is test_status manual: Kernel-Network connect events reached it in only 2 of 21 recent hosted runs, so this stays informational until the engine delivers them reliably; the rule excludes loopback targets."
     },
     {
       "id": "86c19f1a-add5-4553-9c24-f76e7fe3da9d",
@@ -975,9 +973,7 @@
           "field": "edr.yara.scan_source",
           "equals": "process_memory"
         }
-      ],
-      "allow_failure": true,
-      "allow_failure_reason": "Process-memory reads on macOS need task_for_pid, which the hardened Python on a hosted runner may refuse; unproven on CI until this test has run there."
+      ]
     },
     {
       "id": "35866351-9855-465f-9927-d10eef7c8aea",
@@ -1162,45 +1158,35 @@
       "name": "windows_ps_module_defender_tamper",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ps_module_defender_exclusion.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection or Module Logging policy timing may also block it."
+      "script": "windows/ps_module_defender_exclusion.ps1"
     },
     {
       "id": "efac4650-a3aa-4dd9-9f6f-679bfcf14c16",
       "name": "windows_defender_exclusion_added",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ps_module_defender_exclusion.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block the exclusion."
+      "script": "windows/ps_module_defender_exclusion.ps1"
     },
     {
       "id": "92557796-ce11-410a-b976-dd63dd189b82",
       "name": "windows_ps_module_offensive_cmdlet",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ps_module_offensive_cmdlet.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+      "script": "windows/ps_module_offensive_cmdlet.ps1"
     },
     {
       "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
       "name": "windows_defender_realtime_disabled",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/defender_realtime_disabled.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert. Tamper Protection may block disabling real-time protection."
+      "script": "windows/defender_realtime_disabled.ps1"
     },
     {
       "id": "e3136f60-ae86-4333-9ea5-64e4664a0bb1",
       "name": "windows_wmi_permanent_consumer_binding",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/wmi_subscription.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Unproven channel on hosted runners; promote to a gating test once a CI run shows the alert."
+      "script": "windows/wmi_subscription.ps1"
     },
     {
       "id": "3feb077a-6922-4052-93b8-7b95156ca1e5",
