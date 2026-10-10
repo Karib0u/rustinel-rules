@@ -563,7 +563,7 @@
       "engine": "sigma",
       "script": "macos/reverse_shell_dev_tcp.sh",
       "negatives": [
-        {"script": "macos/reverse_shell_dev_tcp_apple_bash_negative.sh", "marker": "rustinel_atomic_neg"}
+        {"script": "macos/reverse_shell_dev_tcp_port_check_negative.sh", "marker": "rustinel_atomic_neg"}
       ]
     },
     {
