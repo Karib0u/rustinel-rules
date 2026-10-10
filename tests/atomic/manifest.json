@@ -1172,9 +1172,7 @@
       "name": "windows_ps_module_offensive_cmdlet",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ps_module_offensive_cmdlet.ps1",
-      "allow_failure": true,
-      "allow_failure_reason": "Failed in every hosted run while the function was defined in the session, which 4103 does not log; now uses a real module. Promote to gating once a CI run shows the alert."
+      "script": "windows/ps_module_offensive_cmdlet.ps1"
     },
     {
       "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
