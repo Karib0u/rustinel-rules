@@ -42,3 +42,21 @@ rustinel:
     - file_delete
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude dotfile managers, Migration Assistant and provisioning tools that rewrite a home directory."
+    - surface: "TargetFilename"
+      guidance: "Scope to interactive hosts; CI and build machines delete history as routine cleanup."
+  negatives:
+    - reason: "history backup, not the history file"
+      fields:
+        Image: "/bin/rm"
+        TargetFilename: "/Users/alice/.zsh_history.bak"
+    - reason: "deleting an unrelated dotfile"
+      fields:
+        Image: "/bin/rm"
+        TargetFilename: "/Users/alice/.viminfo"
+    - reason: "deleting an ordinary file"
+      fields:
+        Image: "/bin/rm"
+        TargetFilename: "/tmp/build.log"

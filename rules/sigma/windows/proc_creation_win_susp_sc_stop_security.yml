@@ -52,3 +52,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "selection_service"
+      guidance: "The service list is the tuning surface: add or remove the security agents you run."
+    - surface: "ParentImage"
+      guidance: "Exclude the AV migration or uninstall tooling that stops the service during approved windows."
+  negatives:
+    - reason: "querying a security service"
+      fields:
+        Image: "C:\\Windows\\System32\\sc.exe"
+        CommandLine: "sc.exe query WinDefend"
+    - reason: "starting a security service"
+      fields:
+        Image: "C:\\Windows\\System32\\net.exe"
+        CommandLine: "net.exe start WinDefend"
+    - reason: "stopping an unrelated service"
+      fields:
+        Image: "C:\\Windows\\System32\\sc.exe"
+        CommandLine: "sc.exe stop Spooler"
+    - reason: "disabling an unrelated service"
+      fields:
+        Image: "C:\\Windows\\System32\\sc.exe"
+        CommandLine: "sc.exe config Spooler start= disabled"

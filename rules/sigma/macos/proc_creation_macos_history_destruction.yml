@@ -62,3 +62,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude hardening and privacy scripts that clear history as a policy step."
+    - surface: "CommandLine"
+      guidance: "A history file name plus a destroying verb is required; reading tools never match."
+  negatives:
+    - reason: "reading the history file"
+      fields:
+        Image: "/usr/bin/less"
+        CommandLine: "less /Users/alice/.zsh_history"
+    - reason: "searching the history file"
+      fields:
+        Image: "/usr/bin/grep"
+        CommandLine: "grep ssh /Users/alice/.zsh_history"
+    - reason: "truncating history to a non-zero size"
+      fields:
+        Image: "/usr/bin/truncate"
+        CommandLine: "truncate -s 1M /Users/alice/.zsh_history"
+    - reason: "linking /dev/null to a non-history path"
+      fields:
+        Image: "/bin/ln"
+        CommandLine: "ln -sf /dev/null /Users/alice/.cache/x"

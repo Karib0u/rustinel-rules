@@ -1,0 +1,26 @@
+title: Fixture - Correlation Event Count (linux)
+id: d943bd63-a255-4b5c-ba0d-2155d49cf2d3
+status: test
+description: >
+  Test-only correlation: the base marker rule matching at least twice within two
+  minutes. Proves the engine wires Sigma correlation end to end. Never a detection.
+references:
+  - https://github.com/Karib0u/rustinel-rules/issues/61
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.execution
+correlation:
+  type: event_count
+  rules:
+    - 37aafcf3-ac54-4833-9b14-633e3a2af312
+  timespan: 2m
+  condition:
+    gte: 2
+falsepositives:
+  - None; the marker exists only for the atomic harness.
+level: informational
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low

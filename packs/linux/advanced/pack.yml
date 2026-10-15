@@ -7,7 +7,7 @@ description: >
 os: linux
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.0.2"
+requires_rustinel: ">=1.6.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -15,21 +15,30 @@ license: DRL-1.1
 extends:
   - linux-essential
 attack_coverage:
-  - T1543.002
-  - T1053.003
-  - T1546.004
-  - T1059.004
-  - T1036
-  - T1105
-  - T1071
-  - T1070.003
-  - T1070.002
-  - T1548.001
-  - T1547
-  - T1505.003
+  - T1014
   - T1027
-  - T1562.001
+  - T1053.003
+  - T1059.004
+  - T1070.002
+  - T1070.003
+  - T1071
+  - T1090
+  - T1098.004
+  - T1105
+  - T1136.001
   - T1219
+  - T1486
+  - T1496
+  - T1505.003
+  - T1543.002
+  - T1546.004
+  - T1547
+  - T1547.006
+  - T1548.001
+  - T1548.003
+  - T1562.001
+  - T1572
+  - T1574.006
 telemetry_requirements:
   - file_event
   - file_delete
@@ -37,7 +46,7 @@ telemetry_requirements:
   - process_creation
   - network_connection
   - file_scan
-test_status: none
+test_status: mixed
 sources:
     manual:
       - https://attack.mitre.org/
@@ -47,7 +56,6 @@ rules:
           - 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73   # Systemd Unit Persistence (sigma)
           - 4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84   # Cron Job Persistence (sigma)
           - 5f607182-93a4-45b6-9fc7-4a5b6c7d8e95   # Shell Profile / RC File Persistence (sigma)
-          - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (sigma)
           - 94fb53c7-debd-4287-99e4-6eb0ba923731   # Linux Download and Execute Piped to Shell (sigma)
           - d0c6216e-881c-408f-8e72-0a466522306b   # Outbound Network Connection from Shell Binary (sigma)
           - 6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb   # Shell History File Deleted (sigma)
@@ -59,5 +67,10 @@ rules:
           - e96a9b85-26f6-4251-a26b-361d4b6761ef   # Webshell Written by Web-Server Process (sigma)
           - d24c4943-3e22-481f-99ee-ca631b8a77af   # Base64-Decode Piped to Shell (sigma)
           - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
+          - b5df6758-24ff-49c0-ba6e-c67760177ddb   # Shell Running as Root Through a SUID Binary (sigma)
+          - 300f4d0e-79ef-4c53-9461-7b3f4e468537   # DNS Query to Tunnel Service (Linux) (sigma)
+          - 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb   # File Renamed to Ransomware-Style Extension (Linux) (sigma)
+          - ae619e3b-9950-4cec-89f0-8874c142197b   # Mass File Rename to Ransomware-Style Extension (Linux) (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
+          - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)

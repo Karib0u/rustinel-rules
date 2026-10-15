@@ -16,15 +16,15 @@ description: >
   Essential pack. It is tier Advanced now, and the title says what is observed.
 references:
   - https://attack.mitre.org/techniques/T1005/
-  - https://attack.mitre.org/techniques/T1548/
+  - https://attack.mitre.org/techniques/T1548/006/
 author: rustinel-rules
 date: 2026-07-09
-modified: 2026-09-12
+modified: 2026-10-08
 tags:
   - attack.collection
   - attack.privilege-escalation
   - attack.t1005
-  - attack.t1548
+  - attack.t1548.006
 logsource:
   category: process_creation
   product: macos
@@ -51,3 +51,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Add the MDM or fleet-management binary that legitimately queries TCC state."
+    - surface: "selection_tool"
+      guidance: "The tool list gates the rule: a bare mention of TCC.db by a viewer or shell does not alert."
+  negatives:
+    - reason: "listing the file"
+      fields:
+        Image: "/bin/ls"
+        CommandLine: "ls -l '/Library/Application Support/com.apple.TCC/TCC.db'"
+    - reason: "searching text for the file name"
+      fields:
+        Image: "/usr/bin/grep"
+        CommandLine: "grep TCC.db notes.txt"
+    - reason: "sqlite3 on an unrelated database"
+      fields:
+        Image: "/usr/bin/sqlite3"
+        CommandLine: "sqlite3 /Users/alice/app/data.db .tables"
+    - reason: "resetting a permission through the supported tool"
+      fields:
+        Image: "/usr/bin/tccutil"
+        CommandLine: "tccutil reset Camera com.vendor.app"

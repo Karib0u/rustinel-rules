@@ -11,31 +11,30 @@ status: experimental
 license: DRL-1.1
 extends: []
 attack_coverage:
-  - T1059.001
-  - T1027
   - T1003.001
-  - T1490
-  - T1218.010
-  - T1218.005
-  - T1566.001
-  - T1059
-  - T1070.001
-  - T1562.001
   - T1003.002
   - T1003.003
-  - T1548.002
-  - T1105
-  - T1546.003
+  - T1027
+  - T1059
+  - T1059.001
   - T1070
+  - T1070.001
+  - T1105
+  - T1218.005
+  - T1218.010
+  - T1490
+  - T1546.003
   - T1546.008
   - T1546.012
-  - T1496
+  - T1548.002
+  - T1562.001
+  - T1566.001
 telemetry_requirements:
   - process_creation
   - registry_event
   - wmi_event
   - file_scan
-test_status: mixed
+test_status: atomic
 sources:
     manual:
       - https://attack.mitre.org/
@@ -53,7 +52,7 @@ rules:
           - b2c3d4e5-8f90-4123-8b4c-5d6e7f801a11   # Microsoft Defender Tampering via Registry (sigma)
           - e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20   # Registry Hive Dump via reg.exe save (sigma)
           - f2b8c4d1-6e90-4a27-9d3b-5a1c2e7f8b21   # UAC Bypass via Auto-Elevating LOLBin (sigma)
-          - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction (sigma)
+          - a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22   # Active Directory Database (NTDS.dit) Extraction via ntdsutil IFM (sigma)
           - b4d8f0c5-3a92-4e67-9d1b-7c3e2f5a0d23   # WDigest Cleartext Credential Caching Enabled (sigma)
           - d6adbfee-548b-4def-9e49-8e6940251957   # WMI Event Subscription Persistence (sigma)
           - e86de5fe-3908-4a95-b4e8-930a93bf4555   # Boot Recovery Tampering via bcdedit or wbadmin (sigma)
@@ -62,5 +61,4 @@ rules:
           - cda4a133-fe67-4aa6-815d-f8c69ff16828   # IFEO Debugger or SilentProcessExit Hijack (sigma)
         yara:
           - yara-win-mimikatz-strings              # Mimikatz credential-dumping strings (yara)
-          - yara-win-xmrig-coinminer   # XMRig / coinminer strings in Windows PE binaries (yara)
           - yara-win-msfvenom-stager   # Metasploit / Meterpreter stager markers in Windows PE (yara)

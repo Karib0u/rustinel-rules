@@ -2,12 +2,18 @@ title: Windows Event Log Cleared via Command Line
 id: 5e8b1d44-9c2a-4f67-8d03-7b1a6e3c9d08
 status: experimental
 description: >
-  Detects clearing of Windows event logs through wevtutil or PowerShell cmdlets.
+  Detects clearing of Windows event logs from a process command line:
+  wevtutil.exe with the cl / clear-log verb, or powershell.exe / pwsh.exe
+  invoked with Clear-EventLog or the ClearEventLog method on its command line.
   Adversaries clear logs to destroy evidence and hinder incident response.
+  This is process-creation telemetry only; clearing performed from inside a
+  script file or an already running PowerShell session is not visible here
+  and needs ScriptBlock logging.
 references:
   - https://attack.mitre.org/techniques/T1070/001/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.defense-evasion
   - attack.t1070.001
@@ -16,15 +22,24 @@ logsource:
   product: windows
 detection:
   selection_wevtutil:
-    Image|endswith: '\wevtutil.exe'
-    CommandLine|contains:
-      - ' cl '
-      - ' clear-log'
-  selection_ps:
+    - Image|endswith: '\wevtutil.exe'
+    - OriginalFileName: 'wevtutil.exe'
+  selection_wevtutil_verb:
+    # cl / clear-log as a whole argument, so log names and paths that merely
+    # contain "cl" do not match.
+    CommandLine|re: '(?i)\s(cl|clear-log)(\s|$)'
+  selection_ps_host:
+    - Image|endswith:
+        - '\powershell.exe'
+        - '\pwsh.exe'
+    - OriginalFileName:
+        - 'PowerShell.EXE'
+        - 'pwsh.dll'
+  selection_ps_clear:
     CommandLine|contains:
       - 'Clear-EventLog'
       - '.ClearEventLog('
-  condition: selection_wevtutil or selection_ps
+  condition: (selection_wevtutil and selection_wevtutil_verb) or (selection_ps_host and selection_ps_clear)
 falsepositives:
   - Authorized log rotation or maintenance tooling.
 level: high

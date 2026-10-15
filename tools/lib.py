@@ -250,56 +250,25 @@ PLATFORM_BASELINE_ENGINES: dict[str, tuple[str, str]] = {
     ),
 }
 
-# Capability -> the release that first provides it, as (platform, category,
-# field, version, why).
-#
-# There is no machine-readable capability/version map in the engine repo: its
-# compatibility/field-availability.json records what is available *now*, not
-# since when. These entries come from the 2026-09-11 coverage audit's sensor
-# inventory, which dated them against the release notes. Verify a new entry the
-# same way before adding it, and prefer leaving a capability out to guessing —
-# an over-claimed floor locks out engines that would have run the pack fine.
-#
-# Deliberately absent: file_delete / file_rename routing. It is present from the
-# platform baseline onward (v1.0.2 on Linux, v1.1.0 on macOS), so it does not
-# raise either platform's floor.
-ENGINE_REQUIREMENTS: tuple[tuple[str, str, str, str, str], ...] = (
-    (
-        "windows",
-        "registry_event",
-        "Details",
-        "1.4.0",
-        "registry events began carrying value data in v1.4.0 (rustinel#310)",
+# Sigma correlation rules (event_count, value_count, temporal, ...) arrived in
+# v1.5.0, whatever their referenced rules select on.
+CORRELATION_MIN_ENGINE = ("1.5.0", "Sigma correlation rules need v1.5.0")
+
+# Channels that arrived in one release. A rule on them needs that release even
+# when it selects only on EventID, which has no field-contract row.
+CHANNEL_MIN_ENGINES: dict[tuple[str, str], tuple[str, str]] = {
+    ("windows", "windefend"): ("1.9.0", "the Defender Operational channel arrived in v1.9.0"),
+    ("windows", "application"): ("1.9.0", "the Application channel arrived in v1.9.0"),
+    ("windows", "ps_classic_start"): (
+        "1.9.0",
+        "classic PowerShell engine-start events arrived in v1.9.0",
     ),
-    (
-        "windows",
-        "service_creation",
-        "ImagePath",
-        "1.4.1",
-        "service_creation gained ImagePath / Provider_Name in v1.4.1",
-    ),
-    (
-        "windows",
-        "service_creation",
-        "ServiceFileName",
-        "1.4.1",
-        "ServiceFileName resolves to the ImagePath added in v1.4.1",
-    ),
-    (
-        "windows",
-        "service_creation",
-        "Provider_Name",
-        "1.4.1",
-        "service_creation gained ImagePath / Provider_Name in v1.4.1",
-    ),
-    (
-        "windows",
-        "process_creation",
-        "IntegrityLevel",
-        "1.4.1",
-        "IntegrityLevel is populated from v1.4.1",
-    ),
-)
+}
+
+# Field -> first release that populates it comes from the vendored engine
+# field contract (`since`, schema 2 and later); see engine_contract.py. Platform
+# baselines above stay here because the contract does not express when a
+# platform itself landed.
 
 # Sub-categories that share a parent's field contract.
 _CATEGORY_PARENTS = {
@@ -312,6 +281,51 @@ _CATEGORY_PARENTS = {
     "registry_delete": "registry_event",
     "dns": "dns_query",
 }
+
+# Log sources that name a Windows event-log service instead of a category. The
+# engine routes `product: windows, service: security` (no category) to the
+# Security channel, which the field contract files under category "security".
+# Since v1.9.0 it routes `service: windefend` (Defender Operational) and
+# `service: application` the same way, and `service: powershell-classic` with
+# no category to the classic engine-start events (`ps_classic_start`).
+# `wmi` (Operational 5857-5861) shares the contract rows of `wmi_event`.
+_SERVICE_CATEGORIES = {
+    ("windows", "security"): "security",
+    ("windows", "windefend"): "windefend",
+    ("windows", "application"): "application",
+    ("windows", "wmi"): "wmi_event",
+    ("windows", "powershell-classic"): "ps_classic_start",
+}
+
+
+def is_correlation(meta) -> bool:
+    """True for a Sigma correlation document (a `correlation:` block instead of
+    `logsource` and `detection`)."""
+    return isinstance(meta, dict) and isinstance(meta.get("correlation"), dict)
+
+
+def correlation_rule_ids(meta) -> list[str]:
+    """The rule references of a correlation document, in order."""
+    rules = (meta.get("correlation") or {}).get("rules") if is_correlation(meta) else None
+    return [str(r).strip() for r in rules] if isinstance(rules, list) else []
+
+
+def logsource_category(logsource: dict) -> str:
+    """The category a Sigma log source routes to: its own `category`, or the one
+    a service-only log source implies. Empty when neither applies."""
+    category = str(logsource.get("category") or "").strip().lower()
+    if category:
+        return category
+    product = str(logsource.get("product") or "").strip().lower()
+    service = str(logsource.get("service") or "").strip().lower()
+    return _SERVICE_CATEGORIES.get((product, service), "")
+
+
+def contract_category(logsource: dict) -> str:
+    """The field-contract category for a log source, with sub-categories
+    (file_create, registry_set, dns, ...) folded into the parent they share."""
+    category = logsource_category(logsource)
+    return _CATEGORY_PARENTS.get(category, category)
 
 
 def parse_version(version: str) -> tuple[int, ...]:
@@ -365,15 +379,34 @@ def detection_fields(detection: dict) -> set[str]:
     return fields
 
 
-def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
+@lru_cache(maxsize=1)
+def _vendored_field_since() -> dict:
+    import engine_contract  # engine_contract imports this module
+
+    return engine_contract.load_field_since()
+
+
+def artifact_min_engine(
+    artifact: Artifact, field_since: dict | None = None
+) -> tuple[str, list[str]]:
     """The oldest engine that can run this artifact, plus why it is not the baseline.
 
-    A rule may also state `rustinel.min_engine` directly, for a requirement this
-    table cannot see (a correlation rule needs v1.5.0 whatever its fields are).
-    The declared value only ever raises the result.
+    Each selected field raises the floor to the first release the engine field
+    contract says populates it (`field_since`, defaulting to the vendored
+    contract). A rule may also state `rustinel.min_engine` directly, for a
+    requirement the contract cannot see (a correlation rule needs v1.5.0
+    whatever its fields are). The declared value only ever raises the result.
     """
+    if field_since is None:
+        field_since = _vendored_field_since()
     minimum = BASELINE_ENGINE
     reasons: list[str] = []
+
+    # A correlation's own floor; its referenced rules are pack members, so the
+    # pack floor already covers whatever they select on.
+    if artifact.kind == "sigma" and is_correlation(artifact.meta):
+        minimum, reason = CORRELATION_MIN_ENGINE
+        reasons.append(reason)
 
     if artifact.kind == "sigma" and isinstance(artifact.meta, dict):
         logsource = artifact.meta.get("logsource") or {}
@@ -383,15 +416,22 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
             minimum = platform_minimum
             if platform_reason:
                 reasons.append(platform_reason)
-        category = str(logsource.get("category") or "").lower()
-        category = _CATEGORY_PARENTS.get(category, category)
+        category = contract_category(logsource)
+        channel_minimum = CHANNEL_MIN_ENGINES.get((product, category))
+        if channel_minimum and parse_version(channel_minimum[0]) > parse_version(minimum):
+            minimum = channel_minimum[0]
+            reasons.append(channel_minimum[1])
         used = detection_fields(artifact.meta.get("detection") or {})
 
-        for req_product, req_category, field, version, why in ENGINE_REQUIREMENTS:
-            if req_product == product and req_category == category and field in used:
-                if parse_version(version) > parse_version(minimum):
-                    minimum = version
-                reasons.append(f"{field}: {why}")
+        available = field_since.get((product, category), {})
+        for field in sorted(used):
+            version = available.get(field)
+            # Fields present from the platform baseline do not explain anything.
+            if version is None or parse_version(version) <= parse_version(platform_minimum):
+                continue
+            if parse_version(version) > parse_version(minimum):
+                minimum = version
+            reasons.append(f"{field}: populated from v{version} (engine field contract)")
 
         declared = str((artifact.meta.get("rustinel") or {}).get("min_engine") or "").strip()
         if declared:
@@ -403,7 +443,7 @@ def artifact_min_engine(artifact: Artifact) -> tuple[str, list[str]]:
 
 
 def pack_min_engine(
-    resolved_ids, artifact_index, platform: str | None = None
+    resolved_ids, artifact_index, platform: str | None = None, field_since: dict | None = None
 ) -> tuple[str, dict[str, list[str]]]:
     """A pack's floor: the newest engine any of its members needs."""
     minimum, _ = platform_baseline_engine(platform or "")
@@ -412,12 +452,79 @@ def pack_min_engine(
         artifact = artifact_index.get(artifact_id)
         if artifact is None:
             continue
-        rule_min, reasons = artifact_min_engine(artifact)
+        rule_min, reasons = artifact_min_engine(artifact, field_since)
         if parse_version(rule_min) > parse_version(minimum):
             minimum = rule_min
         if reasons:
             drivers[artifact_id] = reasons
     return minimum, drivers
+
+
+def advanced_sigma_rules(packs: list[dict], artifacts: list[Artifact]) -> list[Artifact]:
+    """Sigma rules that ship in an Advanced pack and are not already Essential."""
+    by_id = {p["id"]: p for p in packs if "id" in p}
+    index = {a.id: a for a in artifacts if a.id}
+    essential: set[str] = set()
+    for pack in packs:
+        if pack.get("level") == "essential":
+            essential |= set(resolve_pack_rules(pack, by_id))
+    found: dict[str, Artifact] = {}
+    for pack in packs:
+        if pack.get("level") != "advanced":
+            continue
+        for rule_id in resolve_pack_rules(pack, by_id):
+            artifact = index.get(rule_id)
+            if artifact is not None and artifact.kind == "sigma" and rule_id not in essential:
+                found[rule_id] = artifact
+    return sorted(found.values(), key=lambda a: a.rel_path)
+
+
+def active_response_eligible(pack: dict) -> bool:
+    """Whether alerts from a pack may drive automated active response.
+
+    Hunting packs are analyst-driven and never eligible; the manifest states it
+    explicitly (validation enforces that), and other levels default to eligible.
+    """
+    declared = pack.get("active_response_eligible")
+    if isinstance(declared, bool):
+        return declared
+    return pack.get("level") != "hunting"
+
+
+def artifact_test_status(artifact: Artifact) -> str | None:
+    """Declared test evidence of a rule: Sigma `rustinel.test_status`, YARA
+    `test_status` meta. IOC sets carry none and are left out of the roll-up."""
+    if artifact.kind == "sigma":
+        value = (artifact.meta.get("rustinel") or {}).get("test_status")
+    elif artifact.kind == "yara":
+        match = re.search(r'^\s*test_status\s*=\s*"([^"]*)"', artifact.raw, re.MULTILINE)
+        value = match.group(1) if match else None
+    else:
+        return None
+    return str(value or "none").strip().lower()
+
+
+def derive_pack_summary(resolved_ids, artifact_index) -> dict:
+    """What a pack's manifest should declare, computed from its members:
+    the union of their ATT&CK techniques and the roll-up of their test status
+    (one shared value, otherwise `mixed`)."""
+    techniques: set[str] = set()
+    statuses: set[str] = set()
+    for artifact_id in resolved_ids:
+        artifact = artifact_index.get(artifact_id)
+        if artifact is None:
+            continue
+        techniques |= artifact_attack_techniques(artifact)
+        status = artifact_test_status(artifact)
+        if status is not None:
+            statuses.add(status)
+    if not statuses:
+        test_status = "none"
+    elif len(statuses) == 1:
+        test_status = next(iter(statuses))
+    else:
+        test_status = "mixed"
+    return {"attack_coverage": sorted(techniques), "test_status": test_status}
 
 
 # --------------------------------------------------------------------------- #

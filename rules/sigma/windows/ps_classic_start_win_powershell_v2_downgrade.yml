@@ -1,0 +1,51 @@
+title: PowerShell Engine Started as Version 2 (Downgrade)
+id: 4d591fa3-1112-4336-8bed-64e3b04b6619
+status: experimental
+description: >
+  Detects the classic PowerShell engine starting (event 400) as version 2.0.
+  PowerShell 2.0 has no AMSI, Script Block Logging or Constrained Language Mode,
+  so attackers run `powershell -Version 2` to bypass them. Version 2 should not
+  start on a modern host; enable it only for legacy tooling. Requires no extra
+  host policy. Event 400 is also written when version 2 starts through a host
+  that hosts the 2.0 runtime.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.execution
+  - attack.t1059.001
+  - attack.t1562.001
+logsource:
+  category: ps_classic_start
+  product: windows
+detection:
+  selection:
+    Data|contains: 'EngineVersion=2.0'
+  condition: selection
+falsepositives:
+  - Legacy management tooling that still requires the PowerShell 2.0 engine.
+level: medium
+rustinel:
+  telemetry:
+    - ps_classic_start
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    PowerShell 2.0 needs the optional Windows feature and .NET 3.5, which hosted
+    runners do not ship. Logic is covered by unit fixtures in tests/tools.
+  tuning:
+    - surface: "Data"
+      guidance: "Filter by HostName or HostApplication only for legacy tooling that still needs the 2.0 engine."
+    - surface: "selection"
+      guidance: "Keep the match on EngineVersion; HostVersion alone also appears for hosts that load the 5.1 engine."
+  negatives:
+    - reason: "Windows 10 engine start"
+      fields:
+        Data: "NewEngineState=Available\n\tPreviousEngineState=None\n\tSequenceNumber=13\n\tHostName=ConsoleHost\n\tHostVersion=5.1.19041.4170\n\tHostId=0\n\tEngineVersion=5.1.19041.4170\n\tRunspaceId=0\n\tPipelineId=\n\tCommandName=\n\tCommandType=\n\tScriptName=\n\tCommandPath=\n\tCommandLine="
+    - reason: "Windows 11 engine start"
+      fields:
+        Data: "NewEngineState=Available\n\tPreviousEngineState=None\n\tSequenceNumber=13\n\tHostName=ConsoleHost\n\tHostVersion=5.1.22621.2506\n\tHostId=0\n\tEngineVersion=5.1.22621.2506\n\tRunspaceId=0\n\tPipelineId=\n\tCommandName=\n\tCommandType=\n\tScriptName=\n\tCommandPath=\n\tCommandLine="

@@ -2,8 +2,7 @@ name: atomic
 
 # Firing tests: install the rustinel engine on real Windows, Linux + macOS
 # runners, perform an atomic action for each rule, and check the rule produced
-# an alert. Installs published engine releases (>= v1.1.0) via the official
-# install scripts.
+# an alert. Installs one pinned engine release via its official install scripts.
 on:
   workflow_dispatch:
     inputs:
@@ -47,7 +46,6 @@ jobs:
             shard: 1/1
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.shard == '1/1' && matrix.platform || format('{0} shard {1}', matrix.platform, matrix.shard) }}
-    continue-on-error: ${{ matrix.experimental || false }}
     steps:
       - uses: actions/checkout@v7
 
@@ -67,25 +65,28 @@ jobs:
         run: python tests/atomic/run_atomics.py --check-coverage --strict-essential
         shell: bash
 
-      # Resolve "latest" ourselves with an authenticated API call (GITHUB_TOKEN,
-      # ~1000 req/h/repo) instead of letting the install script make an
-      # unauthenticated one (60 req/h shared across all runner IPs -> 403).
-      # Passing --version then makes the install script skip the API call entirely.
-      - name: Resolve latest rustinel version
+      # Use the same release and revision as the vendored field contract.
+      # Passing --version makes the install script skip latest-release resolution.
+      - name: Read pinned rustinel version
         id: engine
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          tag="$(gh release view --repo Karib0u/rustinel --json tagName --jq '.tagName')"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
-          echo "Resolved rustinel engine version: ${tag#v}"
+          uv run python - <<'PY'
+          import os
+          import sys
+          sys.path.insert(0, "tools")
+          from engine_contract import read_pin
+          pin = read_pin()
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version={pin['version']}\nrevision={pin['revision']}\n")
+          print(f"Pinned Rustinel {pin['version']} at {pin['revision']}")
+          PY
         shell: bash
 
       - name: Install rustinel engine (Linux)
         if: matrix.platform == 'linux'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.sh \
                 | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi
@@ -99,7 +100,7 @@ jobs:
       - name: Install rustinel engine (Windows)
         if: matrix.platform == 'windows'
         run: |
-          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.ps1 -OutFile install.ps1
+          Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.ps1 -OutFile install.ps1
           $ok = $false
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             try {
@@ -118,7 +119,7 @@ jobs:
         if: matrix.platform == 'macos'
         run: |
           for attempt in 1 2 3; do
-            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/main/scripts/install/install.sh \
+            if curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/${{ steps.engine.outputs.revision }}/scripts/install/install.sh \
                 | sh -s -- --dir "$GITHUB_WORKSPACE/tests/atomic/.engine" --version "${{ steps.engine.outputs.version }}" --force; then
               exit 0
             fi
@@ -129,6 +130,16 @@ jobs:
           exit 1
         shell: bash
 
+      # The engine's own verdict on every built pack for this platform. Fails on a
+      # parse/compile error or a can-never-fire production rule; degraded only
+      # warns. Preview is reported (promotion candidates), never failed.
+      - name: Check Sigma compatibility (sigma doctor)
+        run: |
+          engine="$GITHUB_WORKSPACE/tests/atomic/.engine/rustinel"
+          [ -f "$engine.exe" ] && engine="$engine.exe"
+          uv run python tools/sigma_doctor.py --engine "$engine" --platform "${{ matrix.platform }}"
+        shell: bash
+
       # The canary atomic writes a tiny unsigned PE into the workspace and runs it
       # so the engine can hash a process image whose SHA-256 is known in advance.
       # Without the exclusion, real-time protection can quarantine it first.
@@ -136,6 +147,51 @@ jobs:
         if: matrix.platform == 'windows'
         run: Add-MpPreference -ExclusionPath "$env:GITHUB_WORKSPACE" -ErrorAction SilentlyContinue
         shell: pwsh
+
+      - name: Check Linux persistence replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/linux_persistence.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check Linux detection logic replay cases
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/linux_detection_logic.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check macOS detection logic replay cases
+        if: matrix.platform == 'macos'
+        run: python3 tests/replay/macos_detection_logic.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check Windows process detection replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/windows_process.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check Essential rule negative-evidence replay cases
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/essential_negatives.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check Advanced rule negative examples
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/advanced_negatives.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check network_connection replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/network_connection.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check shell-history tamper replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/shell_history.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check measured-expansion wave 1 replay regressions
+        if: matrix.platform == 'linux'
+        run: python3 tests/replay/expansion_wave1.py --engine tests/atomic/.engine/rustinel
+        shell: bash
 
       - name: Run atomic tests (Linux)
         if: matrix.platform == 'linux'
@@ -159,7 +215,7 @@ jobs:
             --filter "${{ github.event.inputs.filter }}"
         shell: pwsh
 
-      # macOS EndpointSecurity needs root; -E preserves the resolved engine
+      # macOS EndpointSecurity needs root; -E preserves the pinned engine
       # version + workspace env into the sudo'd process.
       - name: Run atomic tests (macOS)
         if: matrix.platform == 'macos'
@@ -181,6 +237,9 @@ jobs:
           if [ -d tests/atomic/.engine/logs ]; then
             sudo chown -R "$(id -u):$(id -g)" tests/atomic/.engine/logs
           fi
+          if [ -f tests/atomic/.engine/engine.stdout.log ]; then
+            sudo chown "$(id -u):$(id -g)" tests/atomic/.engine/engine.stdout.log
+          fi
         shell: bash
 
       - name: Upload report + engine logs
@@ -191,6 +250,7 @@ jobs:
           path: |
             tests/atomic/report-*.json
             tests/atomic/.engine/logs/
+            tests/atomic/.engine/engine.stdout.log
           include-hidden-files: true   # .engine/ is a dotdir, skipped otherwise
           if-no-files-found: warn
 

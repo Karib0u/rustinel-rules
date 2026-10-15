@@ -2,19 +2,21 @@ title: macOS Reverse Shell via /dev/tcp
 id: be06a6b0-fa9f-4df4-9d4a-9f8794037508
 status: experimental
 description: >
-  Detects shell command lines that use Bash's /dev/tcp pseudo-device for an
-  interactive reverse shell. This is a high-confidence post-exploitation
-  technique and is suitable for the macOS Essential tier because EndpointSecurity
-  provides native argv telemetry.
+  Detects shell command lines that wire a shell stream to the /dev/tcp
+  pseudo-device, the classic interactive reverse shell. /dev/tcp is handled by
+  the shell itself, and the bash Apple ships in /bin/bash (and /bin/sh, which is
+  the same binary) supports it, as do ksh and any bash from Homebrew, MacPorts or
+  a copy dropped by an attacker. zsh has no /dev/tcp and is not matched.
+  A bare port check such as `echo > /dev/tcp/host/80` is not matched.
+  Command-line evidence only: the connection itself is not observed.
 references:
   - https://attack.mitre.org/techniques/T1059/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-10
 tags:
   - attack.execution
-  - attack.command-and-control
   - attack.t1059.004
-  - attack.t1105
 logsource:
   category: process_creation
   product: macos
@@ -22,16 +24,19 @@ detection:
   selection_shell:
     Image|endswith:
       - '/bash'
-      - '/zsh'
       - '/sh'
+      - '/ksh'
+      - '/ksh93'
   selection_dev_tcp:
     CommandLine|contains: '/dev/tcp/'
   selection_redirect:
-    CommandLine|contains:
-      - '>&'
-      - '0>&1'
-      - '1>&'
-      - '2>&'
+    # A shell stream wired to the socket: `>& /dev/tcp/...`, a trailing `0>&1`,
+    # or `exec N<>/dev/tcp/...` followed by fd duplication. A bare
+    # `echo > /dev/tcp/host/80` port check does not match.
+    CommandLine|re:
+      - '>&\s*/dev/tcp/'
+      - '/dev/tcp/\S*\s+[0-9]?[<>]&[0-9]'
+      - '<>\s*/dev/tcp/.*[<>]&[0-9]'
   condition: selection_shell and selection_dev_tcp and selection_redirect
 falsepositives:
   - None expected; legitimate shell use of /dev/tcp with interactive stream redirection is rare.

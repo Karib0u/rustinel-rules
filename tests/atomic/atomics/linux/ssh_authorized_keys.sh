@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Atomic test - rule 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51
-#   "SSH authorized_keys Created or Replaced"  (file_event)
+#   "SSH authorized_keys Written"  (file_event)
 #
 # Writes an authorized_keys file under a disposable directory.
 set -u

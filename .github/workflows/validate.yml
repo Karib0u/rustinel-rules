@@ -25,10 +25,10 @@ jobs:
         run: uv sync --frozen
 
       - name: Lint (ruff)
-        run: uv run ruff check tools
+        run: uv run ruff check tools tests/replay
 
       - name: Format check (ruff)
-        run: uv run ruff format --check tools
+        run: uv run ruff format --check tools tests/replay
 
       - name: Type check (ty)
         run: uv run ty check
@@ -36,7 +36,7 @@ jobs:
       - name: Test atomic alert matching
         run: uv run python -m unittest discover -s tests/atomic -p 'test_*.py'
 
-      - name: Test tooling (version propagation)
+      - name: Test tooling
         run: uv run python -m unittest discover -s tests/tools -p 'test_*.py'
 
       - name: Validate rules and pack manifests
@@ -65,6 +65,12 @@ jobs:
       - name: Build website catalog (catalog.json)
         working-directory: tools
         run: uv run python build_catalog.py
+
+      # Repeats the engine's rules install checks and compares with the latest
+      # published index.json, so a build engines would refuse fails here first.
+      - name: Check packs against the engine install contract
+        working-directory: tools
+        run: uv run python check_engine_install.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

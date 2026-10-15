@@ -2,14 +2,18 @@ title: Suspicious Encoded PowerShell Command Line
 id: 7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60
 status: stable
 description: >
-  Detects PowerShell executed with an encoded command (-EncodedCommand / -enc
-  and common short forms), a common technique used to obfuscate malicious
-  payloads delivered through scripts, macros, or living-off-the-land execution.
+  Detects PowerShell started with an encoded command (-EncodedCommand), a
+  common technique used to obfuscate malicious payloads delivered through
+  scripts, macros, or living-off-the-land execution. The flag is matched as a
+  whole argument for every spelling PowerShell accepts (-e, -ec, and any prefix
+  of -EncodedCommand from -en up), so longer parameters such as -Encoding or
+  -EncodedArguments do not match.
 references:
   - https://attack.mitre.org/techniques/T1059/001/
   - https://attack.mitre.org/techniques/T1027/
 author: rustinel-rules
 date: 2026-06-03
+modified: 2026-10-08
 tags:
   - attack.execution
   - attack.t1059.001
@@ -20,21 +24,17 @@ logsource:
   product: windows
 detection:
   selection_img:
-    Image|endswith:
-      - '\powershell.exe'
-      - '\pwsh.exe'
+    - Image|endswith:
+        - '\powershell.exe'
+        - '\pwsh.exe'
+    - OriginalFileName:
+        - 'PowerShell.EXE'
+        - 'pwsh.dll'
   selection_flag:
-    CommandLine|contains|windash:
-      - ' /e '
-      - ' /en '
-      - ' /enc '
-      - ' /enco '
-      - ' /encodedcommand '
-      - ' -e '
-      - ' -en '
-      - ' -enc '
-      - ' -enco '
-      - ' -encodedcommand '
+    # Dash may be - / en dash, em dash or horizontal bar. The optional groups
+    # accept exactly the prefixes of "encodedcommand" (plus -ec), and the
+    # argument must end at whitespace, a quote or the end of the line.
+    CommandLine|re: '(?i)(^|[\s"''])[-/\x{2013}\x{2014}\x{2015}]e(c|n(c(o(d(e(d(c(o(m(m(a(n(d)?)?)?)?)?)?)?)?)?)?)?)?)?($|[\s"''])'
   condition: selection_img and selection_flag
 falsepositives:
   - Legitimate administration tooling and installers occasionally use encoded commands.

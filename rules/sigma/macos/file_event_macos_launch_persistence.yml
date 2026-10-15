@@ -1,16 +1,25 @@
-title: Launch Agent or Daemon Persistence Plist Created
+title: Launch Agent or Daemon Plist Written
 id: 4d4f5162-7e80-4193-9da3-4e5f60712304
 status: experimental
 description: >
-  Detects creation of a property-list file in a LaunchAgents or LaunchDaemons
-  directory, the primary macOS persistence mechanism. Legitimate application
-  installers also drop launch items here, so this is intended for the Advanced
-  tier with tuning. System-shipped items under /System are excluded.
+  Detects a property-list file written in a LaunchAgents or LaunchDaemons
+  directory, the primary macOS persistence location. Endpoint Security reports
+  the write when the file is closed, so this fires for a new plist and for an
+  existing one that is rewritten; it does not show that the item was ever
+  loaded (see the launchctl rule, 578195d3-de1a-4c46-84c8-b246a060474c, for
+  activation).
+  Application installers and management tools drop launch items here
+  constantly, so this is Advanced-tier. Writes by Apple's system components,
+  the installer, Homebrew and common management agents are excluded by writer;
+  when the writer is unknown the event is kept. The same location written by a
+  shell or scripting interpreter is a stronger signal covered separately by
+  8da551dd-08cf-4b73-b3cc-a18708f548b4.
 references:
   - https://attack.mitre.org/techniques/T1543/001/
   - https://attack.mitre.org/techniques/T1543/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.persistence
   - attack.t1543.001
@@ -24,14 +33,51 @@ detection:
       - '/Library/LaunchAgents/'
       - '/Library/LaunchDaemons/'
     TargetFilename|endswith: '.plist'
-  filter_system:
+  filter_system_path:
     TargetFilename|startswith: '/System/'
-  condition: selection and not filter_system
+  filter_system_writer:
+    Image|startswith:
+      - '/System/'
+      - '/usr/libexec/'
+      - '/usr/sbin/installer'
+  filter_managed_writer:
+    # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
+    # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
+    # case, so that also matched every /opt/homebrew/ shell and interpreter.
+    Image|contains:
+      - '/Library/Homebrew/'
+      - '/PackageKit.framework/'
+      - '/jamf'
+      - '/Jamf/'
+      - '/munki/'
+  condition: selection and not filter_system_path and not filter_system_writer and not filter_managed_writer
 falsepositives:
-  - Application installers and management tooling that register launch items.
+  - Application installers and management tooling that register launch items and are not in the writer filter.
 level: medium
 rustinel:
   telemetry:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_managed_writer"
+      guidance: "Add the paths of your MDM, package and deployment tools (Jamf, Munki, Kandji, Intune) to the writer filter."
+    - surface: "TargetFilename"
+      guidance: "Per-user LaunchAgents are the common developer case; scope to /Library/LaunchDaemons first if the volume is high."
+  negatives:
+    - reason: "system installer writing a daemon plist"
+      fields:
+        Image: "/System/Library/PrivateFrameworks/Install.framework/Support/installd"
+        TargetFilename: "/Library/LaunchDaemons/com.vendor.helper.plist"
+    - reason: "Homebrew registering a service plist"
+      fields:
+        Image: "/opt/homebrew/Library/Homebrew/vendor/portable-ruby/3.4.5/bin/ruby"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/homebrew.mxcl.postgresql.plist"
+    - reason: "Apple-owned launch daemon path"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/System/Library/LaunchDaemons/com.apple.example.plist"
+    - reason: "a non-plist file in the LaunchAgents directory"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/Users/alice/Library/LaunchAgents/README.txt"

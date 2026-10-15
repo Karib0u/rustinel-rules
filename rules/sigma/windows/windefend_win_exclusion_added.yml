@@ -1,0 +1,54 @@
+title: Microsoft Defender Exclusion Added
+id: efac4650-a3aa-4dd9-9f6f-679bfcf14c16
+status: experimental
+description: >
+  Detects Microsoft Defender Operational event 5007 where a scan exclusion was
+  added or changed: the new value is under the `Exclusions\\Paths`,
+  `Extensions`, `Processes` or `IpAddresses` configuration key. Attackers add an
+  exclusion for their staging directory or tool so it is never scanned. Fires
+  however the exclusion was written (Add-MpPreference, registry, Group Policy,
+  WMI). Requires the Defender Operational channel to be enabled.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/defender-endpoint/configure-exclusions-microsoft-defender-antivirus
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  product: windows
+  service: windefend
+detection:
+  selection:
+    EventID: 5007
+    NewValue|re: '(?i)\\Exclusions\\(Paths|Extensions|Processes|IpAddresses)\\'
+  condition: selection
+falsepositives:
+  - Administrators or endpoint-management policy adding vetted exclusions;
+    filter on the excluded value for known software.
+level: medium
+rustinel:
+  telemetry:
+    - windefend
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: "NewValue"
+      guidance: "Filter the excluded value of vetted software."
+    - surface: "EventID"
+      guidance: "Only 5007 with an Exclusions path matches."
+  negatives:
+    - reason: "scan schedule changed"
+      fields:
+        EventID: "5007"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Scan\\ScheduleDay = 0x0"
+    - reason: "signature update interval changed"
+      fields:
+        EventID: "5007"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Signature Updates\\SignatureUpdateInterval = 0x8"
+    - reason: "exclusion path in a different event ID"
+      fields:
+        EventID: "5000"
+        NewValue: "HKLM\\SOFTWARE\\Microsoft\\Windows Defender\\Exclusions\\Paths\\C:\\Tools = 0x0"

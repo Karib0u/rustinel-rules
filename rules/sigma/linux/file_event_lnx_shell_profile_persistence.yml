@@ -7,9 +7,11 @@ description: >
   Moderately noisy due to legitimate dotfile management, so intended for the
   Advanced tier.
 references:
+  - https://github.com/Karib0u/rustinel/issues/686
   - https://attack.mitre.org/techniques/T1546/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-02
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -32,8 +34,16 @@ detection:
     TargetFilename|endswith:
       - '/etc/bash.bashrc'
       - '/etc/profile'
-  condition: selection_user_rc or selection_system or selection_system_files
+  filter_container_unpack:
+    Image|endswith:
+      - '/containerd'
+      - '/dockerd'
+    TargetFilename|startswith:
+      - '/var/lib/containerd/'
+      - '/var/lib/docker/'
+  condition: (selection_user_rc or selection_system or selection_system_files) and not filter_container_unpack
 falsepositives:
+  - Image unpacking under custom runtime storage paths or by other runtimes.
   - Dotfile management, provisioning, and developer environment setup.
 level: medium
 rustinel:
@@ -41,3 +51,27 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "Image"
+      guidance: "Exclude dotfile managers, provisioning tools and package managers that write profile files."
+    - surface: "TargetFilename"
+      guidance: "Developer workstations edit .bashrc and .zshrc constantly; scope user rc files to servers, or alert only on /etc/profile.d and system files there."
+    - surface: "filter_container_unpack"
+      guidance: "Extend the startswith list when container runtimes use a custom storage root."
+  negatives:
+    - reason: "containerd unpacking an image layer that ships /root/.bashrc"
+      fields:
+        Image: "/usr/bin/containerd"
+        TargetFilename: "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs/root/.bashrc"
+    - reason: "dockerd extracting a layer under its storage root"
+      fields:
+        Image: "/usr/bin/dockerd"
+        TargetFilename: "/var/lib/docker/overlay2/ab12/diff/etc/profile"
+    - reason: "shell history, not a startup file"
+      fields:
+        Image: "/usr/bin/bash"
+        TargetFilename: "/home/alice/.bash_history"
+    - reason: "a profile backup that is never sourced"
+      fields:
+        Image: "/usr/bin/cp"
+        TargetFilename: "/home/alice/.bashrc.bak"

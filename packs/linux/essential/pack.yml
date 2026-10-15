@@ -11,23 +11,22 @@ status: experimental
 license: DRL-1.1
 extends: []
 attack_coverage:
-  - T1574.006
-  - T1098.004
-  - T1548.003
-  - T1059.004
-  - T1105
-  - T1505.003
-  - T1562.001
-  - T1496
-  - T1071
-  - T1547.006
   - T1014
+  - T1059.004
+  - T1071
+  - T1098.004
+  - T1105
   - T1136.001
+  - T1505.003
+  - T1547.006
+  - T1548.003
+  - T1562.001
+  - T1574.006
 telemetry_requirements:
   - process_creation
   - file_event
   - file_scan
-test_status: none
+test_status: atomic
 sources:
     manual:
       - https://attack.mitre.org/
@@ -35,7 +34,7 @@ rules:
     has:
         sigma:
           - 0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40   # Dynamic Linker Hijacking via ld.so.preload (sigma)
-          - 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51   # SSH authorized_keys Created or Replaced (sigma)
+          - 1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51   # SSH authorized_keys Written (sigma)
           - 2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62   # Sudoers Configuration Tampering (sigma)
           - a3c5c821-004a-4e52-8684-0f7f9ea0404c   # Linux Reverse Shell via /dev/tcp (sigma)
           - 8fd4d1d9-38cf-4704-8009-00e41a009c98   # Linux Web Server Spawning Interactive Shell (sigma)
@@ -44,5 +43,4 @@ rules:
           - 3f32d825-006a-45e9-b5a9-6e7edeeff13c   # Kernel Module Load from Suspicious Path (sigma)
           - 66fd4673-d86b-41d1-ba33-60d7c66dc962   # Backdoor Account Creation (Duplicate UID 0) (sigma)
         yara:
-          - yara-lnx-xmrig-coinminer                # XMRig / coinminer strings in Linux ELF binaries (yara)
           - yara-lnx-msfvenom-stager   # Metasploit / Mettle stager markers in ELF binaries (yara)

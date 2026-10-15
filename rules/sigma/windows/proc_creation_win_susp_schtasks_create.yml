@@ -34,3 +34,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude software installers and endpoint-management agents that create tasks."
+    - surface: "CommandLine"
+      guidance: "Filter the task names your management tooling creates (/tn)."
+  negatives:
+    - reason: "querying tasks"
+      fields:
+        Image: "C:\\Windows\\System32\\schtasks.exe"
+        CommandLine: "schtasks.exe /query /fo LIST"
+    - reason: "running an existing task"
+      fields:
+        Image: "C:\\Windows\\System32\\schtasks.exe"
+        CommandLine: "schtasks.exe /run /tn \\Vendor\\Update"
+    - reason: "deleting a task"
+      fields:
+        Image: "C:\\Windows\\System32\\schtasks.exe"
+        CommandLine: "schtasks.exe /delete /tn Old /f"
+    - reason: "a shell mentioning the command"
+      fields:
+        Image: "C:\\Windows\\System32\\cmd.exe"
+        CommandLine: "cmd.exe /c echo schtasks /create"

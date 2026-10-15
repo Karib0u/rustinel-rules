@@ -11,6 +11,10 @@
 #                      match. Promote when the blocking issue lands.
 #   rewrite-required   the telemetry exists but the detection is shaped for a
 #                      different sensor and must be rewritten before it ships.
+#   rejected           the telemetry exists, but the logic itself is unsound (too
+#                      noisy, trivially evaded, or wrong). Kept so the decision
+#                      and its reasoning are not lost or re-litigated; promote
+#                      only after the logic is redesigned.
 #   test-only          fixture content that exists to exercise the pipeline in
 #                      tests/atomic. Never a production detection.
 #
@@ -19,24 +23,6 @@
 # references anything listed below.
 schema: rustinel-rules/preview@1
 entries:
-  - id: 3a1cdc64-a2a1-444b-a04b-32a3f1d09a99
-    kind: sigma
-    path: sigma/windows/task_creation_win_susp_scheduled_task_action.yml
-    state: telemetry-blocked
-    missing_fields:
-      - task_creation.TaskContent
-    reason: >
-      Every selection requires TaskContent. TaskScheduler event 106 — the only
-      task_creation source the engine collects — does not carry the task XML
-      definition, so the field is `never` in the engine field-availability
-      contract and the rule cannot match any event. Was shipped in Windows
-      Essential, where it contributed nothing.
-    blocker: https://github.com/Karib0u/rustinel/issues/479
-    notes: >
-      Promotion needs Security event 4698 (task created, carries the XML) or
-      task-file enrichment on 106. The TaskName / UserName branch is a separate,
-      shippable rule and is tracked in Karib0u/rustinel-rules#41.
-
   - id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
     kind: sigma
     path: sigma/windows/image_load_win_hunting_unsigned_dll_userwritable.yml
@@ -52,7 +38,8 @@ entries:
     notes: >
       Needs Authenticode enrichment (rustinel#320), which in turn needs the async
       enrichment contract (rustinel#427). Without #427 a rule on `Signed` still
-      evaluates before enrichment and still never matches.
+      evaluates before enrichment and still never matches. Re-checked against the
+      certified pin (Rustinel 1.9.1): `image_load.Signed` is still `never`.
 
   - id: ioc-eicar-test
     kind: ioc
@@ -81,3 +68,52 @@ entries:
       Loaded into the atomic run by tools/build_packs.py --fixtures, which
       flattens test-only IOC sets into build/fixtures/ioc/ for
       tests/atomic/run_atomics.py to overlay onto the staged pack.
+
+  - id: 37aafcf3-ac54-4833-9b14-633e3a2af312
+    kind: sigma
+    path: sigma/linux/fixture_proc_creation_linux_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the linux Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: d943bd63-a255-4b5c-ba0d-2155d49cf2d3
+    kind: sigma
+    path: sigma/linux/fixture_proc_creation_linux_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the linux base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: 56e1042f-d22b-4eb5-b5b0-2c5a37e66c0e
+    kind: sigma
+    path: sigma/windows/fixture_proc_creation_windows_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the windows Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: 3ea62257-1966-4582-b381-a5adcaf806a8
+    kind: sigma
+    path: sigma/windows/fixture_proc_creation_windows_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the windows base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: 16c1796c-f66a-4bf3-8e69-588a2287e1f3
+    kind: sigma
+    path: sigma/macos/fixture_proc_creation_macos_corr_base.yml
+    state: test-only
+    reason: >
+      Base marker rule for the macos Sigma correlation firing test (rustinel-rules#61). Matches only a unique command-line marker.
+
+  - id: ac1a60e4-e530-43ff-8553-e0624f374305
+    kind: sigma
+    path: sigma/macos/fixture_proc_creation_macos_corr.yml
+    state: test-only
+    reason: >
+      event_count correlation over the macos base marker rule. Overlaid onto the staged pack by the atomic harness; never packaged.
+
+  - id: yara-fixture-memory-marker
+    kind: yara
+    path: yara/common/fixture_memory_marker.yar
+    state: test-only
+    reason: >
+      Marker rule for the YARA process-memory firing test (rustinel-rules#61). The matching string is assembled at runtime by a long-lived atomic process, so only a memory scan can see it.

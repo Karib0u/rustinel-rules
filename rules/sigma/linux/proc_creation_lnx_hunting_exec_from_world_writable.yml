@@ -1,0 +1,37 @@
+title: Execution from World-Writable / Temporary Directory (Hunting)
+id: 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6
+status: experimental
+description: >
+  Hunting signal for a process executing from a world-writable or temporary
+  location (/tmp, /var/tmp, /dev/shm). Common for dropped payloads and in-memory
+  staging, but build tooling, CI jobs, installers and container entrypoints
+  routinely run from these paths too, so it is a lead for triage and not a
+  standing alert. It makes no claim about masquerading: the path says where the
+  binary ran from, not what it pretends to be.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+author: rustinel-rules
+date: 2026-06-04
+modified: 2026-10-08
+tags:
+  - attack.execution
+  - attack.t1059.004
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    Image|startswith:
+      - '/tmp/'
+      - '/var/tmp/'
+      - '/dev/shm/'
+  condition: selection
+falsepositives:
+  - Build systems, package managers and installers that execute helper binaries from temp paths.
+  - Container entrypoints and CI jobs that intentionally stage executables in temporary directories.
+level: low
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: high
+  test_status: atomic

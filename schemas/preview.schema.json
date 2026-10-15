@@ -39,8 +39,8 @@
         },
         "state": {
           "type": "string",
-          "description": "telemetry-blocked = a required field is never populated; rewrite-required = shaped for a different sensor; test-only = harness fixture, never a detection.",
-          "enum": ["telemetry-blocked", "rewrite-required", "test-only"]
+          "description": "telemetry-blocked = a required field is never populated; rewrite-required = shaped for a different sensor; rejected = the detection logic itself is unsound and must not ship as written; test-only = harness fixture, never a detection.",
+          "enum": ["telemetry-blocked", "rewrite-required", "rejected", "test-only"]
         },
         "missing_fields": {
           "type": "array",

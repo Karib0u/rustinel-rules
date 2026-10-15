@@ -47,6 +47,13 @@
       "script": "linux/webserver_spawns_shell.sh"
     },
     {
+      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
+      "name": "linux_webserver_spawns_shell_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webserver_spawns_shell_php_versioned.sh"
+    },
+    {
       "id": "9ac8732e-1818-4cda-89ac-01ca08a7b836",
       "name": "linux_sshd_config_tamper",
       "platform": "linux",
@@ -101,7 +108,10 @@
       "platform": "linux",
       "engine": "ioc",
       "script": "linux/canary_ioc.sh",
-      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-hash"
+      }
     },
     {
       "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
@@ -116,6 +126,13 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/lsass_comsvcs_minidump.ps1"
+    },
+    {
+      "id": "7d2a8f31-4b6c-49e0-a1f8-3c5d9e0b2a05",
+      "name": "windows_lsass_comsvcs_minidump_ordinal",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/lsass_comsvcs_minidump_ordinal.ps1"
     },
     {
       "id": "1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04",
@@ -157,7 +174,23 @@
       "name": "windows_defender_registry_tamper",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/defender_registry_tamper.ps1"
+      "script": "windows/defender_registry_tamper.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "Microsoft Defender Tampering via Registry"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\DisableRealtimeMonitoring"
+        }
+      ],
+      "negatives": [
+        {
+          "script": "windows/defender_registry_tamper_negative.ps1",
+          "marker": "DWORD (0x00000000)"
+        }
+      ]
     },
     {
       "id": "e7a1b9c2-4d6f-4a83-b2e5-1c0d9f3a4b20",
@@ -178,7 +211,23 @@
       "name": "windows_wdigest_registry",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/wdigest_registry.ps1"
+      "script": "windows/wdigest_registry.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "WDigest Cleartext Credential Caching Enabled"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\WDigest\\UseLogonCredential"
+        }
+      ],
+      "negatives": [
+        {
+          "script": "windows/wdigest_registry_negative.ps1",
+          "marker": "DWORD (0x00000000)"
+        }
+      ]
     },
     {
       "id": "3e2d1c0b-5a4f-4938-8271-6a5b4c3d2e10",
@@ -208,8 +257,20 @@
       "engine": "sigma",
       "script": "windows/run_key_persistence.ps1",
       "expect": [
-        {"field": "rule.name", "equals": "Registry Run Key Persistence"},
-        {"field": "registry.path", "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"}
+        {
+          "field": "rule.name",
+          "equals": "Registry Run Key Persistence"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\CurrentVersion\\Run\\RustinelAtomicTest"
+        }
+      ],
+      "negatives": [
+        {
+          "script": "windows/run_key_persistence_negative.ps1",
+          "marker": "RunRustinelNegative"
+        }
       ]
     },
     {
@@ -220,11 +281,32 @@
       "script": "windows/schtasks_create.ps1"
     },
     {
+      "id": "3a1cdc64-a2a1-444b-a04b-32a3f1d09a99",
+      "name": "windows_scheduled_task_suspicious_action",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/scheduled_task_suspicious_action.ps1"
+    },
+    {
       "id": "2a3c3182-80b8-42d4-bd39-83c55582ef70",
       "name": "windows_wmic_process_create",
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/wmic_process_create.ps1"
+    },
+    {
+      "id": "a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22",
+      "name": "windows_ntds_ifm",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ntds_ifm.ps1"
+    },
+    {
+      "id": "6228b718-bcc1-4901-80b9-e2a6fc23a4a6",
+      "name": "windows_ntds_dit_copy",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ntds_dit_copy.ps1"
     },
     {
       "id": "yara-win-mimikatz-strings",
@@ -239,7 +321,10 @@
       "platform": "windows",
       "engine": "ioc",
       "script": "windows/canary_ioc.ps1",
-      "expect": { "field": "rule.description", "contains": "canary-exec-hash" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-hash"
+      }
     },
     {
       "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
@@ -247,6 +332,13 @@
       "platform": "linux",
       "engine": "sigma",
       "script": "linux/nc_exec_reverse_shell.sh"
+    },
+    {
+      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
+      "name": "linux_nc_fifo_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/nc_fifo_reverse_shell.sh"
     },
     {
       "id": "3f32d825-006a-45e9-b5a9-6e7edeeff13c",
@@ -277,6 +369,13 @@
       "script": "linux/chmod_suid.sh"
     },
     {
+      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
+      "name": "linux_chmod_suid_plus_s",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chmod_suid_plus_s.sh"
+    },
+    {
       "id": "1bb5e9e4-f17e-476e-8e77-aaa1858f12f7",
       "name": "linux_udev_persistence",
       "platform": "linux",
@@ -289,6 +388,13 @@
       "platform": "linux",
       "engine": "sigma",
       "script": "linux/webshell_write.sh"
+    },
+    {
+      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
+      "name": "linux_webshell_write_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webshell_write_php_versioned.sh"
     },
     {
       "id": "d24c4943-3e22-481f-99ee-ca631b8a77af",
@@ -337,14 +443,83 @@
       "name": "windows_ifeo_debugger",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/ifeo_debugger.ps1"
+      "script": "windows/ifeo_debugger.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\rustinel_atomic.exe\\Debugger"
+        }
+      ],
+      "negatives": [
+        {
+          "script": "windows/ifeo_debugger_negative.ps1",
+          "marker": "rustinel_negative.exe"
+        }
+      ]
+    },
+    {
+      "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
+      "name": "windows_ifeo_globalflag",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ifeo_globalflag.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\rustinel_atomic.exe\\GlobalFlag"
+        }
+      ]
+    },
+    {
+      "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
+      "name": "windows_silentprocessexit_monitor",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ifeo_silentprocessexit.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "IFEO Debugger or SilentProcessExit Hijack"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\SilentProcessExit\\rustinel_atomic.exe\\MonitorProcess"
+        }
+      ]
     },
     {
       "id": "52b94494-756b-40d7-af01-8d0c7d54a6cc",
       "name": "windows_winlogon_helper",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/winlogon_helper.ps1"
+      "script": "windows/winlogon_helper.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "Winlogon Helper DLL or Shell Modification"
+        },
+        {
+          "field": "registry.path",
+          "endswith": "\\Winlogon\\Shell"
+        }
+      ],
+      "negatives": [
+        {
+          "script": "windows/winlogon_helper_negative.ps1",
+          "marker": [
+            "\"explorer.exe\"",
+            "userinit.exe,\""
+          ]
+        }
+      ]
     },
     {
       "id": "43c59081-d5ec-4153-9e26-04e66e07461a",
@@ -386,7 +561,10 @@
       "name": "macos_reverse_shell_dev_tcp",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/reverse_shell_dev_tcp.sh"
+      "script": "macos/reverse_shell_dev_tcp.sh",
+      "negatives": [
+        {"script": "macos/reverse_shell_dev_tcp_port_check_negative.sh", "marker": "rustinel_atomic_neg"}
+      ]
     },
     {
       "id": "7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01",
@@ -403,11 +581,18 @@
       "script": "macos/osascript_admin_prompt.sh"
     },
     {
-      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
       "name": "macos_gatekeeper_bypass",
       "platform": "macos",
       "engine": "sigma",
       "script": "macos/gatekeeper_bypass.sh"
+    },
+    {
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
+      "name": "macos_gatekeeper_bypass_clear",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_bypass_clear.sh"
     },
     {
       "id": "4d4f5162-7e80-4193-9da3-4e5f60712304",
@@ -421,7 +606,10 @@
       "name": "macos_download_execute_cradle",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/download_execute_cradle.sh"
+      "script": "macos/download_execute_cradle.sh",
+      "negatives": [
+        {"script": "macos/download_execute_checksum_negative.sh", "marker": "rustinel_atomic_neg"}
+      ]
     },
     {
       "id": "2f617384-9012-43b5-9fc5-60718293a416",
@@ -442,8 +630,7 @@
       "name": "macos_coinminer_yara_fixture",
       "platform": "macos",
       "engine": "yara",
-      "script": "macos/coinminer_yara_fixture.sh",
-      "allow_failure": true
+      "script": "macos/coinminer_yara_fixture.sh"
     },
     {
       "id": "ioc-canary-exec",
@@ -451,7 +638,10 @@
       "platform": "macos",
       "engine": "ioc",
       "script": "macos/canary_ioc.sh",
-      "expect": { "field": "rule.description", "contains": "canary-exec-path" }
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-path"
+      }
     },
     {
       "id": "6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb",
@@ -528,7 +718,489 @@
       "name": "macos_launchctl_susp_load",
       "platform": "macos",
       "engine": "sigma",
-      "script": "macos/launchctl_susp_load.sh"
+      "script": "macos/launchctl_susp_load.sh",
+      "negatives": [
+        {"script": "macos/launchctl_unload_negative.sh", "marker": "rustinel_atomic_launch_neg"}
+      ]
+    },
+    {
+      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "name": "macos_gatekeeper_global_disable",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_global_disable.sh"
+    },
+    {
+      "id": "d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd",
+      "name": "macos_osascript_admin_shell",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/osascript_admin_shell.sh"
+    },
+    {
+      "id": "97b0f988-7268-4854-9251-4da5a8397da9",
+      "name": "macos_account_admin_group",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/account_admin_group.sh"
+    },
+    {
+      "id": "55eaad6e-88a1-4eae-8014-24d96a68f965",
+      "name": "macos_hidden_user_account",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/hidden_user_account.sh"
+    },
+    {
+      "id": "8da551dd-08cf-4b73-b3cc-a18708f548b4",
+      "name": "macos_launch_persistence_scripted",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launch_persistence_scripted.sh"
+    },
+    {
+      "id": "d0c6216e-881c-408f-8e72-0a466522306b",
+      "name": "linux_shell_outbound_connect",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/shell_outbound_connect.sh"
+    },
+    {
+      "id": "59bbd501-1c61-45c9-940d-9465cabd36c4",
+      "name": "windows_startup_folder_drop",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/startup_folder_drop.ps1"
+    },
+    {
+      "id": "717396f6-aff0-49b0-b8f3-53568e276d5c",
+      "name": "windows_lolbin_outbound_connect",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/lolbin_outbound_connect.ps1",
+      "allow_failure": true,
+      "allow_failure_reason": "The rule is test_status manual: Kernel-Network connect events reached it in only 2 of 21 recent hosted runs, so this stays informational until the engine delivers them reliably; the rule excludes loopback targets."
+    },
+    {
+      "id": "86c19f1a-add5-4553-9c24-f76e7fe3da9d",
+      "name": "windows_automation_dll_foreign_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/automation_dll_foreign_host.ps1"
+    },
+    {
+      "id": "31ddbaff-1a32-4eb6-b7ce-647b59aeb901",
+      "name": "windows_amsi_bypass_scriptblock",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/amsi_bypass_scriptblock.ps1"
+    },
+    {
+      "id": "c3d4e5f6-9012-4234-9c5d-6e7f8a901a12",
+      "name": "windows_download_cradle_scriptblock",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/download_cradle_scriptblock.ps1"
+    },
+    {
+      "id": "d4e5f6a7-0123-4345-9d6e-7f8a9b012a13",
+      "name": "windows_service_binary_path",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/service_binary_path.ps1"
+    },
+    {
+      "id": "4aae4b03-4807-428a-ac89-5c5f3cda65e4",
+      "name": "windows_recon_commands",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/recon_commands.ps1"
+    },
+    {
+      "id": "yara-lnx-sliver-implant",
+      "name": "linux_sliver_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/sliver_yara_fixture.sh"
+    },
+    {
+      "id": "yara-win-sliver-implant",
+      "name": "windows_sliver_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/sliver_yara_fixture.ps1"
+    },
+    {
+      "id": "yara-win-cobaltstrike-beacon",
+      "name": "windows_cobaltstrike_yara_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/cobaltstrike_yara_fixture.ps1"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_ip",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_domain",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "d943bd63-a255-4b5c-ba0d-2155d49cf2d3",
+      "name": "linux_sigma_correlation_fixture",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "linux_yara_memory_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "windows_canary_ioc_ip",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/ioc_ip_domain.ps1",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "windows_canary_ioc_domain",
+      "platform": "windows",
+      "engine": "ioc",
+      "script": "windows/ioc_ip_domain.ps1",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "3ea62257-1966-4582-b381-a5adcaf806a8",
+      "name": "windows_sigma_correlation_fixture",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/sigma_correlation.ps1"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "windows_yara_memory_fixture",
+      "platform": "windows",
+      "engine": "yara",
+      "script": "windows/yara_memory_marker.ps1",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_ip",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      }
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_domain",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      }
+    },
+    {
+      "id": "ac1a60e4-e530-43ff-8553-e0624f374305",
+      "name": "macos_sigma_correlation_fixture",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "macos_yara_memory_fixture",
+      "platform": "macos",
+      "engine": "yara",
+      "script": "macos/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "35866351-9855-465f-9927-d10eef7c8aea",
+      "name": "windows_amsi_provider_removed",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/amsi_provider_removed.ps1",
+      "negatives": [
+        {
+          "script": "windows/amsi_provider_removed_negative.ps1",
+          "marker": "RustinelAtomicNegative"
+        }
+      ]
+    },
+    {
+      "id": "127db158-346f-4244-b2ad-1522e7c3c2a1",
+      "name": "windows_prefetch_deleted",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/prefetch_deleted.ps1",
+      "negatives": [
+        {
+          "script": "windows/prefetch_deleted_negative.ps1",
+          "marker": "rustinel_negative"
+        }
+      ]
+    },
+    {
+      "id": "5ffa485e-7667-4ecc-a17c-fc5f9068c0d4",
+      "name": "windows_renamed_system_binary",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/renamed_system_binary.ps1",
+      "negatives": [
+        {
+          "script": "windows/renamed_system_binary_negative.ps1",
+          "marker": "rustinel_negative_renamed"
+        }
+      ]
+    },
+    {
+      "id": "ad5acb04-ea4e-4d6d-9719-85042d2963b5",
+      "name": "windows_timestomp_script_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/timestomp_script_host.ps1",
+      "negatives": [
+        {
+          "script": "windows/timestomp_script_host_negative.ps1",
+          "marker": "rustinel_negative_timestomp"
+        }
+      ]
+    },
+    {
+      "id": "c2f19723-1801-48d4-a45f-c47f2f9d41b5",
+      "name": "windows_dns_tunnel_service",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dns_tunnel_service.ps1",
+      "negatives": [
+        {
+          "script": "windows/dns_tunnel_service_negative.ps1",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "d0e8f644-2661-4f99-b1b2-69eb70abe050",
+      "name": "windows_ransomware_mass_rename",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ransomware_mass_rename.ps1",
+      "negatives": [
+        {
+          "script": "windows/ransomware_mass_rename_negative.ps1",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
+      "name": "linux_suid_shell_euid0",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/suid_shell_euid0.sh",
+      "negatives": [
+        {
+          "script": "linux/suid_shell_euid0_negative.sh",
+          "marker": "rustinel_negative_suid"
+        }
+      ]
+    },
+    {
+      "id": "300f4d0e-79ef-4c53-9461-7b3f4e468537",
+      "name": "linux_dns_tunnel_service",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "linux/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
+      "name": "linux_ransomware_mass_rename",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "linux/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "e6aa2995-f56a-454a-af2c-14db0ec296ee",
+      "name": "macos_shell_outbound_connect",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_outbound_connect.sh"
+    },
+    {
+      "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
+      "name": "macos_dns_tunnel_service",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "macos/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
+      "name": "macos_ransomware_mass_rename",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "macos/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "e813d6f6-5dbb-4587-a60e-20a04481fdc6",
+      "name": "windows_security_log_cleared",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_log_cleared.ps1"
+    },
+    {
+      "id": "5a2fd413-6826-47af-8b6b-9e069058c807",
+      "name": "windows_audit_policy_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/audit_policy_disabled.ps1"
+    },
+    {
+      "id": "859d9985-7720-42b1-a557-c1f6f8972642",
+      "name": "windows_privileged_group_member_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/privileged_group_member_added.ps1"
+    },
+    {
+      "id": "2095766d-dd72-41f2-b315-3438406c009a",
+      "name": "windows_security_service_install",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/security_service_install.ps1"
+    },
+    {
+      "id": "3781aa92-44a2-4a03-a2d0-c8fb08e1110e",
+      "name": "windows_ps_module_defender_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1"
+    },
+    {
+      "id": "efac4650-a3aa-4dd9-9f6f-679bfcf14c16",
+      "name": "windows_defender_exclusion_added",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_defender_exclusion.ps1"
+    },
+    {
+      "id": "92557796-ce11-410a-b976-dd63dd189b82",
+      "name": "windows_ps_module_offensive_cmdlet",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ps_module_offensive_cmdlet.ps1"
+    },
+    {
+      "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
+      "name": "windows_defender_realtime_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/defender_realtime_disabled.ps1"
+    },
+    {
+      "id": "e3136f60-ae86-4333-9ea5-64e4664a0bb1",
+      "name": "windows_wmi_permanent_consumer_binding",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmi_subscription.ps1"
+    },
+    {
+      "id": "3feb077a-6922-4052-93b8-7b95156ca1e5",
+      "name": "windows_user_account_created",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
+    },
+    {
+      "id": "410d4870-cc7e-4cc9-a551-0fb32c136c7e",
+      "name": "windows_account_created_and_privileged",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/account_created.ps1"
     }
   ]
 }

@@ -99,8 +99,17 @@ def as_list(value) -> list[str]:
     return [str(value).strip()] if str(value).strip() else []
 
 
-def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dict:
-    """Build the full, self-contained record for a single detection artifact."""
+def rule_record(
+    art: lib.Artifact,
+    pack_ids: list[str],
+    attack_map: dict,
+    artifacts_by_id: dict[str, lib.Artifact] | None = None,
+) -> dict:
+    """Build the full, self-contained record for a single detection artifact.
+
+    `artifacts_by_id` lets a correlation take its platform from the rules it
+    references, since a correlation document has no log source of its own.
+    """
     techniques = sorted(lib.artifact_attack_techniques(art))
     tactics: set[str] = set()
 
@@ -112,7 +121,15 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         status = str(meta.get("status") or "").strip().lower() or None
         logsource = meta.get("logsource") or {}
         product = str(logsource.get("product") or "").strip().lower() or None
-        category = str(logsource.get("category") or "").strip().lower() or None
+        category = lib.logsource_category(logsource) or None
+        if lib.is_correlation(meta):
+            category = "correlation"
+            for ref in lib.correlation_rule_ids(meta):
+                target = (artifacts_by_id or {}).get(ref)
+                if target is not None:
+                    ref_logsource = target.meta.get("logsource") or {}
+                    product = str(ref_logsource.get("product") or "").strip().lower() or None
+                    break
         references = as_list(meta.get("references"))
         falsepositives = as_list(meta.get("falsepositives"))
         author = str(meta.get("author") or "").strip() or None
@@ -121,6 +138,11 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         telemetry = as_list(rustinel.get("telemetry"))
         efp = str(rustinel.get("expected_false_positive_level") or "").strip().lower() or None
         test_status = str(rustinel.get("test_status") or "").strip().lower() or None
+        tuning = [
+            {"surface": str(t["surface"]), "guidance": str(t["guidance"])}
+            for t in (rustinel.get("tuning") or [])
+            if isinstance(t, dict) and t.get("surface") and t.get("guidance")
+        ]
         os_name = product or "windows"
         for tag in as_list(meta.get("tags")):
             tactic_match = _TACTIC_NAME_RE.match(tag)
@@ -145,6 +167,7 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         telemetry = as_list(meta.get("telemetry") or "file_scan")
         efp = (meta.get("expected_false_positive_level") or "").strip().lower() or None
         test_status = (meta.get("test_status") or "").strip().lower() or None
+        tuning = []
         os_name = product or "windows"
         source_lang = "yara"
 
@@ -164,6 +187,7 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         telemetry = ["file_scan"]
         efp = None
         test_status = None
+        tuning = []
         os_name = product
         source_lang = "yaml"
 
@@ -196,6 +220,7 @@ def rule_record(art: lib.Artifact, pack_ids: list[str], attack_map: dict) -> dic
         "telemetry": telemetry,
         "expected_false_positive_level": efp,
         "test_status": test_status,
+        "tuning": tuning,
         "author": author,
         "date": date,
         "packs": pack_ids,
@@ -231,6 +256,7 @@ def build_catalog(version: str) -> dict:
                 "status": pack.get("status"),
                 "requires_rustinel": pack.get("requires_rustinel"),
                 "expected_false_positive_level": pack.get("expected_false_positive_level"),
+                "active_response_eligible": lib.active_response_eligible(pack),
                 "extends": as_list(pack.get("extends")),
                 "attack_coverage": as_list(pack.get("attack_coverage")),
                 "telemetry_requirements": as_list(pack.get("telemetry_requirements")),
@@ -248,7 +274,15 @@ def build_catalog(version: str) -> dict:
             }
         )
 
-    rules = [rule_record(a, rule_packs.get(a.id, []), attack_map) for a in artifacts]
+    artifacts_by_id = {a.id: a for a in artifacts}
+    rules = [
+        rule_record(a, rule_packs.get(a.id, []), attack_map, artifacts_by_id) for a in artifacts
+    ]
+    # A rule is eligible for active response only if some pack that ships it is.
+    # Advanced rules also ride inside Hunting, but stay eligible via Advanced.
+    eligible_packs = {p["id"] for p in pack_entries if p["active_response_eligible"]}
+    for r in rules:
+        r["active_response_eligible"] = any(pid in eligible_packs for pid in r["packs"])
 
     # Warn (don't fail) on any technique missing from the curated ATT&CK map so
     # the build still succeeds but a maintainer notices the gap.

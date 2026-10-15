@@ -1,0 +1,33 @@
+title: User Account Created
+id: 3feb077a-6922-4052-93b8-7b95156ca1e5
+status: experimental
+description: >
+  Detects Security event 4720, a user account created. On its own this is routine
+  administration, so it is a hunting lead and the base event for the "Account
+  Created and Added to Privileged Group" correlation. Requires the "User Account
+  Management" audit subcategory (on by default for success).
+references:
+  - https://attack.mitre.org/techniques/T1136/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4720
+  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.persistence
+  - attack.t1136.001
+  - attack.t1136.002
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4720
+  condition: selection
+falsepositives:
+  - Routine account provisioning.
+level: informational
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: high
+  test_status: atomic

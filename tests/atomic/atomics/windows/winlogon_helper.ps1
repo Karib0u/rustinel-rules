@@ -1,14 +1,12 @@
 # Atomic test - rule 52b94494-756b-40d7-af01-8d0c7d54a6cc
-#   "Winlogon Helper DLL or Shell Modification"  (registry_event)
+#   "Winlogon Helper DLL or Shell Modification"  (registry_set)
 #
-# Creates a Winlogon key whose path ends in the watched Shell value name, under
-# HKCU only, then removes it. Registry telemetry exposes the key path but not the
-# value name.
+# Sets a non-default Shell value under an HKCU-only Winlogon key (the live HKLM
+# value is never touched), then removes the key.
 $ErrorActionPreference = 'SilentlyContinue'
-$base = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon'
-$key = "$base\Shell"
+$key = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Winlogon'
 New-Item -Path $key -Force | Out-Null
-New-ItemProperty -Path $key -Name 'AtomicValue' -Value 'explorer.exe' -PropertyType String -Force | Out-Null
+New-ItemProperty -Path $key -Name 'Shell' -Value 'explorer.exe,rustinel_atomic.exe' -PropertyType String -Force | Out-Null
 Start-Sleep -Seconds 1
-Remove-Item $base -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item $key -Recurse -Force -ErrorAction SilentlyContinue
 exit 0

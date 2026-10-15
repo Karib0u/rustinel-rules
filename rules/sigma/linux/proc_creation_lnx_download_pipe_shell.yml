@@ -32,17 +32,9 @@ detection:
       - 'wget '
       - 'fetch '
   selection_pipe:
-    CommandLine|contains:
-      - '| sh'
-      - '|sh'
-      - '| bash'
-      - '|bash'
-      - '| zsh'
-      - '|zsh'
-      - '| python'
-      - '|python'
-      - '| perl'
-      - '|perl'
+    # The interpreter is the pipe target as a whole word, optionally behind
+    # sudo or env. `| sh` must not match `| shasum` or `| sha256sum`.
+    CommandLine|re: '\|\s*(sudo\s+(-\S+\s+)*|env\s+)?(/\S*/)?((ba|z|da)?sh|python[0-9.]*|perl[0-9.]*)(\s|$|[;&)''"])'
   condition: selection_shell and selection_download and selection_pipe
 falsepositives:
   - Legitimate software bootstrap scripts and administrative install one-liners.
@@ -52,3 +44,25 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude CI runners and provisioning agents whose bootstrap steps legitimately pipe a download into a shell."
+    - surface: "CommandLine"
+      guidance: "Allowlist the vendor install hosts your fleet uses (a URL prefix) instead of suppressing the rule."
+  negatives:
+    - reason: "download piped to a checksum tool, not a shell"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'curl -fsSL https://example.test/a.tgz | sha256sum'"
+    - reason: "download written to disk, nothing executed"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'curl -fsSL https://example.test/a.tgz -o /tmp/a.tgz'"
+    - reason: "download piped to tar"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'wget -qO- https://example.test/a.tgz | tar xz -C /opt'"
+    - reason: "shell piping local data with no download"
+      fields:
+        Image: "/usr/bin/bash"
+        CommandLine: "bash -c 'cat install.sh | sh'"

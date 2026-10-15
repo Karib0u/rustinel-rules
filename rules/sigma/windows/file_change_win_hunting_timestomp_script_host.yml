@@ -1,0 +1,53 @@
+title: File Timestamp Changed by Script Host
+id: ad5acb04-ea4e-4d6d-9719-85042d2963b5
+status: experimental
+description: >
+  Hunting lead for timestomping: a script host (PowerShell, pwsh, wscript,
+  cscript, mshta) changing the creation time of an executable or script file.
+  Attackers back-date dropped payloads to blend in with system files and defeat
+  timeline analysis. File-time changes by ordinary software are common, so the
+  rule is limited to script-host actors and executable or script targets, and is
+  a lead for an analyst rather than a verdict.
+  Rustinel does not populate CreationUtcTime or PreviousCreationUtcTime, so the
+  old and new times cannot be compared here.
+references:
+  - https://attack.mitre.org/techniques/T1070/006/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.defense-evasion
+  - attack.t1070.006
+logsource:
+  category: file_change
+  product: windows
+detection:
+  selection_actor:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+      - '\mshta.exe'
+  selection_target:
+    TargetFilename|endswith:
+      - '.exe'
+      - '.dll'
+      - '.sys'
+      - '.scr'
+      - '.ps1'
+      - '.bat'
+      - '.cmd'
+      - '.vbs'
+      - '.js'
+      - '.lnk'
+  condition: selection_actor and selection_target
+falsepositives:
+  - Build and packaging scripts that normalise file times for reproducible
+    builds.
+  - Administration scripts that copy files and preserve source timestamps.
+level: low
+rustinel:
+  telemetry:
+    - file_change
+  expected_false_positive_level: high
+  test_status: atomic

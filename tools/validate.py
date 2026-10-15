@@ -10,7 +10,7 @@ Mandatory v1 checks:
   - Rustinel telemetry compatibility
   - IOC value sanity (hash/ip/domain/regex well-formed)
   - pack manifest validation (schema + referential integrity)
-  - pack attack_coverage drift guard (declared vs. derived)
+  - pack attack_coverage and test_status match what member rules derive
   - no production rule selects on a field the engine never populates
   - each pack's requires_rustinel covers what its own content needs
   - preview / test-only content is registered, and no pack references it
@@ -30,6 +30,7 @@ import re
 import sys
 from pathlib import Path
 
+import engine_contract
 import lib
 
 # Telemetry channels Rustinel supports.
@@ -37,11 +38,17 @@ import lib
 # Mirrors the engine's authoritative is_supported_category() in
 # src/engine/logsource.rs (ETW on Windows, eBPF on Linux), plus "file_scan"
 # for YARA / IOC executable hashing on process-start. The registry_*, image_load,
-# ps_script, wmi_event, service_creation and task_creation families are
-# Windows-only; rules using them must set logsource product: windows. The file_*
+# ps_script, ps_module, wmi_event, service_creation and task_creation families
+# are Windows-only; rules using them must set logsource product: windows.
+# "security" is the Windows Security event log, selected in Sigma with
+# `product: windows, service: security` and no category; "windefend" (Defender
+# Operational) and "application" follow the same pattern with their own
+# service names. "ps_classic_start" is classic PowerShell engine start (400),
+# selected by that category or by `service: powershell-classic` alone. These
+# three arrived in v1.9.0. The file_*
 # family is collected on all three platforms, but only Windows emits file_change,
 # and only Linux/macOS populate SourceFilename on a rename (see
-# NEVER_POPULATED_FIELDS).
+# the vendored engine field contract).
 SUPPORTED_TELEMETRY = {
     "process_creation",
     "network_connection",
@@ -57,62 +64,22 @@ SUPPORTED_TELEMETRY = {
     "dns_query",
     "image_load",
     "ps_script",
+    "ps_module",
+    "security",
+    "windefend",
+    "application",
+    "ps_classic_start",
     "wmi_event",
     "service_creation",
     "task_creation",
     "file_scan",
 }
 
-# Fields the certified engine never populates, keyed by (product, category).
-#
-# Mirrors the `never` rows of the engine field-availability contract
-# (rustinel/compatibility/field-availability.json). A selection on one of these
-# is dead weight at best: the field is missing on every event, so the selection
-# can never be true. When it is the only selection, the rule can never fire at
-# all — which is how the Essential scheduled-task rule (TaskContent) and the
-# unsigned-DLL hunting rule (Signed) shipped without ever producing an alert.
-#
-# Such a rule belongs under preview/ with a `telemetry-blocked` entry naming the
-# engine issue, not in a pack. Add a row here whenever the contract marks a field
-# `never`; drop it when the engine starts populating it.
-NEVER_POPULATED_FIELDS: dict[tuple[str, str], set[str]] = {
-    # TaskScheduler event 106 carries no task XML; needs Security 4698.
-    ("windows", "task_creation"): {"TaskContent"},
-    # Kernel-Process image-load records carry no Authenticode result.
-    ("windows", "image_load"): {"Signed", "Signature"},
-    # No token/logon resolution on the ETW process path yet.
-    ("windows", "process_creation"): {"User", "ParentUser", "LogonId", "LogonGuid"},
-    # Kernel-File gives no pre-rename name, and no creation timestamps.
-    ("windows", "file_event"): {
-        "SourceFilename",
-        "CreationUtcTime",
-        "PreviousCreationUtcTime",
-    },
-    # macOS network comes from /dev/bpf: no direction, user or reverse name.
-    ("macos", "network_connection"): {"Initiated", "User", "DestinationHostname"},
-    # macOS DNS is captured at the packet layer, unattributed to a process.
-    ("macos", "dns_query"): {"Image", "ProcessId"},
-    ("macos", "process_creation"): {"ParentCommandLine"},
-    # Linux DNS parses the query only, not the answer.
-    ("linux", "dns_query"): {"QueryResults", "QueryStatus"},
-}
-
-# The file_* sub-categories share one field contract.
-FILE_CATEGORY_ALIASES = {
-    "file_create",
-    "file_delete",
-    "file_rename",
-    "file_change",
-}
-DNS_CATEGORY_ALIASES = {"dns"}
-
-
-def _contract_category(category: str) -> str:
-    if category in FILE_CATEGORY_ALIASES:
-        return "file_event"
-    if category in DNS_CATEGORY_ALIASES:
-        return "dns_query"
-    return category
+# Categories routed by native event ID, where an EventID the engine does not
+# collect can never match. Sysmon-style categories are left out: the engine
+# maps their Sysmon event IDs onto its own sources (DNS EventID 22 still
+# matches the DNS Client's 3006/3008).
+EVENT_ID_ROUTED_CATEGORIES = {"security", "windefend", "application", "ps_classic_start"}
 
 
 def _detection_fields(detection: dict) -> set[str]:
@@ -148,6 +115,33 @@ REQUIRED_SIGMA_FIELDS = [
     "detection",
 ]
 
+# A correlation document replaces `logsource` + `detection` with `correlation`.
+REQUIRED_CORRELATION_FIELDS = [
+    f for f in REQUIRED_SIGMA_FIELDS if f not in ("logsource", "detection")
+] + ["correlation"]
+
+# What rsigma-parser 0.21 (the engine's Sigma parser) accepts.
+CORRELATION_TYPES = {
+    "event_count",
+    "value_count",
+    "temporal",
+    "temporal_ordered",
+    "value_sum",
+    "value_avg",
+    "value_percentile",
+    "value_median",
+}
+TEMPORAL_CORRELATION_TYPES = {"temporal", "temporal_ordered"}
+VALUE_CORRELATION_TYPES = {
+    "value_count",
+    "value_sum",
+    "value_avg",
+    "value_percentile",
+    "value_median",
+}
+CORRELATION_OPERATORS = {"lt", "lte", "gt", "gte", "eq", "neq"}
+_TIMESPAN_RE = re.compile(r"^\d+[smhdwMy]$")
+
 ATTACK_TAG_PREFIX = "attack."
 
 _HEX_RE = re.compile(r"^[0-9a-fA-F]+$")
@@ -172,7 +166,7 @@ class Report:
 
 def load_yara_compiler():
     """Return a callable(raw, where, rep) that compiles a YARA rule with yara-x,
-    or None if yara-x is unavailable. A compile failure is a hard error — this is
+    or None if yara-x is unavailable. A compile failure is a hard error - this is
     the real load/compile gate the engine uses (Rustinel embeds yara-x)."""
     try:
         import yara_x
@@ -225,7 +219,8 @@ def check_sigma_rule(art, rep: Report):
         rep.error(art.rel_path, "Sigma rule is not a mapping")
         return
 
-    for field in REQUIRED_SIGMA_FIELDS:
+    required = REQUIRED_CORRELATION_FIELDS if lib.is_correlation(doc) else REQUIRED_SIGMA_FIELDS
+    for field in required:
         if field not in doc or doc[field] in (None, "", [], {}):
             rep.error(art.rel_path, f"missing required field '{field}'")
 
@@ -245,24 +240,143 @@ def check_sigma_rule(art, rep: Report):
         rep.warn(art.rel_path, "missing rustinel.expected_false_positive_level")
 
 
-def check_engine_field_availability(art, rep: Report):
+def check_correlation(
+    art, rep: Report, sigma_by_id: dict, never_populated: engine_contract.BlockedFields
+):
+    """Check a correlation document against the engine parser and its references."""
+    doc = art.meta
+    if not lib.is_correlation(doc):
+        return
+    where = art.rel_path
+    corr = doc["correlation"]
+
+    ctype = corr.get("type")
+    if ctype not in CORRELATION_TYPES:
+        rep.error(where, f"correlation type {ctype!r} is not one of {sorted(CORRELATION_TYPES)}")
+
+    timespan = corr.get("timespan", corr.get("timeframe"))
+    if not isinstance(timespan, str) or not _TIMESPAN_RE.match(timespan):
+        rep.error(where, f"correlation timespan {timespan!r} must look like 30s, 5m, 1h or 7d")
+
+    condition = corr.get("condition")
+    if ctype in TEMPORAL_CORRELATION_TYPES and (condition is None or isinstance(condition, str)):
+        # Omitted means every referenced rule must match: the Sigma default, which
+        # Rustinel restores at load time since v1.5.0. A string is an extended
+        # condition over rule names, e.g. "rule_a and rule_b".
+        pass
+    elif not isinstance(condition, dict) or not CORRELATION_OPERATORS & condition.keys():
+        rep.error(where, "correlation condition needs an operator (gte, gt, lte, lt, eq, neq)")
+    elif ctype in VALUE_CORRELATION_TYPES and not condition.get("field"):
+        rep.error(where, f"a {ctype} correlation condition needs a 'field'")
+
+    group_by = corr.get("group-by") or []
+    if not isinstance(group_by, list) or not all(isinstance(f, str) for f in group_by):
+        rep.error(where, "correlation group-by must be a list of field names")
+        group_by = []
+
+    rule_ids = lib.correlation_rule_ids(doc)
+    if not rule_ids:
+        rep.error(where, "correlation rules must list at least one rule id")
+    referenced = []
+    for rule_id in rule_ids:
+        target = sigma_by_id.get(rule_id)
+        if target is None:
+            rep.error(where, f"correlation references unknown Sigma rule id '{rule_id}'")
+        elif lib.is_correlation(target.meta):
+            rep.error(where, f"correlation references another correlation '{rule_id}'")
+        else:
+            referenced.append(target)
+
+    products = {str((t.meta.get("logsource") or {}).get("product") or "") for t in referenced}
+    if len(products) > 1:
+        rep.error(where, f"correlation mixes rules for {sorted(products)}; use one platform")
+
+    telemetry = set((doc.get("rustinel") or {}).get("telemetry") or [])
+    for target in referenced:
+        logsource = target.meta.get("logsource") or {}
+        missing = set((target.meta.get("rustinel") or {}).get("telemetry") or []) - telemetry
+        if missing:
+            rep.error(
+                where,
+                f"rustinel.telemetry lacks {sorted(missing)} needed by referenced rule "
+                f"'{target.id}'",
+            )
+        product = str(logsource.get("product") or "").lower()
+        blocked = never_populated.get((product, lib.contract_category(logsource)), {})
+        for field in group_by:
+            if field in blocked or "*" in blocked:
+                rep.error(
+                    where,
+                    f"groups by '{field}', which Rustinel never populates for the referenced "
+                    f"rule '{target.id}' ({product}/{lib.logsource_category(logsource)})",
+                )
+
+
+def check_engine_field_availability(
+    art, rep: Report, never_populated: engine_contract.BlockedFields
+):
     """Reject a production rule that selects on a field the engine never populates."""
     doc = art.meta
     if not isinstance(doc, dict):
         return
     logsource = doc.get("logsource") or {}
     product = str(logsource.get("product") or "").lower()
-    category = _contract_category(str(logsource.get("category") or "").lower())
-    blocked = NEVER_POPULATED_FIELDS.get((product, category))
+    category = lib.contract_category(logsource)
+    blocked = never_populated.get((product, category))
     if not blocked:
         return
     used = _detection_fields(doc.get("detection") or {})
-    for field in sorted(blocked & used):
+    for field in sorted(used if "*" in blocked else blocked.keys() & used):
+        reason = "; ".join(blocked.get(field, blocked.get("*", ())))
         rep.error(
             art.rel_path,
             f"selects on '{field}', which Rustinel never populates for "
-            f"{product}/{logsource.get('category')} — the rule cannot match. "
+            f"{product}/{lib.logsource_category(logsource)}: {reason}. "
             f"Move it to preview/ with a telemetry-blocked entry, or drop the field.",
+        )
+
+
+def _selected_event_ids(detection: dict) -> set[str]:
+    """Literal EventID values a rule selects on, as strings. Values behind a
+    modifier (|gt, |re, ...) are not literal IDs and are skipped."""
+    ids: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if str(key) == "EventID":
+                    for item in value if isinstance(value, list) else [value]:
+                        if isinstance(item, (int, str)) and not isinstance(item, bool):
+                            ids.add(str(item).strip())
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for name, selection in (detection or {}).items():
+        if name in ("condition", "timeframe"):
+            continue
+        walk(selection)
+    return ids
+
+
+def check_collected_event_ids(art, rep: Report, collected: engine_contract.EventIds):
+    """Reject a rule that selects an event ID its channel never collects."""
+    doc = art.meta
+    if not isinstance(doc, dict):
+        return
+    logsource = doc.get("logsource") or {}
+    product = str(logsource.get("product") or "").lower()
+    category = lib.contract_category(logsource)
+    if category not in EVENT_ID_ROUTED_CATEGORIES:
+        return
+    known = collected.get((product, category), set())
+    for event_id in sorted(_selected_event_ids(doc.get("detection") or {}) - known):
+        rep.error(
+            art.rel_path,
+            f"selects EventID {event_id}, which Rustinel does not collect on "
+            f"{product}/{category} (collected: {', '.join(sorted(known, key=int)) or 'none'}).",
         )
 
 
@@ -340,6 +454,40 @@ REQUIRED_PACK_FIELDS = [
 ]
 
 
+def check_advanced_documentation(packs, artifacts, rep: Report):
+    """Advanced rules must document how to tune them and what they must not match."""
+    for art in lib.advanced_sigma_rules(packs, artifacts):
+        rustinel = art.meta.get("rustinel") or {}
+        where = art.rel_path
+        tuning = rustinel.get("tuning")
+        if not isinstance(tuning, list) or not tuning:
+            rep.error(
+                where, "Advanced rule needs rustinel.tuning (the surfaces an operator filters)"
+            )
+        else:
+            for item in tuning:
+                if not (
+                    isinstance(item, dict)
+                    and str(item.get("surface") or "").strip()
+                    and str(item.get("guidance") or "").strip()
+                ):
+                    rep.error(where, "each rustinel.tuning entry needs 'surface' and 'guidance'")
+        negatives = rustinel.get("negatives")
+        if not isinstance(negatives, list) or not negatives:
+            rep.error(
+                where, "Advanced rule needs rustinel.negatives (benign events it must ignore)"
+            )
+        else:
+            for item in negatives:
+                if not (
+                    isinstance(item, dict)
+                    and str(item.get("reason") or "").strip()
+                    and isinstance(item.get("fields"), dict)
+                    and item["fields"]
+                ):
+                    rep.error(where, "each rustinel.negatives entry needs 'reason' and 'fields'")
+
+
 def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
     schema_validate = load_schema_validator(lib.PACK_SCHEMA_PATH)
     if schema_validate is None:
@@ -356,6 +504,12 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         for field in REQUIRED_PACK_FIELDS:
             if field not in pack:
                 rep.error(where, f"missing required field '{field}'")
+        if pack.get("level") == "hunting" and pack.get("active_response_eligible") is not False:
+            rep.error(
+                where,
+                "hunting packs must set 'active_response_eligible: false' "
+                "(hunting content is not eligible for active response)",
+            )
         if pack.get("pack_schema_version") != 2:
             rep.error(where, "pack_schema_version must be 2 for v2")
         if not pack.get("license"):
@@ -412,25 +566,51 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
                 f"constraint, so its floor cannot be checked (content needs >={derived})",
             )
         elif lib.parse_version(declared_floor) < lib.parse_version(derived):
-            why = "; ".join(
-                f"{artifact_index[rule_id].meta.get('title', rule_id)} ({reasons[0]})"
-                for rule_id, reasons in list(drivers.items())[:2]
-            )
+            # Name the members that actually set the derived floor, with the
+            # reason that reaches it, not just the first members with a reason.
+            setters = []
+            for rule_id, reasons in drivers.items():
+                floor, _ = lib.artifact_min_engine(artifact_index[rule_id])
+                if floor == derived:
+                    reason = next((r for r in reasons if derived in r), reasons[-1])
+                    setters.append(
+                        f"{artifact_index[rule_id].meta.get('title', rule_id)} ({reason})"
+                    )
+            why = "; ".join(setters[:2]) or "the platform baseline"
             rep.error(
                 where,
                 f"requires_rustinel is >={declared_floor} but the pack's content needs "
-                f">={derived} — {why}",
+                f">={derived} - {why}",
             )
 
-        # Drift guard: declared attack_coverage should be backed by member content.
-        declared = {str(t).upper() for t in pack.get("attack_coverage") or []}
-        derived: set = set()
+        # A correlation only fires if every rule it references loads with it.
+        members = set(resolved)
         for rule_id in resolved:
-            art = artifact_index.get(rule_id)
-            if art is not None:
-                derived |= lib.artifact_attack_techniques(art)
-        for technique in sorted(declared - derived):
-            rep.warn(where, f"attack_coverage '{technique}' not found in any member artifact")
+            artifact = artifact_index.get(rule_id)
+            if artifact is None or not lib.is_correlation(artifact.meta):
+                continue
+            for ref in lib.correlation_rule_ids(artifact.meta):
+                if ref not in members:
+                    rep.error(
+                        where,
+                        f"correlation '{rule_id}' references '{ref}', which is not in this pack",
+                    )
+
+        # Drift guard: coverage and test status are derived from member rules,
+        # so the manifest must say exactly what the content supports.
+        summary = lib.derive_pack_summary(resolved, artifact_index)
+        declared = {str(t).upper() for t in pack.get("attack_coverage") or []}
+        derived_techniques = set(summary["attack_coverage"])
+        for technique in sorted(declared - derived_techniques):
+            rep.error(where, f"attack_coverage '{technique}' not found in any member artifact")
+        for technique in sorted(derived_techniques - declared):
+            rep.error(where, f"attack_coverage is missing '{technique}', covered by a member rule")
+        if pack.get("test_status") != summary["test_status"]:
+            rep.error(
+                where,
+                f"test_status is {pack.get('test_status')!r} but member rules roll up to "
+                f"{summary['test_status']!r}",
+            )
 
 
 def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_yara):
@@ -493,13 +673,24 @@ def check_release_version(rep: Report):
     if tag.lstrip("v") != version:
         rep.error(
             "pyproject.toml",
-            f"building tag {tag!r} but [project].version is {version!r} — bump the "
+            f"building tag {tag!r} but [project].version is {version!r} - bump the "
             f"version in the release PR before tagging, or retag",
         )
 
 
 def main() -> int:
     rep = Report()
+
+    try:
+        engine_pin, never_populated = engine_contract.load_contract()
+        collected_event_ids = engine_contract.load_event_ids()
+    except (OSError, ValueError) as exc:
+        print(f"[ERROR] engine field contract: {exc}")
+        return 1
+    print(
+        f"Engine field contract: Rustinel {engine_pin['version']} "
+        f"at {engine_pin['revision']} (schema {engine_pin['schema_version']})."
+    )
 
     artifacts = lib.load_all_artifacts()
     ioc_schema_validate = load_schema_validator(lib.IOC_SCHEMA_PATH)
@@ -510,10 +701,13 @@ def main() -> int:
     preview_artifacts = lib.load_preview_artifacts()
 
     check_unique_ids(artifacts + preview_artifacts, rep)
+    sigma_by_id = {a.id: a for a in artifacts if a.kind == "sigma" and a.id}
     for art in artifacts:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
-            check_engine_field_availability(art, rep)
+            check_engine_field_availability(art, rep, never_populated)
+            check_collected_event_ids(art, rep, collected_event_ids)
+            check_correlation(art, rep, sigma_by_id, never_populated)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":
@@ -524,6 +718,7 @@ def main() -> int:
 
     packs = lib.load_packs()
     check_packs(packs, artifacts, rep, preview_by_id)
+    check_advanced_documentation(packs, artifacts, rep)
 
     counts = {k: sum(1 for a in artifacts if a.kind == k) for k in ("sigma", "yara", "ioc")}
     print(
@@ -539,9 +734,9 @@ def main() -> int:
         print(line)
 
     if rep.ok():
-        print(f"\nOK — validation passed ({len(rep.warnings)} warning(s)).")
+        print(f"\nOK - validation passed ({len(rep.warnings)} warning(s)).")
         return 0
-    print(f"\nFAILED — {len(rep.errors)} error(s), {len(rep.warnings)} warning(s).")
+    print(f"\nFAILED - {len(rep.errors)} error(s), {len(rep.warnings)} warning(s).")
     return 1
 
 

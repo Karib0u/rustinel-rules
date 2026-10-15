@@ -42,3 +42,21 @@ rustinel:
     - file_event
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "filter_pkg"
+      guidance: "Add other package tooling (pacman, apk, zypper) or driver installers your fleet uses."
+    - surface: "Image"
+      guidance: "Exclude configuration-management agents that ship udev rules for known hardware."
+  negatives:
+    - reason: "dpkg installing a driver rule"
+      fields:
+        Image: "/usr/bin/dpkg"
+        TargetFilename: "/lib/udev/rules.d/70-uaccess.rules"
+    - reason: "apt-get installing a rule"
+      fields:
+        Image: "/usr/bin/apt-get"
+        TargetFilename: "/etc/udev/rules.d/90-vendor.rules"
+    - reason: "hwdb data, not a rule"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/etc/udev/hwdb.d/60-custom.hwdb"

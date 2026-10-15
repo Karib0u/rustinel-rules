@@ -33,3 +33,19 @@ rustinel:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude the administration tooling that configures port forwarding on gateway hosts."
+  negatives:
+    - reason: "showing port proxies"
+      fields:
+        Image: "C:\\Windows\\System32\\netsh.exe"
+        CommandLine: "netsh.exe interface portproxy show all"
+    - reason: "showing IP addresses"
+      fields:
+        Image: "C:\\Windows\\System32\\netsh.exe"
+        CommandLine: "netsh.exe interface ip show addresses"
+    - reason: "adding a firewall rule"
+      fields:
+        Image: "C:\\Windows\\System32\\netsh.exe"
+        CommandLine: "netsh.exe advfirewall firewall add rule name=x dir=in action=allow"

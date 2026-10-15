@@ -2,13 +2,14 @@ title: Sudoers Configuration Tampering
 id: 2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62
 status: experimental
 description: >
-  Detects creation or replacement of /etc/sudoers or a drop-in file under
-  /etc/sudoers.d/, used by attackers to grant passwordless or unauthorized
+  Detects a write to /etc/sudoers or a drop-in file under /etc/sudoers.d/ by
+  anything other than a package manager, used by attackers to grant passwordless or unauthorized
   privilege escalation.
 references:
   - https://attack.mitre.org/techniques/T1548/003/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.privilege-escalation
   - attack.persistence
@@ -21,7 +22,15 @@ detection:
     TargetFilename|endswith: '/etc/sudoers'
   selection_dir:
     TargetFilename|contains: '/etc/sudoers.d/'
-  condition: selection_file or selection_dir
+  filter_pkg:
+    Image|endswith:
+      - '/dpkg'
+      - '/rpm'
+      - '/dnf'
+      - '/yum'
+      - '/apt'
+      - '/apt-get'
+  condition: (selection_file or selection_dir) and not filter_pkg
 falsepositives:
   - Package installations and configuration management that add sudoers drop-ins.
 level: high

@@ -53,6 +53,10 @@
       "type": "boolean",
       "description": "Whether this pack is enabled by default."
     },
+    "active_response_eligible": {
+      "type": "boolean",
+      "description": "Whether alerts from this pack may drive automated active response. Hunting packs must be false: their content is analyst-driven and noisy. Defaults to true for other levels when omitted."
+    },
     "expected_false_positive_level": {
       "type": "string",
       "enum": ["low", "medium", "high"]

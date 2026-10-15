@@ -1,0 +1,100 @@
+title: Outbound Network Connection from Shell Binary (macOS)
+id: e6aa2995-f56a-454a-af2c-14db0ec296ee
+status: experimental
+description: >
+  Detects a network connection attributed to a shell binary (bash, sh, dash,
+  zsh, ksh) with a public destination. A shell only opens sockets itself
+  through a `/dev/tcp` redirect or a built-in such as zsh's ztcp, which is the
+  shape of a reverse shell; ordinary downloads go through curl or similar and
+  are attributed to those. This is the macOS port of the Linux rule and the
+  safety net for a reverse shell whose command line was not captured.
+  macOS does not report direction (Initiated), so accepted connections are not
+  excluded; a shell accepting connections is itself unusual. Process
+  attribution of network events is reliable from Rustinel 1.7.0. Apple's stock
+  /bin/bash is built without /dev/tcp, so the common trigger is a Homebrew or
+  copied bash. Add legitimate public endpoints to the non-public filter as
+  tuning.
+references:
+  - https://attack.mitre.org/techniques/T1059/004/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.execution
+  - attack.t1059.004
+logsource:
+  category: network_connection
+  product: macos
+detection:
+  selection:
+    Image|endswith:
+      - '/bash'
+      - '/sh'
+      - '/dash'
+      - '/zsh'
+      - '/ksh'
+  filter_nonpublic:
+    DestinationIp|cidr:
+      - '0.0.0.0/8'
+      - '10.0.0.0/8'
+      - '100.64.0.0/10'
+      - '127.0.0.0/8'
+      - '169.254.0.0/16'
+      - '172.16.0.0/12'
+      - '192.0.0.0/24'
+      - '192.0.2.0/24'
+      - '192.168.0.0/16'
+      - '198.18.0.0/15'
+      - '198.51.100.0/24'
+      - '203.0.113.0/24'
+      - '224.0.0.0/4'
+      - '240.0.0.0/4'
+      - '::/128'
+      - '::1/128'
+      - '::ffff:0.0.0.0/104'
+      - '::ffff:10.0.0.0/104'
+      - '::ffff:127.0.0.0/104'
+      - '::ffff:169.254.0.0/112'
+      - '::ffff:172.16.0.0/108'
+      - '::ffff:192.168.0.0/112'
+      - '100::/64'
+      - '2001:db8::/32'
+      - 'fc00::/7'
+      - 'fe80::/10'
+      - 'ff00::/8'
+  condition: selection and not filter_nonpublic
+falsepositives:
+  - Provisioning scripts that use /dev/tcp health checks against public
+    endpoints; the CIDR filter is the tuning surface.
+level: medium
+rustinel:
+  telemetry:
+    - network_connection
+  expected_false_positive_level: medium
+  min_engine: '1.7.0'
+  test_status: atomic
+  tuning:
+    - surface: "filter_nonpublic"
+      guidance: "Add the CIDRs of internal proxies, package mirrors and monitoring endpoints that scripts reach over /dev/tcp."
+    - surface: "Image"
+      guidance: "Exclude a specific provisioning shell by full path only when it is a known health-check runner."
+  negatives:
+    - reason: "shell connecting to a private RFC 1918 address"
+      fields:
+        Image: "/bin/bash"
+        DestinationIp: "10.0.0.5"
+        DestinationPort: "22"
+    - reason: "shell connecting to loopback"
+      fields:
+        Image: "/bin/zsh"
+        DestinationIp: "127.0.0.1"
+        DestinationPort: "5432"
+    - reason: "shell connecting to IPv6 loopback"
+      fields:
+        Image: "/bin/zsh"
+        DestinationIp: "::1"
+        DestinationPort: "8080"
+    - reason: "curl reaching a public address"
+      fields:
+        Image: "/usr/bin/curl"
+        DestinationIp: "93.184.216.34"
+        DestinationPort: "443"

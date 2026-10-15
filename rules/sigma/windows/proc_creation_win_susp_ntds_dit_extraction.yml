@@ -1,15 +1,18 @@
-title: Active Directory Database (NTDS.dit) Extraction
+title: Active Directory Database (NTDS.dit) Extraction via ntdsutil IFM
 id: a3c7e9b4-2f81-4d56-8c0a-6b2d1f4e9c22
 status: experimental
 description: >
-  Detects extraction of the Active Directory database via ntdsutil IFM media
-  creation or direct references to ntds.dit. On a domain controller this yields
-  every domain credential and is a critical credential-access technique.
+  Detects extraction of the Active Directory database through ntdsutil
+  Install From Media (IFM): ntdsutil.exe asked to create a full, RODC or
+  SYSVOL IFM set. On a domain controller this yields every domain credential
+  and is a critical credential-access technique. Copying or opening ntds.dit
+  with other tools is covered by the separate NTDS.dit file copy rule.
 references:
   - https://attack.mitre.org/techniques/T1003/003/
   - https://lolbas-project.github.io/lolbas/Binaries/Ntdsutil/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.credential-access
   - attack.t1003.003
@@ -18,15 +21,17 @@ logsource:
   product: windows
 detection:
   selection_ntdsutil:
-    Image|endswith: '\ntdsutil.exe'
+    - Image|endswith: '\ntdsutil.exe'
+    - OriginalFileName: 'ntdsutil.exe'
+  selection_ifm:
+    CommandLine|contains: 'ifm'
+  selection_create:
     CommandLine|contains:
       - 'create full'
       - 'create rodc'
-      - 'ifm'
-      - 'ac i ntds'
-  selection_ntdsfile:
-    CommandLine|contains: 'ntds.dit'
-  condition: selection_ntdsutil or selection_ntdsfile
+      - 'create sysvol full'
+      - 'create sysvol rodc'
+  condition: selection_ntdsutil and selection_ifm and selection_create
 falsepositives:
   - Legitimate domain controller backup or migration performed by administrators.
 level: high
@@ -34,5 +39,4 @@ rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: low
-  test_status: manual
-  test_reason: Real NTDS.dit extraction requires a live domain controller / AD database; a safe command-line smoke test (cmd echo ntds.dit) does not produce reliable process_creation telemetry on hosted Windows runners. Validated manually.
+  test_status: atomic

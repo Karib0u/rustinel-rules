@@ -1,0 +1,52 @@
+title: Mass File Rename to Ransomware-Style Extension (macOS)
+id: 90ae463b-19cb-4fd3-9447-dc2222792865
+status: experimental
+description: >
+  Detects one process renaming at least 50 files to a ransomware-style extension
+  within a minute, the signature of file-encrypting ransomware stamping its
+  extension on victim files. A single rename or a handful (an encryption
+  utility, a backup job) stays below the threshold. Correlates the matches of
+  "File Renamed to Ransomware-Style Extension (macOS)" per process ID.
+  Raise or lower the threshold to tune; ransomware that renames to a random or
+  unlisted extension is not seen.
+references:
+  - https://attack.mitre.org/techniques/T1486/
+author: rustinel-rules
+date: 2026-10-08
+tags:
+  - attack.impact
+  - attack.t1486
+correlation:
+  type: event_count
+  rules:
+    - f0bf3203-e981-4d98-82c4-6ba8dc0675f3
+  group-by:
+    - ProcessId
+  timespan: 1m
+  condition:
+    gte: 50
+falsepositives:
+  - Bulk encryption or archiving jobs that name every output .enc or .crypt.
+    Filter the process image on the base rule.
+level: high
+rustinel:
+  telemetry:
+    - file_rename
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: "gte"
+      guidance: "Raise the count if a bulk-archiving job approaches 50 matching renames a minute; lower it only with the base rule's Image filter in place."
+    - surface: "Image"
+      guidance: "Filter the encryption or backup tool on the base rule, not here: the correlation counts only what the base rule matches."
+  negatives:
+    - reason: "49 ransomware-style renames from one process, one below the threshold"
+      fields:
+        TargetFilename: "/Users/alice/Documents/doc.locked"
+        Image: "/usr/bin/python3"
+        count: 49
+    - reason: "many renames to an ordinary extension"
+      fields:
+        TargetFilename: "/Users/alice/Documents/photo.bak"
+        Image: "/usr/bin/python3"
+        count: 80

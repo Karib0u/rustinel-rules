@@ -6,11 +6,15 @@ description: >
   with curl or wget and pipes it directly into an interpreter for execution — a
   common macOS payload-staging and fake-installer technique. Noisier where
   developer install one-liners are common, so placed in the Advanced tier.
+  The pipe target must be a shell as a whole word, so verification pipes such
+  as `curl ... | shasum -a 256` do not match. Command-line evidence only: the
+  download and execution are not observed.
 references:
   - https://attack.mitre.org/techniques/T1105/
   - https://attack.mitre.org/techniques/T1059/004/
 author: rustinel-rules
 date: 2026-06-04
+modified: 2026-10-08
 tags:
   - attack.command-and-control
   - attack.t1105
@@ -30,19 +34,33 @@ detection:
       - 'curl '
       - 'wget '
   selection_pipe:
-    CommandLine|contains:
-      - '| bash'
-      - '| sh'
-      - '| zsh'
-      - '|bash'
-      - '|sh'
-      - '|zsh'
+    # The shell is the pipe target as a whole word, optionally behind sudo or
+    # env. `| sh` must not match `| shasum` or `| sha256sum`.
+    CommandLine|re: '\|\s*(sudo\s+(-\S+\s+)*|env\s+)?(/\S*/)?(ba|z)?sh(\s|$|[;&)''"])'
   condition: selection_shell and selection_download and selection_pipe
 falsepositives:
   - Developer install one-liners (e.g. Homebrew-style bootstraps) that fetch and run scripts.
-level: high
+level: medium
 rustinel:
   telemetry:
     - process_creation
   expected_false_positive_level: medium
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude developer bootstrap tooling and CI runners that pipe vendor installers into a shell."
+    - surface: "CommandLine"
+      guidance: "Allowlist the install hosts you trust by URL prefix instead of disabling the rule."
+  negatives:
+    - reason: "download piped to a checksum tool"
+      fields:
+        Image: "/bin/zsh"
+        CommandLine: "zsh -c 'curl -fsSL https://example.test/a.pkg | shasum -a 256'"
+    - reason: "download saved to disk"
+      fields:
+        Image: "/bin/bash"
+        CommandLine: "bash -c 'curl -fsSL https://example.test/a.pkg -o /tmp/a.pkg'"
+    - reason: "download piped to a pager-like tool"
+      fields:
+        Image: "/bin/zsh"
+        CommandLine: "zsh -c 'curl -s https://example.test/notes | tee /tmp/notes'"

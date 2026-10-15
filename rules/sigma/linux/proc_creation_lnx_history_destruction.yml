@@ -66,3 +66,29 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: "ParentImage"
+      guidance: "Exclude hardening or privacy scripts and image-build steps that clear history on purpose."
+    - surface: "CommandLine"
+      guidance: "The rule needs the history file name plus a destroying verb; reading tools (less, cat, grep) never match."
+  negatives:
+    - reason: "reading the history file"
+      fields:
+        Image: "/usr/bin/less"
+        CommandLine: "less /home/alice/.bash_history"
+    - reason: "searching the history file"
+      fields:
+        Image: "/usr/bin/grep"
+        CommandLine: "grep ssh /home/alice/.bash_history"
+    - reason: "truncating history to a non-zero size"
+      fields:
+        Image: "/usr/bin/truncate"
+        CommandLine: "truncate -s 1M /home/alice/.bash_history"
+    - reason: "shredding an unrelated file"
+      fields:
+        Image: "/usr/bin/shred"
+        CommandLine: "shred -u /home/alice/notes.txt"
+    - reason: "linking /dev/null to a non-history path"
+      fields:
+        Image: "/usr/bin/ln"
+        CommandLine: "ln -sf /dev/null /home/alice/.cache/x"

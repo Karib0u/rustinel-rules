@@ -1,0 +1,3 @@
+# Vendored engine contract: checksummed byte-for-byte against compatibility/engine.json,
+# so never let a checkout (e.g. core.autocrlf on Windows) rewrite its line endings.
+compatibility/field-availability.json -text
