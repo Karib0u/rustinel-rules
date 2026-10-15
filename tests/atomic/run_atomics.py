@@ -379,6 +379,20 @@ def select_tests(tests: list[dict], os_name: str, flt: str | None) -> list[dict]
     return out
 
 
+def parse_shard(spec: str) -> tuple[int, int]:
+    """Parse "i/n" (1-based) into (i, n)."""
+    m = re.fullmatch(r"(\d+)/(\d+)", spec)
+    if not m or not 1 <= int(m[1]) <= int(m[2]):
+        raise argparse.ArgumentTypeError(f"expected i/n with 1 <= i <= n, got {spec!r}")
+    return int(m[1]), int(m[2])
+
+
+def shard_tests(tests: list[dict], shard: tuple[int, int]) -> list[dict]:
+    """Round-robin split so every shard gets a similar mix of slow and fast tests."""
+    index, count = shard
+    return [t for i, t in enumerate(tests) if i % count == index - 1]
+
+
 def make_predicate(test: dict, rules: dict[str, dict]):
     """Return (predicate, human_description). predicate(alert_dict) -> bool."""
     exp = test.get("expect")
@@ -569,6 +583,13 @@ def main() -> int:
     )
     ap.add_argument("--warmup", type=int, default=10, help="seconds to let the engine start")
     ap.add_argument("--script-timeout", type=int, default=30)
+    ap.add_argument(
+        "--shard",
+        type=parse_shard,
+        default=(1, 1),
+        metavar="I/N",
+        help="run only the I-th of N round-robin slices of the selected tests",
+    )
     ap.add_argument("--list", action="store_true", help="list selected tests and exit")
     ap.add_argument(
         "--check-coverage",
@@ -586,7 +607,7 @@ def main() -> int:
     os_name = args.platform
     dist_dir = args.dist_dir or (args.rules_dir / "dist")
     rules = index_rules(args.rules_dir)
-    tests = select_tests(load_manifest(args.manifest), os_name, args.filter)
+    tests = shard_tests(select_tests(load_manifest(args.manifest), os_name, args.filter), args.shard)
 
     if args.check_coverage:
         packs = load_source_packs(args.rules_dir)
@@ -683,13 +704,14 @@ def main() -> int:
                 proc.kill()
         fh.close()
 
-    return report(results, os_name)
+    return report(results, os_name, args.shard)
 
 
-def report(results: list[dict], os_name: str) -> int:
+def report(results: list[dict], os_name: str, shard: tuple[int, int] = (1, 1)) -> int:
     passed = [r for r in results if r["status"] == "PASS"]
     gating_fail = [r for r in results if r["status"] in ("FAIL", "ERROR")]
-    out_path = HARNESS_ROOT / f"report-{os_name}.json"
+    suffix = f"-shard{shard[0]}of{shard[1]}" if shard[1] > 1 else ""
+    out_path = HARNESS_ROOT / f"report-{os_name}{suffix}.json"
     out_path.write_text(
         json.dumps({"platform": os_name, "results": results}, indent=2), encoding="utf-8"
     )

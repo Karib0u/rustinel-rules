@@ -8,7 +8,9 @@ import sys
 import unittest
 from pathlib import Path
 
-from run_atomics import make_predicate
+import argparse
+
+from run_atomics import make_predicate, parse_shard, shard_tests
 
 sys.path.insert(0, str(Path(__file__).parent / "canary"))
 import make_canary  # noqa: E402
@@ -120,6 +122,20 @@ class CanaryBlobTests(unittest.TestCase):
         directory = re.search(r"^DIR=(\S+)", script, re.M).group(1)
         path = launched.group(1).replace("$DIR", directory)
         self.assertRegex(path, pattern.group(1).replace("\\\\", "\\"))
+
+
+class ShardTests(unittest.TestCase):
+    def test_parse_shard(self):
+        self.assertEqual(parse_shard("2/3"), (2, 3))
+        for bad in ("0/2", "3/2", "x", "1/"):
+            with self.assertRaises(argparse.ArgumentTypeError):
+                parse_shard(bad)
+
+    def test_shards_partition_the_tests_without_overlap(self):
+        tests = [{"id": str(i)} for i in range(7)]
+        parts = [shard_tests(tests, (i, 3)) for i in (1, 2, 3)]
+        self.assertEqual(sorted(t["id"] for p in parts for t in p), sorted(t["id"] for t in tests))
+        self.assertEqual(shard_tests(tests, (1, 1)), tests)
 
 
 if __name__ == "__main__":
