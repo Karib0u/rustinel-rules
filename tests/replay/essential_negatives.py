@@ -176,12 +176,14 @@ CASES = {
         ],
         "proc_creation_win_susp_bcdedit_recovery_tamper.yml": [
             (True, proc(SYS + "bcdedit.exe", "bcdedit.exe /set {default} recoveryenabled no")),
+            (True, proc(SYS + "bcdedit.exe", "bcdedit.exe /set {default} safeboot minimal")),
             (True, proc(SYS + "wbadmin.exe", "wbadmin.exe delete catalog -quiet")),
             (
                 True,
                 proc(SYS + "wbadmin.exe", "wbadmin.exe delete systemstatebackup -keepVersions:0"),
             ),
             (False, proc(SYS + "bcdedit.exe", "bcdedit.exe /enum")),
+            (False, proc(SYS + "bcdedit.exe", "bcdedit.exe /deletevalue {default} safeboot")),
             (False, proc(SYS + "bcdedit.exe", "bcdedit.exe /set {default} recoveryenabled yes")),
             (False, proc(SYS + "wbadmin.exe", "wbadmin.exe get versions")),
             (

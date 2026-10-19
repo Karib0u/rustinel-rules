@@ -1,0 +1,66 @@
+title: Web Server or SQL Server Spawning a Command Shell
+id: 157ffa4c-89d0-4b92-9119-66ca256eea60
+status: experimental
+description: >
+  Detects an IIS worker, Apache, nginx, Tomcat service wrapper, PHP FastCGI or
+  SQL Server process spawning a command interpreter or script host. This is the
+  runtime shape of a web shell, a deserialization or upload exploit, and
+  xp_cmdshell abuse. Windows counterpart of the Linux web-server shell rule.
+references:
+  - https://attack.mitre.org/techniques/T1505/003/
+  - https://attack.mitre.org/techniques/T1190/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.persistence
+  - attack.t1505.003
+  - attack.initial-access
+  - attack.t1190
+  - attack.execution
+  - attack.t1059
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_parent:
+    ParentImage|endswith:
+      - '\w3wp.exe'
+      - '\httpd.exe'
+      - '\nginx.exe'
+      - '\php-cgi.exe'
+      - '\tomcat8.exe'
+      - '\tomcat9.exe'
+      - '\tomcat10.exe'
+      - '\tomcat11.exe'
+      - '\sqlservr.exe'
+  selection_child:
+    Image|endswith:
+      - '\cmd.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+      - '\mshta.exe'
+  condition: selection_parent and selection_child
+falsepositives:
+  - Legacy web applications or SQL Agent jobs that deliberately shell out to cmd.exe.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_parent
+      guidance: Remove sqlservr.exe where xp_cmdshell is a sanctioned part of an application, or add the exact CommandLine of known maintenance scripts as a filter.
+  negatives:
+    - reason: IIS worker spawning a non-interpreter helper
+      fields:
+        Image: C:\Windows\System32\inetsrv\appcmd.exe
+        ParentImage: C:\Windows\System32\inetsrv\w3wp.exe
+        CommandLine: appcmd.exe list sites
+    - reason: shell started by an interactive administrator session
+      fields:
+        Image: C:\Windows\System32\cmd.exe
+        ParentImage: C:\Windows\explorer.exe
+        CommandLine: cmd.exe
