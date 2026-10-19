@@ -1,0 +1,66 @@
+title: Windows Firewall Disabled from the Command Line
+id: ddada813-a945-40a5-af78-3131b2e93fe9
+status: experimental
+description: >
+  Detects turning off the Windows Firewall for any profile through netsh or the
+  NetSecurity PowerShell module. Attackers disable the host firewall to open
+  inbound access for remote desktop, SMB lateral movement and C2 listeners.
+references:
+  - https://attack.mitre.org/techniques/T1562/004/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.defense-evasion
+  - attack.t1562.004
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_netsh_advfirewall:
+    Image|endswith: '\netsh.exe'
+    CommandLine|contains|all:
+      - 'advfirewall'
+      - 'set'
+      - 'state off'
+  selection_netsh_legacy:
+    Image|endswith: '\netsh.exe'
+    CommandLine|contains|all:
+      - 'firewall'
+      - 'set'
+      - 'opmode'
+      - 'disable'
+  selection_powershell:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    CommandLine|contains|all:
+      - 'Set-NetFirewallProfile'
+      - '-Enabled'
+    CommandLine|contains:
+      - 'False'
+      - '$false'
+  condition: selection_netsh_advfirewall or selection_netsh_legacy or selection_powershell
+falsepositives:
+  - Administrators or deployment scripts that briefly disable the firewall during troubleshooting or image builds.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_netsh_advfirewall
+      guidance: Exclude the ParentImage of golden-image build or lab provisioning tooling that toggles the firewall.
+  negatives:
+    - reason: showing firewall state
+      fields:
+        Image: C:\Windows\System32\netsh.exe
+        CommandLine: netsh.exe advfirewall show allprofiles
+    - reason: turning the firewall on
+      fields:
+        Image: C:\Windows\System32\netsh.exe
+        CommandLine: netsh.exe advfirewall set allprofiles state on
+    - reason: enabling a firewall profile through PowerShell
+      fields:
+        Image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        CommandLine: powershell.exe -Command Set-NetFirewallProfile -Profile Domain -Enabled True

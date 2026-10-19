@@ -5,14 +5,20 @@ description: >
   Detects disabling of Windows automatic boot recovery via bcdedit, or deletion
   of backup catalogs / system-state backups via wbadmin. These steps fire in
   virtually every human-operated ransomware chain, usually within seconds of the
-  already-covered vssadmin shadow-copy deletion, and precede encryption.
+  already-covered vssadmin shadow-copy deletion, and precede encryption. Also
+  detects forcing safe-mode boot (bcdedit /set safeboot), which ransomware uses
+  to restart into a mode where security agents do not run.
 references:
   - https://attack.mitre.org/techniques/T1490/
+  - https://attack.mitre.org/techniques/T1562/009/
 author: rustinel-rules
 date: 2026-07-09
+modified: 2026-10-19
 tags:
   - attack.impact
   - attack.t1490
+  - attack.defense-evasion
+  - attack.t1562.009
 logsource:
   category: process_creation
   product: windows
@@ -23,6 +29,11 @@ detection:
       - 'recoveryenabled no'
       - 'recoveryenabled off'
       - 'bootstatuspolicy ignoreallfailures'
+  selection_bcdedit_safeboot:
+    Image|endswith: '\bcdedit.exe'
+    CommandLine|contains|all:
+      - '/set'
+      - 'safeboot'
   selection_wbadmin_catalog:
     Image|endswith: '\wbadmin.exe'
     CommandLine|contains|all:
@@ -38,7 +49,7 @@ detection:
     CommandLine|contains|all:
       - 'delete'
       - 'backup'
-  condition: selection_bcdedit or selection_wbadmin_catalog or selection_wbadmin_systemstate or selection_wbadmin_backup
+  condition: selection_bcdedit or selection_bcdedit_safeboot or selection_wbadmin_catalog or selection_wbadmin_systemstate or selection_wbadmin_backup
 falsepositives:
   - Essentially none; no routine administrative workflow disables boot recovery.
 level: high

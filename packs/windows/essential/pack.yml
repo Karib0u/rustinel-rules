@@ -28,6 +28,7 @@ attack_coverage:
   - T1546.012
   - T1548.002
   - T1562.001
+  - T1562.009
   - T1566.001
 telemetry_requirements:
   - process_creation

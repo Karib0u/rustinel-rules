@@ -1236,6 +1236,34 @@
       "platform": "linux",
       "engine": "sigma",
       "script": "linux/cryptominer_cmdline.sh"
+    },
+    {
+      "id": "157ffa4c-89d0-4b92-9119-66ca256eea60",
+      "name": "windows_webserver_spawning_shell",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/webserver_spawning_shell.ps1"
+    },
+    {
+      "id": "68863af9-9225-4d43-8708-0fb73581d4c6",
+      "name": "windows_rclone_exfil",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/rclone_exfil.ps1"
+    },
+    {
+      "id": "ddada813-a945-40a5-af78-3131b2e93fe9",
+      "name": "windows_firewall_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/firewall_disabled.ps1"
+    },
+    {
+      "id": "021a78f0-210b-4932-bb12-26820eedc3c1",
+      "name": "windows_defender_cli_tamper",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/defender_cli_tamper.ps1"
     }
   ]
 }
