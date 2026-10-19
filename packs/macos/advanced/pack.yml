@@ -19,6 +19,7 @@ extends:
   - macos-essential
 attack_coverage:
   - T1005
+  - T1037.002
   - T1056.002
   - T1059.002
   - T1059.004
@@ -33,10 +34,15 @@ attack_coverage:
   - T1496
   - T1543.001
   - T1543.004
+  - T1546.004
+  - T1547.015
   - T1548.006
   - T1553.001
+  - T1553.004
+  - T1555
   - T1555.001
   - T1555.003
+  - T1556
   - T1562.001
   - T1564.002
   - T1572
@@ -71,5 +77,10 @@ rules:
           - 6ffbed18-7975-470b-97ce-33d187ecd839   # DNS Query to Tunnel Service (macOS) (sigma)
           - f0bf3203-e981-4d98-82c4-6ba8dc0675f3   # File Renamed to Ransomware-Style Extension (macOS) (sigma)
           - 90ae463b-19cb-4fd3-9447-dc2222792865   # Mass File Rename to Ransomware-Style Extension (macOS) (sigma)
+          - 7cdd4118-b1f9-4396-a9fd-728b9d453803   # Password Validation via dscl -authonly (sigma)
+          - abc435d7-cb05-4288-8e87-f549e189bbb0   # Authorization Plugin Written to SecurityAgentPlugins (sigma)
+          - b01a8433-8768-4825-8d7e-665e132f17b6   # Shell Profile Modified by a Shell or Scripting Process (sigma)
+          - ba4c78ad-7cd1-4fce-b409-57af0f79c814   # Login Hook or Login Item Added from the Command Line (sigma)
+          - a360dda4-e2ba-42e1-8fda-4a787afebf2d   # Root Certificate Added to the Trust Store via security (sigma)
         yara:
           - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)

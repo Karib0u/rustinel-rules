@@ -1,0 +1,57 @@
+title: Authorization Plugin Written to SecurityAgentPlugins
+id: abc435d7-cb05-4288-8e87-f549e189bbb0
+status: experimental
+description: >
+  Detects a file written under /Library/Security/SecurityAgentPlugins/, the
+  directory loaded by the macOS login and authorization stack. A plugin there
+  runs inside the login process and can capture the password or bypass
+  authentication, as the EvilQuest-era and later authorization-plugin
+  backdoors do.
+references:
+  - https://attack.mitre.org/techniques/T1556/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.credential-access
+  - attack.persistence
+  - attack.t1556
+logsource:
+  category: file_event
+  product: macos
+detection:
+  selection:
+    TargetFilename|contains: '/Library/Security/SecurityAgentPlugins/'
+  filter_system_writer:
+    Image|startswith:
+      - '/System/'
+      - '/usr/libexec/'
+      - '/usr/sbin/installer'
+  filter_managed_writer:
+    Image|contains:
+      - '/PackageKit.framework/'
+      - '/jamf'
+  condition: selection and not filter_system_writer and not filter_managed_writer
+falsepositives:
+  - Enterprise login or smart-card software that installs an authorization plugin through its installer.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: filter_managed_writer
+      guidance: Add the installer or management agent of your login or smart-card vendor.
+  negatives:
+    - reason: installer writing a vendor plugin
+      fields:
+        Image: /usr/sbin/installer
+        TargetFilename: /Library/Security/SecurityAgentPlugins/Vendor.bundle/Contents/MacOS/Vendor
+    - reason: Apple installer service
+      fields:
+        Image: /System/Library/PrivateFrameworks/PackageKit.framework/Resources/installd
+        TargetFilename: /Library/Security/SecurityAgentPlugins/Apple.bundle/Info.plist
+    - reason: unrelated file in the Security folder
+      fields:
+        Image: /usr/bin/touch
+        TargetFilename: /Library/Security/notes.txt

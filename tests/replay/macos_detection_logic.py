@@ -30,6 +30,11 @@ KEYCHAIN = "Keychain Credential Dump via security"
 PLIST = "Launch Agent or Daemon Plist Written"
 PLIST_SCRIPTED = "Launch Agent or Daemon Plist Written by a Shell or Scripting Process"
 KEYS = "SSH authorized_keys Written (macOS)"
+AUTHONLY = "Password Validation via dscl -authonly"
+AUTH_PLUGIN = "Authorization Plugin Written to SecurityAgentPlugins"
+PROFILE = "Shell Profile Modified by a Shell or Scripting Process"
+LOGIN_HOOK = "Login Hook or Login Item Added from the Command Line"
+TRUSTED_CERT = "Root Certificate Added to the Trust Store via security"
 
 RULE_FILES = {
     GK_GLOBAL: "proc_creation_macos_gatekeeper_bypass.yml",
@@ -47,10 +52,64 @@ RULE_FILES = {
     PLIST: "file_event_macos_launch_persistence.yml",
     PLIST_SCRIPTED: "file_event_macos_launch_persistence_scripted.yml",
     KEYS: "file_event_macos_ssh_authorized_keys.yml",
+    AUTHONLY: "proc_creation_macos_dscl_authonly.yml",
+    AUTH_PLUGIN: "file_event_macos_authorization_plugin.yml",
+    PROFILE: "file_event_macos_shell_profile_scripted.yml",
+    LOGIN_HOOK: "proc_creation_macos_login_hook_or_item.yml",
+    TRUSTED_CERT: "proc_creation_macos_trusted_cert_added.yml",
 }
 
 # (rule, Image, CommandLine, extra fields, alerts)
 PROCESS_CASES = [
+    (AUTHONLY, "/usr/bin/dscl", "dscl . -authonly alice hunter2", {}, True),
+    (AUTHONLY, "/usr/bin/dscl", "dscl /Local/Default -authonly alice pw", {}, True),
+    (AUTHONLY, "/usr/bin/dscl", "dscl . -read /Users/alice", {}, False),
+    (AUTHONLY, "/usr/bin/dscl", "dscl . -list /Users", {}, False),
+    (
+        LOGIN_HOOK,
+        "/usr/bin/defaults",
+        "defaults write com.apple.loginwindow LoginHook /tmp/x.sh",
+        {},
+        True,
+    ),
+    (
+        LOGIN_HOOK,
+        "/usr/bin/defaults",
+        "defaults write com.apple.loginwindow LogoutHook /tmp/x.sh",
+        {},
+        True,
+    ),
+    (
+        LOGIN_HOOK,
+        "/usr/bin/osascript",
+        'osascript -e \'tell application "System Events" to make login item at end with properties {path:"/tmp/x.app"}\'',  # noqa: E501
+        {},
+        True,
+    ),
+    (LOGIN_HOOK, "/usr/bin/defaults", "defaults read com.apple.loginwindow", {}, False),
+    (
+        LOGIN_HOOK,
+        "/usr/bin/defaults",
+        "defaults write com.apple.loginwindow GuestEnabled -bool false",
+        {},
+        False,
+    ),
+    (
+        LOGIN_HOOK,
+        "/usr/bin/osascript",
+        "osascript -e 'tell application \"System Events\" to get the name of every login item'",
+        {},
+        False,
+    ),
+    (
+        TRUSTED_CERT,
+        "/usr/bin/security",
+        "security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/ca.pem",  # noqa: E501
+        {},
+        True,
+    ),
+    (TRUSTED_CERT, "/usr/bin/security", "security list-keychains", {}, False),
+    (TRUSTED_CERT, "/usr/bin/security", "security verify-cert -c /tmp/ca.pem", {}, False),
     # Gatekeeper: the global switch only; xattr is a separate rule.
     (GK_GLOBAL, "/usr/sbin/spctl", "spctl --master-disable", {}, True),
     (GK_GLOBAL, "/usr/sbin/spctl", "spctl --global-disable", {}, True),
@@ -276,6 +335,32 @@ PROCESS_CASES = [
 
 # (rule, Image, TargetFilename, alerts)
 FILE_CASES = [
+    (
+        AUTH_PLUGIN,
+        "/bin/sh",
+        "/Library/Security/SecurityAgentPlugins/Evil.bundle/Contents/MacOS/Evil",
+        True,
+    ),
+    (AUTH_PLUGIN, "/usr/bin/dd", "/Library/Security/SecurityAgentPlugins/x.txt", True),
+    (
+        AUTH_PLUGIN,
+        "/usr/sbin/installer",
+        "/Library/Security/SecurityAgentPlugins/V.bundle/Info.plist",
+        False,
+    ),
+    (AUTH_PLUGIN, "/usr/bin/touch", "/Library/Security/notes.txt", False),
+    (PROFILE, "/bin/zsh", "/Users/alice/.zshrc", True),
+    (PROFILE, "/bin/bash", "/Users/alice/.zprofile", True),
+    (PROFILE, "/usr/bin/curl", "/Users/alice/.bash_profile", True),
+    (PROFILE, "/usr/bin/python3", "/etc/zshrc", True),
+    (PROFILE, "/usr/bin/vim", "/Users/alice/.zshrc", False),
+    (PROFILE, "/bin/zsh", "/Users/alice/notes.txt", False),
+    (
+        PROFILE,
+        "/opt/homebrew/Library/Homebrew/vendor/portable-ruby/3.4.5/bin/ruby",
+        "/Users/alice/.zprofile",
+        False,
+    ),
     (PLIST, "/usr/bin/plutil", "/Users/alice/Library/LaunchAgents/com.evil.plist", True),
     (PLIST, "/tmp/dropper", "/Library/LaunchDaemons/com.evil.plist", True),
     (PLIST, "/usr/sbin/installer", "/Library/LaunchDaemons/com.vendor.helper.plist", False),
