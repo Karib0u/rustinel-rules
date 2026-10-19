@@ -27,13 +27,7 @@ detection:
   selection_dropin:
     TargetFilename|contains: '/etc/ssh/sshd_config.d/'
   filter_pkg:
-    Image|endswith:
-      - '/dpkg'
-      - '/rpm'
-      - '/dnf'
-      - '/yum'
-      - '/apt'
-      - '/apt-get'
+    Image|re: '^/(usr/)?s?bin/(dpkg|rpm|dnf|yum|apt|apt-get)$'
   condition: (selection_file or selection_dropin) and not filter_pkg
 falsepositives:
   - Legitimate SSH hardening, package upgrades and configuration management.

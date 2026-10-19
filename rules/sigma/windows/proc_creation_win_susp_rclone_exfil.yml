@@ -3,9 +3,10 @@ id: 68863af9-9225-4d43-8708-0fb73581d4c6
 status: experimental
 description: >
   Detects rclone, including renamed copies identified by the version resource,
-  copying or syncing data with the transfer-tuning and unattended options that
-  ransomware operators use to push stolen data to cloud storage before
-  encryption.
+  copying or syncing data to a named or connection-string remote, or with a stored
+  configuration or unattended mode, which is how ransomware operators push stolen
+  data to cloud storage before encryption. Local copies are not matched, even
+  with transfer-tuning options.
 references:
   - https://attack.mitre.org/techniques/T1567/002/
   - https://attack.mitre.org/software/S1040/
@@ -27,13 +28,16 @@ detection:
       - ' sync '
       - ' move '
       - ' copyto '
-  selection_options:
+  selection_remote:
+    # A named remote (remote:path, at least two characters so a drive letter
+    # does not count) or an on-the-fly connection string (:s3,provider=...:bucket).
+    CommandLine|re: '\s(:[a-z0-9]+(,[^:\s]+)?|[A-Za-z0-9_-]{2,}):[^\s\\]*(\s|$)'
+  selection_unattended:
+    # Options that point at a stored remote configuration or skip confirmation.
     CommandLine|contains:
       - '--config'
-      - '--transfers'
       - '--auto-confirm'
-      - '--multi-thread-streams'
-  condition: selection_image and selection_verb and selection_options
+  condition: selection_image and selection_verb and (selection_remote or selection_unattended)
 falsepositives:
   - Administrators running sanctioned backup or sync jobs with rclone.
 level: high
@@ -44,7 +48,7 @@ rustinel:
   test_status: atomic
   tuning:
     - surface: selection_options
-      guidance: Add a filter on the ParentImage or the --config path used by your sanctioned rclone backup jobs.
+      guidance: Add a filter on the ParentImage, or the remote name or --config path, used by your sanctioned rclone backup jobs.
   negatives:
     - reason: listing remotes without transferring data
       fields:
@@ -54,6 +58,14 @@ rustinel:
       fields:
         Image: C:\Tools\rclone.exe
         CommandLine: rclone.exe version
+    - reason: local copy with transfer tuning
+      fields:
+        Image: C:\Tools\rclone.exe
+        CommandLine: rclone.exe copy C:\a D:\b --transfers 8
+    - reason: sync to a network share
+      fields:
+        Image: C:\Tools\rclone.exe
+        CommandLine: rclone.exe sync C:\a \\nas\share\backup
     - reason: another binary that mentions the word copy
       fields:
         Image: C:\Windows\System32\robocopy.exe

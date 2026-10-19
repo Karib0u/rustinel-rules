@@ -44,12 +44,13 @@ detection:
     # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
     # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
     # case, so that also matched every /opt/homebrew/ shell and interpreter.
-    Image|contains:
-      - '/Library/Homebrew/'
-      - '/PackageKit.framework/'
-      - '/jamf'
-      - '/Jamf/'
-      - '/munki/'
+    Image|startswith:
+      - '/opt/homebrew/Library/Homebrew/'
+      - '/usr/local/Homebrew/Library/Homebrew/'
+      - '/usr/local/jamf/'
+      - '/usr/local/bin/jamf'
+      - '/Library/Application Support/JAMF/'
+      - '/usr/local/munki/'
   condition: selection and not filter_system_path and not filter_system_writer and not filter_managed_writer
 falsepositives:
   - Application installers and management tooling that register launch items and are not in the writer filter.

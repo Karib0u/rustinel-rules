@@ -23,13 +23,7 @@ detection:
   selection_dir:
     TargetFilename|contains: '/etc/sudoers.d/'
   filter_pkg:
-    Image|endswith:
-      - '/dpkg'
-      - '/rpm'
-      - '/dnf'
-      - '/yum'
-      - '/apt'
-      - '/apt-get'
+    Image|re: '^/(usr/)?s?bin/(dpkg|rpm|dnf|yum|apt|apt-get)$'
   condition: (selection_file or selection_dir) and not filter_pkg
 falsepositives:
   - Package installations and configuration management that add sudoers drop-ins.

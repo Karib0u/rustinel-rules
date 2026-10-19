@@ -25,13 +25,7 @@ detection:
       - '/lib/udev/rules.d/'
       - '/usr/lib/udev/rules.d/'
   filter_pkg:
-    Image|endswith:
-      - '/dpkg'
-      - '/rpm'
-      - '/dnf'
-      - '/apt'
-      - '/apt-get'
-      - '/yum'
+    Image|re: '^/(usr/)?s?bin/(dpkg|rpm|dnf|apt|apt-get|yum)$'
   condition: selection and not filter_pkg
 falsepositives:
   - Driver and package installs write udev rules; the package-manager image filter

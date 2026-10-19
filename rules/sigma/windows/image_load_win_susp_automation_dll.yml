@@ -23,14 +23,15 @@ detection:
       - '\System.Management.Automation.dll'
       - '\System.Management.Automation.ni.dll'
   filter_hosts:
-    Image|endswith:
-      - '\powershell.exe'
-      - '\powershell_ise.exe'
-      - '\pwsh.exe'
-      - '\wsmprovhost.exe'
-      - '\sdiagnhost.exe'
-      - '\mscorsvw.exe'
-      - '\dsac.exe'
+    # Full trusted paths, not basenames: a renamed or dropped copy named
+    # powershell.exe in a user-writable folder is exactly the foreign host this
+    # rule is meant to see.
+    Image|re:
+      - '(?i)^[a-z]:\\windows\\(system32|syswow64)\\windowspowershell\\v1\.0\\(powershell|powershell_ise)\.exe$'
+      - '(?i)^[a-z]:\\program files( \(x86\))?\\powershell\\[0-9]+(-preview)?\\pwsh\.exe$'
+      - '(?i)^[a-z]:\\program files\\windowsapps\\microsoft\.powershell_[^\\]+\\pwsh\.exe$'
+      - '(?i)^[a-z]:\\windows\\(system32|syswow64)\\(wsmprovhost|sdiagnhost|dsac)\.exe$'
+      - '(?i)^[a-z]:\\windows\\microsoft\.net\\framework(64)?\\v[0-9.]+\\mscorsvw\.exe$'
   condition: selection and not filter_hosts
 falsepositives:
   - Administration and backup tools that embed the PowerShell runtime; add them

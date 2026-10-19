@@ -29,9 +29,7 @@ detection:
       # 3xxx, 5xxx, 7xxx included), optionally zero-prefixed.
       - '(^|[\s/])chmod\s+(-\S+\s+)*0?[2-7][0-7]{3}(\s|$)'
   filter_pkg:
-    ParentImage|endswith:
-      - '/dpkg'
-      - '/rpm'
+    ParentImage|re: '^/(usr/)?s?bin/(dpkg|rpm)$'
   condition: selection and not filter_pkg
 falsepositives:
   - Package post-install scripts occasionally set setuid bits; the package-manager

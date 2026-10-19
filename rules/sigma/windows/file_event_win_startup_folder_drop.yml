@@ -21,9 +21,9 @@ detection:
   filter_ini:
     TargetFilename|endswith: '.ini'
   filter_installer:
-    Image|endswith:
-      - '\msiexec.exe'
-      - '\TrustedInstaller.exe'
+    Image|re:
+      - '(?i)^[a-z]:\\windows\\(system32|syswow64)\\msiexec\.exe$'
+      - '(?i)^[a-z]:\\windows\\servicing\\trustedinstaller\.exe$'
   condition: selection and not (filter_ini or filter_installer)
 falsepositives:
   - Legitimate installers register startup entries; the installer image filter is
