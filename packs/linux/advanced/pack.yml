@@ -19,10 +19,12 @@ attack_coverage:
   - T1027
   - T1053.003
   - T1059.004
+  - T1059.006
   - T1070.002
   - T1070.003
   - T1071
   - T1090
+  - T1095
   - T1098.004
   - T1105
   - T1136.001
@@ -36,7 +38,10 @@ attack_coverage:
   - T1547.006
   - T1548.001
   - T1548.003
+  - T1552.005
+  - T1556.003
   - T1562.001
+  - T1562.012
   - T1572
   - T1574.006
 telemetry_requirements:
@@ -71,6 +76,11 @@ rules:
           - 300f4d0e-79ef-4c53-9461-7b3f4e468537   # DNS Query to Tunnel Service (Linux) (sigma)
           - 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb   # File Renamed to Ransomware-Style Extension (Linux) (sigma)
           - ae619e3b-9950-4cec-89f0-8874c142197b   # Mass File Rename to Ransomware-Style Extension (Linux) (sigma)
+          - f7c3b270-a699-4597-a5b6-0e2860f3decf   # Scripted Reverse Shell via Python, Perl, PHP or Ruby (sigma)
+          - 40109cc2-5bab-4d23-9761-080badad3447   # Linux Audit Rules Deleted or Auditing Disabled (sigma)
+          - 2ef433bf-d843-424c-8223-c31efb639535   # PAM Configuration or Module Tampering (sigma)
+          - 94f6d29a-b19b-4bb2-9283-f3d6f9976811   # Cloud Instance Metadata Credential Request from the Command Line (sigma)
+          - 43dae6e5-fb47-46a0-90a3-a0992f985eaa   # Cryptominer Command Line (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
           - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)

@@ -1,0 +1,59 @@
+title: PAM Configuration or Module Tampering
+id: 2ef433bf-d843-424c-8223-c31efb639535
+status: experimental
+description: >
+  Detects a write to /etc/pam.d/ or to a pam_*.so module under a security
+  directory by anything other than a package manager. A modified PAM stack or a
+  malicious module lets an attacker accept any password or capture credentials
+  (the Plague and Ebury families).
+references:
+  - https://attack.mitre.org/techniques/T1556/003/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.credential-access
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.t1556.003
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_config:
+    TargetFilename|contains: '/etc/pam.d/'
+  selection_module:
+    TargetFilename|re: '/security/pam_[^/]+\.so'
+  filter_pkg:
+    Image|endswith:
+      - '/dpkg'
+      - '/rpm'
+      - '/dnf'
+      - '/yum'
+      - '/apt'
+      - '/apt-get'
+      - '/pam-auth-update'
+  condition: (selection_config or selection_module) and not filter_pkg
+falsepositives:
+  - Configuration management and hardening tools that manage PAM files.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: filter_pkg
+      guidance: Add the images of your configuration-management agent and any authentication client such as sssd or authselect.
+  negatives:
+    - reason: package manager updating a PAM file
+      fields:
+        Image: /usr/bin/dpkg
+        TargetFilename: /etc/pam.d/common-auth
+    - reason: pam-auth-update regenerating the stack
+      fields:
+        Image: /usr/sbin/pam-auth-update
+        TargetFilename: /etc/pam.d/common-session
+    - reason: unrelated file under /etc
+      fields:
+        Image: /usr/bin/vim
+        TargetFilename: /etc/hostname

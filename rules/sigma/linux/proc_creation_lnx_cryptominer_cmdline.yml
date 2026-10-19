@@ -1,0 +1,45 @@
+title: Cryptominer Command Line
+id: 43dae6e5-fb47-46a0-90a3-a0992f985eaa
+status: experimental
+description: >
+  Detects a process whose command line carries stratum mining-pool URLs or the
+  donate-level option shared by XMRig and its forks. Matches by arguments, so it
+  still catches packed or renamed miners that the YARA rules cannot read.
+references:
+  - https://attack.mitre.org/techniques/T1496/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.impact
+  - attack.t1496
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    CommandLine|contains:
+      - 'stratum+tcp://'
+      - 'stratum+ssl://'
+      - 'stratum+tls://'
+      - '--donate-level'
+  condition: selection
+falsepositives:
+  - Documentation tooling or mining software run on purpose by the host owner.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: selection
+      guidance: Filter the Image of an approved miner on hosts where mining is the workload.
+  negatives:
+    - reason: grep through a log for a pool URL fragment
+      fields:
+        Image: /usr/bin/grep
+        CommandLine: grep pool /var/log/syslog
+    - reason: unrelated command with a TCP URL
+      fields:
+        Image: /usr/bin/curl
+        CommandLine: curl http://example.com:3333/health

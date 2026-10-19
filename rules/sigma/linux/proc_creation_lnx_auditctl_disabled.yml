@@ -1,0 +1,53 @@
+title: Linux Audit Rules Deleted or Auditing Disabled
+id: 40109cc2-5bab-4d23-9761-080badad3447
+status: experimental
+description: >
+  Detects auditctl deleting every audit rule (-D) or turning auditing off
+  (-e 0). Attackers clear the audit configuration before acting so that later
+  commands, file writes and logins are not recorded.
+references:
+  - https://attack.mitre.org/techniques/T1562/012/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.defense-evasion
+  - attack.t1562.012
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_image:
+    Image|endswith: '/auditctl'
+  selection_delete_all:
+    CommandLine|re: '\s-D(\s|$)'
+  selection_disable:
+    CommandLine|re: '\s-e\s*0(\s|$)'
+  condition: selection_image and (selection_delete_all or selection_disable)
+falsepositives:
+  - Configuration management reloading audit rules, which runs auditctl -D before loading the new set.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Exclude augenrules, auditd and the configuration-management agent that reloads rules.
+  negatives:
+    - reason: listing the loaded rules
+      fields:
+        Image: /usr/sbin/auditctl
+        CommandLine: auditctl -l
+    - reason: enabling auditing
+      fields:
+        Image: /usr/sbin/auditctl
+        CommandLine: auditctl -e 1
+    - reason: adding a watch
+      fields:
+        Image: /usr/sbin/auditctl
+        CommandLine: auditctl -w /etc/passwd -p wa -k passwd
+    - reason: removing one rule by its lowercase flag
+      fields:
+        Image: /usr/sbin/auditctl
+        CommandLine: auditctl -d exit,always -S open
