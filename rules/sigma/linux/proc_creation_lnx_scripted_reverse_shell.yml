@@ -1,0 +1,76 @@
+title: Scripted Reverse Shell via Python, Perl, PHP or Ruby
+id: f7c3b270-a699-4597-a5b6-0e2860f3decf
+status: experimental
+description: >
+  Detects a Python, Perl, PHP or Ruby one-liner that opens a socket, connects out
+  and wires it to a shell (dup2, pty.spawn, exec, system or an interactive
+  shell). This is the common reverse-shell form when netcat is absent and
+  /dev/tcp is unavailable, and complements the netcat and /dev/tcp rules.
+  Note: on Linux CommandLine is best-effort /proc enrichment.
+references:
+  - https://attack.mitre.org/techniques/T1059/006/
+  - https://attack.mitre.org/techniques/T1059/004/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.execution
+  - attack.t1059.006
+  - attack.t1059.004
+  - attack.command-and-control
+  - attack.t1095
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_image:
+    Image|re: '/(python[0-9.]*|perl|php[0-9.]*|ruby[0-9.]*)$'
+  selection_socket:
+    CommandLine|contains:
+      - 'socket.socket'
+      - 'socket('
+      - 'fsockopen'
+      - 'TCPSocket'
+      - 'IO::Socket'
+  selection_connect:
+    CommandLine|contains:
+      - 'connect('
+      - 'fsockopen'
+      - 'TCPSocket.open'
+      - 'TCPSocket.new'
+      - 'IO::Socket::INET'
+  selection_shell:
+    CommandLine|contains:
+      - 'dup2'
+      - 'pty.spawn'
+      - '/bin/sh'
+      - '/bin/bash'
+      - 'sh -i'
+      - 'exec('
+      - 'system('
+      - 'popen'
+      - 'open(STDIN'
+  condition: selection_image and selection_socket and selection_connect and selection_shell
+falsepositives:
+  - Network utilities written in a scripting language that open a connection and then run a local command.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: selection_shell
+      guidance: Add a ParentImage filter for monitoring or provisioning agents that build socket-and-exec one-liners.
+  negatives:
+    - reason: connecting to a database from a script without a shell
+      fields:
+        Image: /usr/bin/python3
+        CommandLine: python3 -c "import socket;s=socket.socket();s.connect(('db.internal',5432));print('ok')"
+    - reason: serving files over HTTP
+      fields:
+        Image: /usr/bin/python3
+        CommandLine: python3 -m http.server 8000
+    - reason: socket module only used for the hostname
+      fields:
+        Image: /usr/bin/python3
+        CommandLine: python3 -c "import socket,os;print(socket.gethostname())"

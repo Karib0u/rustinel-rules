@@ -1201,6 +1201,41 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/account_created.ps1"
+    },
+    {
+      "id": "f7c3b270-a699-4597-a5b6-0e2860f3decf",
+      "name": "linux_scripted_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/scripted_reverse_shell.sh"
+    },
+    {
+      "id": "40109cc2-5bab-4d23-9761-080badad3447",
+      "name": "linux_auditctl_disabled",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/auditctl_disabled.sh"
+    },
+    {
+      "id": "2ef433bf-d843-424c-8223-c31efb639535",
+      "name": "linux_pam_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/pam_tamper.sh"
+    },
+    {
+      "id": "94f6d29a-b19b-4bb2-9283-f3d6f9976811",
+      "name": "linux_cloud_metadata_credentials",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cloud_metadata_credentials.sh"
+    },
+    {
+      "id": "43dae6e5-fb47-46a0-90a3-a0992f985eaa",
+      "name": "linux_cryptominer_cmdline",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cryptominer_cmdline.sh"
     }
   ]
 }

