@@ -13,7 +13,7 @@ atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
    (a script)        (process / file / registry)            (engine)     (we check)
 ```
 
-> **Status:** CI installs the released **v1.9.1** binaries on all three
+> **Status:** CI installs the released **v1.10.0** binaries on all three
 > platforms. Linux, Windows and hosted `macos-latest` jobs all gate CI.
 > Endpoint Security initialises under `sudo` with the released macOS binary.
 > macOS packs remain disabled by default for users; CI loads them explicitly.
@@ -21,7 +21,7 @@ atomic action  ->  real OS telemetry (eBPF / ETW / ES)  ->  rustinel  ->  alert?
 ## Shared suite and engine pin
 
 The workflow installs the released version recorded in
-[`compatibility/engine.json`](../../compatibility/engine.json) (**1.9.1**), using
+[`compatibility/engine.json`](../../compatibility/engine.json) (**1.10.0**), using
 install scripts from the same exact commit as the vendored field contract, so an
 unchanged rules revision keeps testing against the same engine release. The
 first baseline was v1.6.0, the first release on which the full suite passed
@@ -30,7 +30,7 @@ across Linux, Windows and hosted macOS, including the IOC and WMI paths (see
 v1.8.0 in [#72](https://github.com/Karib0u/rustinel-rules/issues/72) to unblock
 its Security, process-identity, hash and container telemetry; the full suite
 passed on it on all three platforms. It then moved to v1.9.1, which brings the
-schema 3 field contract.
+schema 3 field contract. It moved to v1.10.0 with that contract unchanged.
 The test pin is separate from each pack's content-derived `requires_rustinel`
 minimum; passing here does not certify every older supported engine version.
 
@@ -271,8 +271,8 @@ privileged. Linux and macOS use the same installer:
 ```bash
 uv sync --frozen
 uv run python tools/build_packs.py
-curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/v1.9.1/scripts/install/install.sh \
-  | sh -s -- --dir tests/atomic/.engine --version 1.9.1
+curl -fsSL https://raw.githubusercontent.com/Karib0u/rustinel/v1.10.0/scripts/install/install.sh \
+  | sh -s -- --dir tests/atomic/.engine --version 1.10.0
 
 # Linux:
 sudo python3 tests/atomic/run_atomics.py --platform linux
@@ -290,9 +290,9 @@ Windows, from an elevated PowerShell:
 ```powershell
 uv sync --frozen
 uv run python tools\build_packs.py
-Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/v1.9.1/scripts/install/install.ps1 -OutFile install.ps1
+Invoke-WebRequest https://raw.githubusercontent.com/Karib0u/rustinel/v1.10.0/scripts/install/install.ps1 -OutFile install.ps1
 powershell -ExecutionPolicy Bypass -File .\install.ps1 `
-  -InstallDir tests\atomic\.engine -Version 1.9.1
+  -InstallDir tests\atomic\.engine -Version 1.10.0
 python tests\atomic\run_atomics.py --platform windows
 ```
 
