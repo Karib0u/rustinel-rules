@@ -25,13 +25,7 @@ detection:
       - '/authorized_keys'
       - '/authorized_keys2'
   filter_pkg:
-    Image|endswith:
-      - '/dpkg'
-      - '/rpm'
-      - '/dnf'
-      - '/yum'
-      - '/apt'
-      - '/apt-get'
+    Image|re: '^/(usr/)?s?bin/(dpkg|rpm|dnf|yum|apt|apt-get)$'
   condition: selection and not filter_pkg
 falsepositives:
   - Legitimate key provisioning via ssh-copy-id or configuration management.

@@ -27,9 +27,10 @@ detection:
       - '/usr/libexec/'
       - '/usr/sbin/installer'
   filter_managed_writer:
-    Image|contains:
-      - '/PackageKit.framework/'
-      - '/jamf'
+    Image|startswith:
+      - '/usr/local/jamf/'
+      - '/usr/local/bin/jamf'
+      - '/Library/Application Support/JAMF/'
   condition: selection and not filter_system_writer and not filter_managed_writer
 falsepositives:
   - Enterprise login or smart-card software that installs an authorization plugin through its installer.

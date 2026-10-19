@@ -35,9 +35,7 @@ detection:
       - '/etc/bash.bashrc'
       - '/etc/profile'
   filter_container_unpack:
-    Image|endswith:
-      - '/containerd'
-      - '/dockerd'
+    Image|re: '^/usr/(local/)?s?bin/(containerd|dockerd)$'
     TargetFilename|startswith:
       - '/var/lib/containerd/'
       - '/var/lib/docker/'

@@ -42,9 +42,12 @@ detection:
       - '/osascript'
       - '/curl'
   filter_managed_writer:
-    Image|contains:
-      - '/Library/Homebrew/'
-      - '/jamf'
+    Image|startswith:
+      - '/opt/homebrew/Library/Homebrew/'
+      - '/usr/local/Homebrew/Library/Homebrew/'
+      - '/usr/local/jamf/'
+      - '/usr/local/bin/jamf'
+      - '/Library/Application Support/JAMF/'
   condition: selection_profile and selection_writer and not filter_managed_writer
 falsepositives:
   - Developer environment installers such as nvm, pyenv, conda and rustup, which append to shell profiles.

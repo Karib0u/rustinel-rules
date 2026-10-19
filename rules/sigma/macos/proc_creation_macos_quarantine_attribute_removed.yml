@@ -44,15 +44,17 @@ detection:
     # Homebrew's own Ruby lives under <repository>/Library/Homebrew/ on both
     # /opt/homebrew and /usr/local/Homebrew. Not '/Homebrew/': contains ignores
     # case, so that also matched every /opt/homebrew/ shell and interpreter.
-    ParentImage|contains:
-      - '/Library/Homebrew/'
+    ParentImage|startswith:
+      - '/opt/homebrew/Library/Homebrew/'
+      - '/usr/local/Homebrew/Library/Homebrew/'
       - '/usr/sbin/installer'
-      - '/PackageKit.framework/'
-      - '/jamf'
-      - '/Jamf/'
-      - '/munki/'
-      - '/Kandji'
-      - '/mdmclient'
+      - '/System/Library/PrivateFrameworks/PackageKit.framework/'
+      - '/usr/local/jamf/'
+      - '/usr/local/bin/jamf'
+      - '/Library/Application Support/JAMF/'
+      - '/usr/local/munki/'
+      - '/Library/Kandji/'
+      - '/usr/libexec/mdmclient'
   condition: selection_xattr and (selection_delete or selection_clear) and not filter_managed
 falsepositives:
   - Developers stripping quarantine from their own builds or from downloaded tools.

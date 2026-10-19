@@ -24,14 +24,7 @@ detection:
   selection_module:
     TargetFilename|re: '/security/pam_[^/]+\.so'
   filter_pkg:
-    Image|endswith:
-      - '/dpkg'
-      - '/rpm'
-      - '/dnf'
-      - '/yum'
-      - '/apt'
-      - '/apt-get'
-      - '/pam-auth-update'
+    Image|re: '^/(usr/)?s?bin/(dpkg|rpm|dnf|yum|apt|apt-get|pam-auth-update)$'
   condition: (selection_config or selection_module) and not filter_pkg
 falsepositives:
   - Configuration management and hardening tools that manage PAM files.
