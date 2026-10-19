@@ -2,7 +2,7 @@
 
 `field-availability.json` is an unmodified copy of the engine's generated contract.
 `engine.json` records its released engine version, exact commit and SHA-256 digest.
-Validation and atomic CI read this shared pin, currently v1.9.1. The initial
+Validation and atomic CI read this shared pin, currently v1.10.0. The initial
 baseline was v1.6.0, proposed in [#37](https://github.com/Karib0u/rustinel-rules/issues/37).
 `engine.json` is the engine CI tests against; each pack's `requires_rustinel` is the
 true minimum compatible version of its content. The two are independent: moving the
@@ -15,10 +15,10 @@ uv run python tools/refresh_engine_contract.py
 ```
 
 To deliberately move certification to another released engine, refresh both files
-together (replace `1.9.1` with the intended version):
+together (replace `1.10.0` with the intended version):
 
 ```bash
-uv run python tools/refresh_engine_contract.py --version 1.9.1
+uv run python tools/refresh_engine_contract.py --version 1.10.0
 ```
 
 The command resolves the release tag to a commit, downloads from that commit and
