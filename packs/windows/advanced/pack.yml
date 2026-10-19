@@ -33,6 +33,7 @@ attack_coverage:
   - T1105
   - T1134.005
   - T1136.001
+  - T1190
   - T1197
   - T1218
   - T1218.005
@@ -42,6 +43,7 @@ attack_coverage:
   - T1486
   - T1490
   - T1496
+  - T1505.003
   - T1543.003
   - T1546.003
   - T1546.008
@@ -51,7 +53,10 @@ attack_coverage:
   - T1548.002
   - T1562.001
   - T1562.002
+  - T1562.004
+  - T1562.009
   - T1566.001
+  - T1567.002
   - T1569.002
   - T1572
 telemetry_requirements:
@@ -109,6 +114,10 @@ rules:
           - efac4650-a3aa-4dd9-9f6f-679bfcf14c16   # Microsoft Defender Exclusion Added (sigma)
           - 6c7fb86b-bb5e-4de0-a414-e4865717f926   # Windows CVE Exploitation Attempt Audited (sigma)
           - e3136f60-ae86-4333-9ea5-64e4664a0bb1   # WMI Permanent Event Consumer Bound (5861) (sigma)
+          - 157ffa4c-89d0-4b92-9119-66ca256eea60   # Web Server or SQL Server Spawning a Command Shell (sigma)
+          - 68863af9-9225-4d43-8708-0fb73581d4c6   # Rclone Used to Copy Data to a Remote Storage (sigma)
+          - ddada813-a945-40a5-af78-3131b2e93fe9   # Windows Firewall Disabled from the Command Line (sigma)
+          - 021a78f0-210b-4932-bb12-26820eedc3c1   # Microsoft Defender Exclusion or Disable via PowerShell Command Line (sigma)
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

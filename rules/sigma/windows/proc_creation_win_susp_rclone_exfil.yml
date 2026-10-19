@@ -1,0 +1,60 @@
+title: Rclone Used to Copy Data to a Remote Storage
+id: 68863af9-9225-4d43-8708-0fb73581d4c6
+status: experimental
+description: >
+  Detects rclone, including renamed copies identified by the version resource,
+  copying or syncing data with the transfer-tuning and unattended options that
+  ransomware operators use to push stolen data to cloud storage before
+  encryption.
+references:
+  - https://attack.mitre.org/techniques/T1567/002/
+  - https://attack.mitre.org/software/S1040/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.exfiltration
+  - attack.t1567.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_image:
+    - Image|endswith: '\rclone.exe'
+    - OriginalFileName: 'rclone.exe'
+  selection_verb:
+    CommandLine|contains:
+      - ' copy '
+      - ' sync '
+      - ' move '
+      - ' copyto '
+  selection_options:
+    CommandLine|contains:
+      - '--config'
+      - '--transfers'
+      - '--auto-confirm'
+      - '--multi-thread-streams'
+  condition: selection_image and selection_verb and selection_options
+falsepositives:
+  - Administrators running sanctioned backup or sync jobs with rclone.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_options
+      guidance: Add a filter on the ParentImage or the --config path used by your sanctioned rclone backup jobs.
+  negatives:
+    - reason: listing remotes without transferring data
+      fields:
+        Image: C:\Tools\rclone.exe
+        CommandLine: rclone.exe listremotes
+    - reason: version check
+      fields:
+        Image: C:\Tools\rclone.exe
+        CommandLine: rclone.exe version
+    - reason: another binary that mentions the word copy
+      fields:
+        Image: C:\Windows\System32\robocopy.exe
+        CommandLine: robocopy.exe C:\a D:\b /MIR
