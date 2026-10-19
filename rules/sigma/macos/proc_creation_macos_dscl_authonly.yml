@@ -1,0 +1,49 @@
+title: Password Validation via dscl -authonly
+id: 7cdd4118-b1f9-4396-a9fd-728b9d453803
+status: experimental
+description: >
+  Detects dscl authenticating a local account with -authonly. Infostealers such
+  as Atomic Stealer phish the user's password through an osascript dialog and
+  then call dscl -authonly to check that it is correct before using it. Few
+  legitimate tools validate passwords this way.
+references:
+  - https://attack.mitre.org/techniques/T1056/002/
+  - https://attack.mitre.org/techniques/T1555/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.credential-access
+  - attack.t1056.002
+  - attack.t1555
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection:
+    Image|endswith: '/dscl'
+    CommandLine|contains: '-authonly'
+  condition: selection
+falsepositives:
+  - Enterprise tooling that checks a local password, such as some MDM or FileVault helpers.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Exclude the management agents that validate local passwords as part of enrollment or escrow.
+  negatives:
+    - reason: reading a user record
+      fields:
+        Image: /usr/bin/dscl
+        CommandLine: dscl . -read /Users/alice UserShell
+    - reason: listing local users
+      fields:
+        Image: /usr/bin/dscl
+        CommandLine: dscl . -list /Users
+    - reason: searching for a user with a similar flag
+      fields:
+        Image: /usr/bin/dscl
+        CommandLine: dscl . -search /Users UniqueID 501

@@ -1,0 +1,72 @@
+title: Shell Profile Modified by a Shell or Scripting Process
+id: b01a8433-8768-4825-8d7e-665e132f17b6
+status: experimental
+description: >
+  Detects a shell or scripting interpreter writing a zsh or bash startup file.
+  Attackers append a line to ~/.zshrc, ~/.zprofile or the system profile so
+  their payload runs at every shell start. Interactive editors are not matched,
+  which keeps developer dotfile editing out. Parity with the Linux shell
+  profile rule.
+references:
+  - https://attack.mitre.org/techniques/T1546/004/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.004
+logsource:
+  category: file_event
+  product: macos
+detection:
+  selection_profile:
+    TargetFilename|endswith:
+      - '/.zshrc'
+      - '/.zprofile'
+      - '/.zshenv'
+      - '/.bash_profile'
+      - '/.bashrc'
+      - '/etc/zshrc'
+      - '/etc/zprofile'
+      - '/etc/profile'
+  selection_writer:
+    Image|endswith:
+      - '/sh'
+      - '/bash'
+      - '/zsh'
+      - '/dash'
+      - '/python'
+      - '/python3'
+      - '/perl'
+      - '/ruby'
+      - '/osascript'
+      - '/curl'
+  filter_managed_writer:
+    Image|contains:
+      - '/Library/Homebrew/'
+      - '/jamf'
+  condition: selection_profile and selection_writer and not filter_managed_writer
+falsepositives:
+  - Developer environment installers such as nvm, pyenv, conda and rustup, which append to shell profiles.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_writer
+      guidance: Developer workstations legitimately run installers that append to profiles; scope this rule to servers, or filter the ParentImage of approved installers.
+  negatives:
+    - reason: interactive editor saving the profile
+      fields:
+        Image: /usr/bin/vim
+        TargetFilename: /Users/alice/.zshrc
+    - reason: shell writing an unrelated file
+      fields:
+        Image: /bin/zsh
+        TargetFilename: /Users/alice/notes.txt
+    - reason: Homebrew Ruby updating a profile
+      fields:
+        Image: /opt/homebrew/Library/Homebrew/vendor/portable-ruby/3.4.5/bin/ruby
+        TargetFilename: /Users/alice/.zprofile

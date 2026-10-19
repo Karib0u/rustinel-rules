@@ -1229,6 +1229,41 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/defender_cli_tamper.ps1"
+    },
+    {
+      "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
+      "name": "macos_dscl_authonly",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dscl_authonly.sh"
+    },
+    {
+      "id": "abc435d7-cb05-4288-8e87-f549e189bbb0",
+      "name": "macos_authorization_plugin",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/authorization_plugin.sh"
+    },
+    {
+      "id": "b01a8433-8768-4825-8d7e-665e132f17b6",
+      "name": "macos_shell_profile_scripted",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_profile_scripted.sh"
+    },
+    {
+      "id": "ba4c78ad-7cd1-4fce-b409-57af0f79c814",
+      "name": "macos_login_hook_or_item",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/login_hook.sh"
+    },
+    {
+      "id": "a360dda4-e2ba-42e1-8fda-4a787afebf2d",
+      "name": "macos_trusted_cert_added",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/trusted_cert_added.sh"
     }
   ]
 }

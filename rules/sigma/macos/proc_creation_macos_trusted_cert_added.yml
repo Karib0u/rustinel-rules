@@ -1,0 +1,46 @@
+title: Root Certificate Added to the Trust Store via security
+id: a360dda4-e2ba-42e1-8fda-4a787afebf2d
+status: experimental
+description: >
+  Detects the security tool adding a trusted certificate. Adware, proxy
+  installers and interception tooling add a root certificate so they can read
+  TLS traffic, which breaks the trust model for every site the host visits.
+references:
+  - https://attack.mitre.org/techniques/T1553/004/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.defense-evasion
+  - attack.t1553.004
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection:
+    Image|endswith: '/security'
+    CommandLine|contains: 'add-trusted-cert'
+  condition: selection
+falsepositives:
+  - Corporate proxy or VPN installers and developer tools such as mkcert that add a local root.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Exclude your endpoint-management agent and the installers of approved proxy and VPN software.
+  negatives:
+    - reason: listing the keychains
+      fields:
+        Image: /usr/bin/security
+        CommandLine: security list-keychains
+    - reason: verifying a certificate
+      fields:
+        Image: /usr/bin/security
+        CommandLine: security verify-cert -c /tmp/cert.pem
+    - reason: finding a certificate
+      fields:
+        Image: /usr/bin/security
+        CommandLine: security find-certificate -a

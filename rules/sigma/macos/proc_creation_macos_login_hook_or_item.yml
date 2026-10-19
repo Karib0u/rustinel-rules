@@ -1,0 +1,59 @@
+title: Login Hook or Login Item Added from the Command Line
+id: ba4c78ad-7cd1-4fce-b409-57af0f79c814
+status: experimental
+description: >
+  Detects defaults writing a LoginHook or LogoutHook under
+  com.apple.loginwindow, or osascript telling System Events to make a new
+  login item. Both run attacker code at every login without a launch agent.
+references:
+  - https://attack.mitre.org/techniques/T1037/002/
+  - https://attack.mitre.org/techniques/T1547/015/
+author: rustinel-rules
+date: 2026-10-19
+tags:
+  - attack.persistence
+  - attack.t1037.002
+  - attack.t1547.015
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_hook:
+    Image|endswith: '/defaults'
+    CommandLine|contains|all:
+      - 'write'
+      - 'com.apple.loginwindow'
+    CommandLine|contains:
+      - 'LoginHook'
+      - 'LogoutHook'
+  selection_item:
+    Image|endswith: '/osascript'
+    CommandLine|contains|all:
+      - 'System Events'
+      - 'login item'
+      - 'make'
+  condition: selection_hook or selection_item
+falsepositives:
+  - Management scripts or installers that register a login item for a managed application.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Exclude the installer or management agent that registers approved login items.
+  negatives:
+    - reason: reading the login window domain
+      fields:
+        Image: /usr/bin/defaults
+        CommandLine: defaults read com.apple.loginwindow
+    - reason: writing a different loginwindow key
+      fields:
+        Image: /usr/bin/defaults
+        CommandLine: defaults write com.apple.loginwindow GuestEnabled -bool false
+    - reason: osascript listing login items
+      fields:
+        Image: /usr/bin/osascript
+        CommandLine: osascript -e tell application "System Events" to get the name of every login item
