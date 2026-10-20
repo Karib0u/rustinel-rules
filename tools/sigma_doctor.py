@@ -37,6 +37,23 @@ def verdict_of(doc: dict) -> str:
     return str(doc.get("verdict", "")).replace("_", "-")
 
 
+def _failure_detail(proc: subprocess.CompletedProcess) -> str:
+    """Why the engine could not judge. A fatal report carries the cause in its
+    reasons, past the point where a fixed-length prefix of the JSON would cut it."""
+    try:
+        documents = json.loads(proc.stdout).get("documents", [])
+        messages = [
+            reason.get("message", "")
+            for document in documents
+            for reason in document.get("reasons", [])
+        ]
+    except (json.JSONDecodeError, AttributeError):
+        messages = []
+    if messages:
+        return "; ".join(messages)
+    return (proc.stderr or proc.stdout).strip()[:4000]
+
+
 def run_doctor(engine: Path, platform: str, rules: Path) -> dict:
     """The parsed `sigma doctor --json` report. Exit 0 and 1 both carry a report;
     anything else, or an unreadable report, means the engine could not judge."""
@@ -47,8 +64,7 @@ def run_doctor(engine: Path, platform: str, rules: Path) -> dict:
         check=False,
     )
     if proc.returncode not in (0, 1):
-        detail = (proc.stderr or proc.stdout).strip()[:500]
-        raise RuntimeError(f"exit {proc.returncode}: {detail}")
+        raise RuntimeError(f"exit {proc.returncode}: {_failure_detail(proc)}")
     try:
         report = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
