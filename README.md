@@ -1,8 +1,11 @@
 <p align="center">
-  <img src=".github/assets/logo-rustinel.png" alt="Rustinel" width="240">
+  <a href="#gh-dark-mode-only">
+    <img src=".github/assets/logo-rustinel-dark.png" alt="Rustinel" width="240">
+  </a>
+  <a href="#gh-light-mode-only">
+    <img src=".github/assets/logo-rustinel.png" alt="Rustinel" width="240">
+  </a>
 </p>
-
-<h1 align="center">rustinel-rules</h1>
 
 <p align="center">
   <b>Detection packs for Rustinel.</b><br>
