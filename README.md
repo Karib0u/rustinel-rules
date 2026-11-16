@@ -1,10 +1,9 @@
 <p align="center">
-  <a href="#gh-dark-mode-only">
-    <img src=".github/assets/logo-rustinel-dark.png#gh-dark-mode-only" alt="Rustinel" width="240">
-  </a>
-  <a href="#gh-light-mode-only">
-    <img src=".github/assets/logo-rustinel.png#gh-light-mode-only" alt="Rustinel" width="240">
-  </a>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel.png">
+    <img src="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel.png" alt="Rustinel" width="240">
+  </picture>
 </p>
 
 <p align="center">
