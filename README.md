@@ -1,9 +1,9 @@
 <p align="center">
   <a href="#gh-dark-mode-only">
-    <img src=".github/assets/logo-rustinel-dark.png" alt="Rustinel" width="240">
+    <img src=".github/assets/logo-rustinel-dark.png#gh-dark-mode-only" alt="Rustinel" width="240">
   </a>
   <a href="#gh-light-mode-only">
-    <img src=".github/assets/logo-rustinel.png" alt="Rustinel" width="240">
+    <img src=".github/assets/logo-rustinel.png#gh-light-mode-only" alt="Rustinel" width="240">
   </a>
 </p>
 
