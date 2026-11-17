@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel.png">
-    <img src="https://raw.githubusercontent.com/Karib0u/rustinel-rules/main/.github/assets/logo-rustinel.png" alt="Rustinel" width="240">
-  </picture>
+  <img src=".github/assets/logo-rustinel-universal.png" alt="Rustinel" width="240">
 </p>
 
 <p align="center">
