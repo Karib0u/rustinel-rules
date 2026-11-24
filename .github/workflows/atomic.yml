@@ -113,6 +113,16 @@ jobs:
             Start-Sleep -Seconds ($attempt * 10)
           }
           if (-not $ok) { exit 1 }
+          # Engine v1.9.1+ refuses portable inputs (including config.toml) that
+          # non-admin accounts can write. Hosted Windows runners can grant
+          # Authenticated Users or BUILTIN\Users write access on the workspace,
+          # so lock down the engine directory and reset extracted file ACLs
+          # before sigma doctor and the atomic harness read config.toml.
+          $engineDir = "$env:GITHUB_WORKSPACE\tests\atomic\.engine"
+          icacls $engineDir /inheritance:r /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          icacls "$engineDir\*" /reset /T
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         shell: pwsh
 
       - name: Install rustinel engine (macOS)
