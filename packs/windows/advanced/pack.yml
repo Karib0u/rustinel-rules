@@ -19,6 +19,8 @@ attack_coverage:
   - T1003.003
   - T1003.006
   - T1014
+  - T1021.002
+  - T1021.006
   - T1027
   - T1036.003
   - T1036.005
@@ -27,6 +29,8 @@ attack_coverage:
   - T1053.005
   - T1059
   - T1059.001
+  - T1059.005
+  - T1059.007
   - T1068
   - T1070
   - T1070.001
@@ -37,12 +41,16 @@ attack_coverage:
   - T1098
   - T1102
   - T1105
+  - T1127.001
   - T1134.005
   - T1136.001
   - T1190
   - T1197
+  - T1204.004
   - T1218
+  - T1218.004
   - T1218.005
+  - T1218.009
   - T1218.010
   - T1218.011
   - T1486
@@ -155,6 +163,11 @@ rules:
           - 24867dcd-1aac-43e0-86fe-9d921490212d   # Unsigned or Invalid-Signature Kernel Driver Loaded
           - 47a3a209-8e17-4150-85b1-2e8303700302   # Kernel Driver Loaded with a Known BYOVD Filename
           - 0a98f9f8-817a-4cf7-b171-93e441c03ee1   # Unsigned DLL with a Common Side-Loading Name
+          - 68d288c3-75fa-4773-b195-684657984534   # Script Host Running a Downloaded or Archive-Extracted Script
+          - 386d44a5-be07-4868-b53e-3af359b0fb18   # .NET Build or Registration Tool Using a User-Writable Path
+          - aff3a851-eda8-49fa-8e1e-f353a909541e   # WMI or WinRM Provider Spawning a Shell or Script Host
+          - c28cddd0-5518-4a27-b412-dcf69191825d   # PsExec or Renamed PsExec Execution
+          - 77d79285-57e8-459d-9b8d-2a2627010d1e   # Explorer Spawning an Interpreter With a ClickFix-Style Command Line
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

@@ -1,0 +1,65 @@
+title: Explorer Spawning an Interpreter With a ClickFix-Style Command Line
+id: 77d79285-57e8-459d-9b8d-2a2627010d1e
+status: experimental
+description: >
+  Detects Explorer directly spawning a shell or script host with a web URL,
+  an encoded-command option, an expression evaluator or a downloader piped to
+  an interpreter. This is the process-creation signal for a possible Run-dialog
+  lure. Explorer can also start the same programs through other user actions.
+references:
+  - https://www.microsoft.com/en-us/security/blog/2025/08/21/think-before-you-clickfix-analyzing-the-clickfix-social-engineering-technique/
+  - https://attack.mitre.org/techniques/T1204/004/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1204.004
+  - attack.t1059
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_explorer:
+    ParentImage|endswith: '\explorer.exe'
+  selection_interpreter:
+    Image|endswith:
+      - '\mshta.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+  selection_url:
+    CommandLine|contains:
+      - 'http://'
+      - 'https://'
+  selection_execution:
+    CommandLine|re:
+      - '(?i)(?:^|[\s"''(;&|])-(?:enc|encodedcommand)(?:$|[\s"'';)&|])'
+      - '(?i)(?:^|[\s"''(;&|])(?:iex|invoke-expression)(?:$|[\s"''();&|])'
+      - '(?i)(?:^|[\s"''(;&|])(?:curl(?:\.exe)?|irm|invoke-restmethod|iwr|invoke-webrequest)[\s(][^|]*\|\s*(?:&\s*)?(?:powershell|pwsh|cmd|mshta|wscript|cscript)(?:\.exe)?(?:$|[\s"''();&|])'
+  condition: selection_explorer and selection_interpreter and (selection_url or selection_execution)
+falsepositives:
+  - Approved shortcuts that start a script host with a web URL or launch an administrative command.
+level: high
+rustinel:
+  telemetry: [process_creation]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: CommandLine
+      guidance: >
+        For approved shortcuts, scope exclusions to the exact full launcher
+        paths and the known command. Corroborate suspected lures with RunMRU
+        or user activity when available.
+  negatives:
+    - reason: Explorer starts a managed script with a text encoding option
+      fields:
+        ParentImage: 'C:\Windows\explorer.exe'
+        Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+        CommandLine: 'powershell.exe -Command "Get-Content settings.json -Encoding utf8"'
+    - reason: Normal browser navigation from Explorer
+      fields:
+        ParentImage: 'C:\Windows\explorer.exe'
+        Image: 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+        CommandLine: 'msedge.exe https://intranet.example.invalid/'
