@@ -22,6 +22,10 @@ ENCODED = "Suspicious Encoded PowerShell Command Line"
 BITS = "BITS Job Download via bitsadmin"
 WMIC = "WMI Process Execution via WMIC"
 LOCALADMIN = "Local Account Created or Added to Administrators"
+LOGGING_DISABLED = "Windows Event Channel or ETW Session Stopped from the Command Line"
+AUDIT_DISABLED = "Windows Audit Policy Cleared or Disabled from the Command Line"
+WRONG_PATH = "Windows System Process Name Executed from an Unexpected Path"
+MINER = "Cryptominer Command Line (Windows)"
 
 RULE_FILES = [
     "proc_creation_win_susp_procdump_lsass.yml",
@@ -33,6 +37,10 @@ RULE_FILES = [
     "proc_creation_win_susp_bitsadmin_download.yml",
     "proc_creation_win_susp_wmic_process_create.yml",
     "proc_creation_win_susp_local_admin_account_added.yml",
+    "proc_creation_win_susp_logging_disabled.yml",
+    "proc_creation_win_susp_audit_policy_disabled.yml",
+    "proc_creation_win_susp_system_binary_wrong_path.yml",
+    "proc_creation_win_cryptominer_cmdline.yml",
 ]
 
 SYS = "C:\\Windows\\System32\\"
@@ -172,6 +180,45 @@ CASES = [
     (SYS + "net.exe", "net.exe user bob", None, None),
     (SYS + "net.exe", "net.exe user bob /delete", None, None),
     (SYS + "cmd.exe", "cmd.exe /c echo net user bob /add", None, None),
+    # Logging blinding: actual verbs and options for each tool.
+    (SYS + "wevtutil.exe", "wevtutil.exe sl Defender/Operational /e:false", None, LOGGING_DISABLED),
+    (
+        r"C:\Tools\evt.exe",
+        r'"C:\Tools\evt.exe" "SET-LOG" "Some Channel" "/E:FALSE"',
+        "wevtutil.exe",
+        LOGGING_DISABLED,
+    ),
+    (SYS + "logman.exe", 'logman.exe stop "Trace Session" -ets', None, LOGGING_DISABLED),
+    (SYS + "wevtutil.exe", "wevtutil.exe sl Application /e:falsex", None, None),
+    (SYS + "logman.exe", "logman.exe start stop -ets", None, None),
+    (SYS + "logman.exe", "logman.exe stop trace -ets2", None, None),
+    # Audit policy: clear, remove, and independently disabling either outcome.
+    (SYS + "auditpol.exe", "auditpol.exe /clear /y", None, AUDIT_DISABLED),
+    (SYS + "auditpol.exe", "auditpol.exe -remove /allusers", None, AUDIT_DISABLED),
+    (
+        SYS + "auditpol.exe",
+        'auditpol.exe /SET /subcategory:"Process Creation" "/success:disable"',
+        None,
+        AUDIT_DISABLED,
+    ),
+    (
+        r"C:\Tools\audit.exe",
+        "audit.exe \u2013set /category:* /failure:disable",
+        "auditpol.exe",
+        AUDIT_DISABLED,
+    ),
+    (SYS + "auditpol.exe", "auditpol.exe /set /category:* /failure:disablex", None, None),
+    # The trusted path must be rooted and refer to a direct child.
+    (r"C:\Users\Public\svchost.exe", "svchost.exe", None, WRONG_PATH),
+    (r"C:\Temp\Windows\System32\lsass.exe", "lsass.exe", None, WRONG_PATH),
+    (r"C:\Windows\System32\Tasks\winlogon.exe", "winlogon.exe", None, WRONG_PATH),
+    (r"C:\Windows\System32\csrss.exe", "csrss.exe", None, None),
+    # Miner indicators work without relying on a specific process image name.
+    (r"C:\Tools\worker.exe", "worker.exe -o stratum+tcp://pool.invalid:3333", None, MINER),
+    (r"C:\Tools\worker.exe", "worker.exe -o stratum+ssl://pool.invalid:443", None, MINER),
+    (r"C:\Tools\worker.exe", "worker.exe --donate-level=5", None, MINER),
+    (r"C:\Tools\worker.exe", 'worker.exe "--coin=monero"', None, MINER),
+    (r"C:\Tools\worker.exe", "worker.exe --coin-count=5", None, None),
 ]
 
 

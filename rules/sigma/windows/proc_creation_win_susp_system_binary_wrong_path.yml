@@ -1,0 +1,57 @@
+title: Windows System Process Name Executed from an Unexpected Path
+id: a30c71e5-f274-46d8-838a-1c0f2b569368
+status: experimental
+description: >
+  Detects execution of a file named after a core Windows process from outside
+  the standard System32 and SysWOW64 locations. Attackers can name executables
+  after familiar processes such as svchost.exe or lsass.exe to blend in.
+references:
+  - https://attack.mitre.org/techniques/T1036/005/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1036.005
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith:
+      - '\svchost.exe'
+      - '\lsass.exe'
+      - '\csrss.exe'
+      - '\services.exe'
+      - '\wininit.exe'
+      - '\winlogon.exe'
+      - '\smss.exe'
+  filter_system_path:
+    Image|re: '(?i)^(?:[a-z]:\\Windows|\\SystemRoot|\\Device\\HarddiskVolume[0-9]+\\Windows)\\(?:System32|SysWOW64)\\[^\\]+$'
+  condition: selection and not filter_system_path
+falsepositives:
+  - Diagnostic fixtures, isolated Windows images, and hosts with a nonstandard installation directory.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: filter_system_path
+      guidance: Add exact image paths for supported nonstandard Windows installations or verified diagnostic fixtures.
+  negatives:
+    - reason: service host from System32
+      fields:
+        Image: 'C:\Windows\System32\svchost.exe'
+    - reason: a 32-bit service host from SysWOW64 on a different system drive
+      fields:
+        Image: 'D:\WINDOWS\SysWOW64\SVCHOST.EXE'
+    - reason: a native system volume path
+      fields:
+        Image: '\Device\HarddiskVolume3\Windows\System32\lsass.exe'
+    - reason: a native SystemRoot path
+      fields:
+        Image: '\SystemRoot\System32\smss.exe'
+    - reason: an unrelated service executable
+      fields:
+        Image: 'C:\Tools\myservices.exe'

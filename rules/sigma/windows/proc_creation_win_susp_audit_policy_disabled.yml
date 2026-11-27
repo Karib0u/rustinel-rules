@@ -1,0 +1,66 @@
+title: Windows Audit Policy Cleared or Disabled from the Command Line
+id: c7eccf1c-329e-423d-8ba0-cdf572b52023
+status: experimental
+description: >
+  Detects auditpol attempts to clear audit policy, remove per-user policy, or
+  disable success or failure auditing. Process telemetry can capture these
+  attempts even when audit policy changes are no longer recorded in the
+  Security log.
+references:
+  - https://attack.mitre.org/techniques/T1685/001/
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/auditpol
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/auditpol-set
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1562.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_image:
+    - Image|endswith: '\auditpol.exe'
+    - OriginalFileName: 'auditpol.exe'
+  # The regex preserves argument boundaries and includes the windash variants.
+  selection_clear_remove:
+    CommandLine|re: '(?i)^\s*(?:"[^"]+"|\S+)\s+"?[/\x{2013}\x{2014}\x{2015}-](?:clear|remove)"?(?:\s|$)'
+  selection_set_disable:
+    CommandLine|re|all:
+      - '(?i)^\s*(?:"[^"]+"|\S+)\s+"?[/\x{2013}\x{2014}\x{2015}-]set"?(?:\s|$)'
+      - '(?i)\s"?[/\x{2013}\x{2014}\x{2015}-](?:success|failure):disable"?(?:\s|$)'
+  filter_help:
+    CommandLine|re: '(?i)\s"?/\?"?(?:\s|$)'
+  condition: selection_image and (selection_clear_remove or selection_set_disable) and not filter_help
+falsepositives:
+  - Administrators changing auditing during system provisioning, troubleshooting, or policy maintenance.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Add a filter for the full parent executable path of approved provisioning tools in managed environments.
+  negatives:
+    - reason: reading audit policy
+      fields:
+        Image: C:\Windows\System32\auditpol.exe
+        CommandLine: auditpol.exe /get /category:*
+    - reason: enabling success and failure auditing
+      fields:
+        Image: C:\Windows\System32\auditpol.exe
+        CommandLine: 'auditpol.exe /set /category:* /success:enable /failure:enable'
+    - reason: displaying help for the clear operation
+      fields:
+        Image: C:\Windows\System32\auditpol.exe
+        CommandLine: auditpol.exe /clear /?
+    - reason: backing up audit policy to a file with a similar name
+      fields:
+        Image: C:\Windows\System32\auditpol.exe
+        CommandLine: 'auditpol.exe /backup /file:C:\Temp\remove.csv'
+    - reason: unrelated command with the same switch
+      fields:
+        Image: C:\Tools\cleanup.exe
+        CommandLine: cleanup.exe /remove
