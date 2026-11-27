@@ -1,0 +1,61 @@
+title: Linux Local Account Database Written by an Unexpected Process
+id: be42af57-38e2-4292-af75-bdb6c1e1b1ca
+status: experimental
+description: >
+  Detects writes or replacements targeting /etc/passwd or /etc/shadow when
+  the writer is outside the standard account and package tool paths. A direct
+  write can add a local account or change its credentials or privileges.
+  When writer attribution is unavailable, the event still alerts for review.
+references:
+  - https://man7.org/linux/man-pages/man5/passwd.5.html
+  - https://man7.org/linux/man-pages/man5/shadow.5.html
+  - https://attack.mitre.org/techniques/T1136/001/
+  - https://attack.mitre.org/techniques/T1098/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1136.001
+  - attack.t1098
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection:
+    TargetFilename|re: '^/etc/(passwd|shadow)$'
+  filter_account_or_package:
+    Image|re:
+      - '^/(usr/)?sbin/(useradd|usermod|userdel|adduser|deluser|chpasswd|vipw|pwconv|pwunconv|newusers|apk)$'
+      - '^/(usr/)?bin/(passwd|chage|chfn|chsh|systemd-sysusers|dpkg|rpm|apt|apt-get|dnf|yum|pacman)$'
+  condition: selection and not filter_account_or_package
+falsepositives:
+  - Direct edits during account recovery and provisioning or restores that bypass standard tools.
+level: high
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    A live positive targets the host account database. Linux logic replay
+    exercises writes and renames against both paths using synthetic events.
+  tuning:
+    - surface: filter_account_or_package
+      guidance: Add only anchored full paths of vetted account or package tools used on the distribution.
+  negatives:
+    - reason: normal local account creation
+      fields:
+        Image: /usr/sbin/useradd
+        TargetFilename: /etc/passwd
+    - reason: normal password change on a layout with separate /bin
+      fields:
+        Image: /bin/passwd
+        TargetFilename: /etc/shadow
+    - reason: package manager maintaining accounts
+      fields:
+        Image: /usr/bin/dpkg
+        TargetFilename: /etc/passwd
+    - reason: write to a backup copy
+      fields:
+        Image: /usr/bin/cp
+        TargetFilename: /etc/shadow.bak

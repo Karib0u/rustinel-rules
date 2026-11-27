@@ -1,0 +1,62 @@
+title: Silent or Scripted Screen Capture Attempt via screencapture (macOS)
+id: 36048d72-1a88-423b-91df-da6f0fc48ed3
+status: experimental
+description: >
+  Detects the system screencapture utility invoked with the silent -x option
+  or by a parent command line that shows a shell or interpreter running a
+  script. The script branch requires cached parent command-line telemetry.
+  Endpoint Security signing fields describe the launched utility. This rule
+  uses parent invocation context, and a match indicates a capture attempt.
+references:
+  - https://loobins.io/binaries/screencapture/
+  - https://attack.mitre.org/techniques/T1113/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.collection
+  - attack.t1113
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_image:
+    Image: /usr/sbin/screencapture
+  selection_silent:
+    # Read leading options only. The first group includes options that take values.
+    CommandLine|re: >-
+      (?x)^\S+\s+(?:(?:-[BDGJlRtTV]\s+\S+|-[abcdgikmoprsuvwCMPSUW]+)\s+)*
+      -[abcdgikmoprsuvwCMPSUW]*x[abcdgikmoprsuvwxCMPSUW]*(?:\s|$)
+  selection_script_parent:
+    ParentCommandLine|re:
+      - '^(?:\S*/)?(?:sh|bash|zsh|dash|ksh|fish)\s+(?:-[elsuvx]*c[elsuvx]*|[^-\s]\S*\.(?:sh|bash|zsh|ksh|fish))(?:\s|$)'
+      - '^(?:\S*/)?(?:osascript|perl[0-9.]*|python[0-9.]*|ruby[0-9.]*|node)\s+(?:-[ceE]|[^-\s]\S*\.(?:applescript|scpt|pl|py|rb|js|mjs))(?:\s|$)'
+  condition: selection_image and (selection_silent or selection_script_parent)
+falsepositives:
+  - Approved screenshot automation, UI tests, and remote support tools.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    The exact system path cannot be reproduced with a decoy. macOS logic
+    replay exercises both branches without capturing a desktop.
+  tuning:
+    - surface: ParentImage
+      guidance: Use the full parent executable path and its approved invocation to filter known capture workflows.
+  negatives:
+    - reason: interactive region selection from a login shell
+      fields:
+        Image: /usr/sbin/screencapture
+        CommandLine: screencapture -i /Users/alice/Desktop/region.png
+        ParentImage: /bin/zsh
+        ParentCommandLine: -zsh
+    - reason: output filename containing the flag text
+      fields:
+        Image: /usr/sbin/screencapture
+        CommandLine: screencapture /Users/alice/Desktop/notes-x.png
+    - reason: a different executable with the same basename
+      fields:
+        Image: /Users/alice/tools/screencapture
+        CommandLine: screencapture -x /tmp/test.png

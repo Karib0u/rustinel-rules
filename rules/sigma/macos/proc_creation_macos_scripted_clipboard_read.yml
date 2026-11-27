@@ -1,0 +1,69 @@
+title: Scripted Clipboard Read via pbpaste or osascript (macOS)
+id: 3a48105d-a235-496a-b094-f413c1552115
+status: experimental
+description: >
+  Detects pbpaste or an osascript invocation whose first inline AppleScript
+  statement reads the clipboard, when the cached parent identifies a shell or
+  interpreter running a script. This surfaces automated collection attempts
+  on process creation. Clipboard contents and polling frequency are outside
+  the scope of a single event.
+references:
+  - https://loobins.io/binaries/pbpaste/
+  - https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/reference/ASLR_cmds.html
+  - https://attack.mitre.org/techniques/T1115/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.collection
+  - attack.t1115
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_pbpaste:
+    Image: /usr/bin/pbpaste
+  selection_osascript:
+    Image: /usr/bin/osascript
+    # ESF joins argv with spaces. Quotes inside an AppleScript string remain.
+    CommandLine|re: >-
+      (?x)^\S+\s+(?:-l\s+(?i:AppleScript)\s+)?-e\s+
+      (?i:(?:(?:get|return)\s+|set\s+\w+\s+to\s+)?(?:\(\s*)?the\s+clipboard)
+      (?:\s+(?i:as)\s+|\s*\)|\s+-e\s+|[\r\n]|\s*$)
+  selection_script_parent:
+    ParentCommandLine|re:
+      - '^(?:\S*/)?(?:sh|bash|zsh|dash|ksh|fish)\s+(?:-[elsuvx]*c[elsuvx]*|[^-\s]\S*\.(?:sh|bash|zsh|ksh|fish))(?:\s|$)'
+      - '^(?:\S*/)?(?:osascript|perl[0-9.]*|python[0-9.]*|ruby[0-9.]*|node)\s+(?:-[ceE]|[^-\s]\S*\.(?:applescript|scpt|pl|py|rb|js|mjs))(?:\s|$)'
+  condition: (selection_pbpaste or selection_osascript) and selection_script_parent
+falsepositives:
+  - Clipboard managers, accessibility utilities, or scripts that import user-copied text.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    A live positive at either exact system path would read a session
+    clipboard. macOS logic replay supplies synthetic exec and parent fields.
+  tuning:
+    - surface: ParentImage
+      guidance: Filter the full path and expected invocation of vetted clipboard automation.
+  negatives:
+    - reason: clipboard read from an interactive login shell
+      fields:
+        Image: /usr/bin/pbpaste
+        CommandLine: pbpaste
+        ParentImage: /bin/zsh
+        ParentCommandLine: -zsh
+    - reason: AppleScript replacing clipboard contents
+      fields:
+        Image: /usr/bin/osascript
+        CommandLine: 'osascript -e set the clipboard to "build complete"'
+        ParentImage: /bin/bash
+        ParentCommandLine: /bin/bash /opt/admin/notify.sh
+    - reason: AppleScript returning a literal string
+      fields:
+        Image: /usr/bin/osascript
+        CommandLine: 'osascript -e return "the clipboard"'
+        ParentImage: /bin/bash
+        ParentCommandLine: /bin/bash /opt/admin/notify.sh

@@ -34,6 +34,8 @@ attack_coverage:
   - T1098.004
   - T1102
   - T1105
+  - T1113
+  - T1115
   - T1136.001
   - T1176
   - T1204.002
@@ -104,6 +106,8 @@ rules:
           - c35a831e-4046-4e9b-9378-a180d00814f7   # Configuration Profile Installation Attempt (macOS) (sigma)
           - 52013862-0171-4b0c-a0d0-97bc065109e5   # DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS) (sigma)
           - 4e7911b2-63a4-43c0-a97b-61c6f360782b   # Remote Management Tool Launched from a Staging Path (macOS) (sigma)
+          - 36048d72-1a88-423b-91df-da6f0fc48ed3   # Silent or Scripted Screen Capture Attempt via screencapture (macOS) (sigma)
+          - 3a48105d-a235-496a-b094-f413c1552115   # Scripted Clipboard Read via pbpaste or osascript (macOS) (sigma)
         yara:
           - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)
         ioc:

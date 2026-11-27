@@ -55,8 +55,25 @@ for name, path in [
     ("file_event_lnx_sshd_config_tamper.yml", "/etc/ssh/sshd_config"),
     ("file_event_lnx_udev_persistence.yml", "/etc/udev/rules.d/90-x.rules"),
     ("file_event_lnx_pam_tamper.yml", "/etc/pam.d/sshd"),
+    ("file_event_lnx_ssh_startup_file.yml", "/etc/ssh/sshrc"),
 ]:
     linux_writer(name, path)
+for writer, target in [
+    ("/usr/sbin/useradd", "/etc/passwd"),
+    ("/sbin/pwconv", "/etc/shadow"),
+    ("/usr/bin/passwd", "/etc/shadow"),
+    ("/bin/rpm", "/etc/passwd"),
+    ("/usr/bin/dpkg", "/etc/passwd"),
+]:
+    add(
+        "file_event_lnx_account_database_write.yml",
+        [
+            ({"Image": writer, "TargetFilename": target}, False),
+            ({"Image": "/tmp/" + Path(writer).name, "TargetFilename": target}, True),
+            ({"Image": "/tmp/rootfs" + writer, "TargetFilename": target}, True),
+            ({"Image": writer + ".backup", "TargetFilename": target}, True),
+        ],
+    )
 for name, target in [
     ("file_event_lnx_cron_persistence.yml", "/var/lib/docker/overlay2/x/etc/crontab"),
     (
