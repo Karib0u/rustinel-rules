@@ -1441,6 +1441,20 @@
       "script": "windows/explorer_clickfix_command.ps1"
     },
     {
+      "id": "7d68c414-c638-4f68-9837-1c4002df6127",
+      "name": "windows_user_com_server",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/user_com_server.ps1"
+    },
+    {
+      "id": "11a1e1f0-f49f-4f26-8205-3cdee4e52756",
+      "name": "windows_office_startup_drop",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/office_startup_drop.ps1"
+    },
+    {
       "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
       "name": "macos_dscl_authonly",
       "platform": "macos",

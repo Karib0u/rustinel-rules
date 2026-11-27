@@ -1,0 +1,60 @@
+title: Office Startup Macro or Add-in File Written
+id: 11a1e1f0-f49f-4f26-8205-3cdee4e52756
+status: experimental
+description: >
+  Detects macro-capable workbooks, templates, or add-ins written directly to
+  an Excel XLSTART or Word Startup directory, or a write to the default
+  Outlook VBA project. Office must load the file and allow its active content
+  for it to execute. Custom startup paths need fleet-specific tuning.
+references:
+  - https://attack.mitre.org/techniques/T1137/
+  - https://attack.mitre.org/techniques/T1137/001/
+  - https://attack.mitre.org/techniques/T1137/006/
+  - https://support.microsoft.com/en-us/excel/customize-how-excel-starts
+  - https://learn.microsoft.com/en-us/troubleshoot/outlook/deployment/manage-distribute-outlook-vba-project
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1137
+  - attack.t1137.001
+  - attack.t1137.006
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_excel:
+    TargetFilename|re: '(?i)\\XLSTART\\[^\\]+\.(?:xla|xlam|xll|xls|xlsb|xlsm|xlt|xltm)$'
+  selection_word:
+    TargetFilename|re: '(?i)\\(?:Word|Microsoft Office\\(?:root\\)?Office[0-9]+)\\STARTUP\\[^\\]+\.(?:dot|dotm|wll)$'
+  selection_outlook:
+    TargetFilename|endswith: '\Microsoft\Outlook\VbaProject.OTM'
+  condition: 1 of selection_*
+falsepositives:
+  - Approved Office add-in deployments or edits to personal macros and templates.
+level: medium
+rustinel:
+  telemetry: [file_event]
+  roles: [workstation, server, developer]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_excel.TargetFilename
+      guidance: Add managed Excel alternate startup paths and allow approved add-ins by full destination path and verified writer Image.
+    - surface: selection_word.TargetFilename
+      guidance: Add custom Word Startup paths and review approved templates by full destination path.
+    - surface: selection_outlook.TargetFilename
+      guidance: Use the exact profile path and verified Outlook writer Image to tune approved VBA edits.
+  negatives:
+    - reason: ordinary macro-free workbook in an Excel startup directory
+      fields:
+        TargetFilename: 'C:\Users\alice\AppData\Roaming\Microsoft\Excel\XLSTART\calendar.xlsx'
+        Image: 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE'
+    - reason: a Word template outside the startup directory
+      fields:
+        TargetFilename: 'C:\Users\alice\AppData\Roaming\Microsoft\Templates\team.dotm'
+        Image: 'C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE'
+    - reason: a backup of the Outlook VBA project
+      fields:
+        TargetFilename: 'C:\Users\alice\AppData\Roaming\Microsoft\Outlook\VbaProject.OTM.bak'
+        Image: 'C:\Windows\System32\robocopy.exe'

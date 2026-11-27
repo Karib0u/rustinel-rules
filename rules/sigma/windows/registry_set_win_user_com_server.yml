@@ -1,0 +1,52 @@
+title: Per-User COM Server Registered To a Suspicious Path
+id: 7d68c414-c638-4f68-9837-1c4002df6127
+status: experimental
+description: >
+  Detects a default InprocServer32 or LocalServer32 value in a user's COM
+  class hive pointing to a potentially user-writable location or a script.
+  The rule needs captured registry value data. An alert shows a registration
+  that warrants review for a machine-wide override or unexpected activation.
+references:
+  - https://attack.mitre.org/techniques/T1546/015/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1546.015
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection_server:
+    TargetObject|re: '(?i)^(?:(?:HKCU|HKEY_CURRENT_USER|(?:HKU|HKEY_USERS|\\REGISTRY\\USER)\\S-1-(?:[0-9]+-)*[0-9]+)\\Software\\Classes|(?:HKU|HKEY_USERS|\\REGISTRY\\USER)\\S-1-(?:[0-9]+-)*[0-9]+_Classes)\\(?:Wow6432Node\\)?CLSID\\\{[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\}\\(?:InprocServer32|LocalServer32)(?:\\\(Default\))?$'
+  selection_path:
+    Details|re: '(?i)^\s*"?(?:(?:(?:\\\?\?\\|\\\\\?\\)?[a-z]:|%SystemDrive%|\\Device\\HarddiskVolume[0-9]+)\\(?:Users|Public|ProgramData|Temp|Windows\\Temp)|\\SystemRoot\\Temp|%SystemRoot%\\Temp|%(?:UserProfile|LocalAppData|AppData|Public|ProgramData|Temp|Tmp)%)\\[^"\s]+'
+  selection_script:
+    Details|re: '(?i)^\s*(?:"[a-z]:\\[^"]+\.(?:bat|cmd|js|jse|ps1|sct|vbe|vbs|wsh|wsf)"|[a-z]:\\[^"\s]+\.(?:bat|cmd|js|jse|ps1|sct|vbe|vbs|wsh|wsf))(?:\s|$)'
+  condition: selection_server and (selection_path or selection_script)
+falsepositives:
+  - Per-user software installs or updates that register COM components under a user profile.
+level: medium
+rustinel:
+  telemetry: [registry_set]
+  roles: [workstation, server, developer]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_server.TargetObject
+      guidance: Suppress approved registrations by exact CLSID and full server path together.
+    - surface: selection_path.Details
+      guidance: Add profile roots used by your fleet and verify effective write permissions when triaging.
+  negatives:
+    - reason: per-user registration pointing to an approved Program Files location
+      fields:
+        TargetObject: 'HKCU\Software\Classes\CLSID\{12345678-1234-4234-8234-123456789abc}\InprocServer32'
+        Details: 'C:\Program Files\Acme\extension.dll'
+    - reason: COM threading model metadata
+      fields:
+        TargetObject: 'HKCU\Software\Classes\CLSID\{12345678-1234-4234-8234-123456789abc}\InprocServer32\ThreadingModel'
+        Details: Apartment
+    - reason: maintenance setting a machine-wide COM server
+      fields:
+        TargetObject: 'HKLM\Software\Classes\CLSID\{12345678-1234-4234-8234-123456789abc}\LocalServer32'
+        Details: 'C:\ProgramData\Acme\server.exe'
