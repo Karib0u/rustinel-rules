@@ -118,7 +118,6 @@ def correlation_bases(artifact):
 
 def replay(engine, artifact, events):
     platform = logsource(artifact)["product"]
-    timestamp = "2026-10-08T08:00:00Z"
     with tempfile.TemporaryDirectory(prefix="rustinel-advanced-negatives-") as directory:
         root = Path(directory)
         rules = root / "sigma"
@@ -138,8 +137,8 @@ def replay(engine, artifact, events):
                     "payload": payload.name,
                     "rustinel_version": version,
                     "platform": platform,
-                    "started_at": timestamp,
-                    "ended_at": timestamp,
+                    "started_at": events[0]["event_time"],
+                    "ended_at": events[-1]["event_time"],
                     "status": "complete",
                     "events": {
                         "received": len(events),

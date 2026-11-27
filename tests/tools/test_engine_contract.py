@@ -430,10 +430,10 @@ class CorrelationTests(unittest.TestCase):
         self.assertEqual(self.errors(self.correlation()), [])
 
     def test_temporal_condition_may_be_omitted_or_extended(self):
-        # Omitted means every rule, which Rustinel restores at load time.
-        for condition in (None, "rule_a and rule_b"):
-            with self.subTest(condition=condition):
-                self.assertEqual(self.errors(self.correlation(condition=condition)), [])
+        for kind in ("temporal", "temporal_ordered"):
+            for condition in (None, "rule_a and rule_b"):
+                with self.subTest(kind=kind, condition=condition):
+                    self.assertEqual(self.errors(self.correlation(type=kind, condition=condition)), [])
         errors = self.errors(self.correlation(type="event_count", condition=None))
         self.assertTrue(any("operator" in e for e in errors))
 
@@ -445,6 +445,10 @@ class CorrelationTests(unittest.TestCase):
             ({"type": "value_count", "condition": {"gte": 3}}, "needs a 'field'"),
             ({"group-by": "ParentImage"}, "group-by"),
             ({"rules": []}, "at least one rule"),
+            ({"aliases": ["Parent"]}, "aliases must map"),
+            ({"aliases": {"Parent": {SHADOW: "ParentImage"}}}, "must map each referenced rule"),
+            ({"aliases": {"Parent": {SHADOW: "ParentImage", BCDEDIT: 0}}}, "must map each referenced rule"),
+            ({"aliases": {"Parent": {SHADOW: "ParentImage", "nope": "Image"}}}, "must map each referenced rule"),
         ):
             with self.subTest(corr=corr):
                 self.assertTrue(any(message in e for e in self.errors(self.correlation(**corr))))
@@ -462,6 +466,13 @@ class CorrelationTests(unittest.TestCase):
         artifact = self.correlation()
         artifact.meta["rustinel"]["telemetry"] = ["file_event"]
         self.assertTrue(any("lacks ['process_creation']" in e for e in self.errors(artifact)))
+
+    def test_group_by_alias_checks_mapped_fields(self):
+        aliases = {"Caller": {SHADOW: "ParentImage", BCDEDIT: "Image"}}
+        self.assertEqual(self.errors(self.correlation(aliases=aliases, **{"group-by": ["Caller"]})), [])
+        aliases["Caller"][BCDEDIT] = "LogonGuid"
+        errors = self.errors(self.correlation(aliases=aliases, **{"group-by": ["Caller"]}))
+        self.assertTrue(any("'LogonGuid'" in e and BCDEDIT in e for e in errors), errors)
 
     def test_correlation_floor_is_v1_5_0(self):
         minimum, reasons = lib.artifact_min_engine(self.correlation())
