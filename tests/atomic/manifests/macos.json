@@ -1,0 +1,361 @@
+{
+  "tests": [
+    {
+      "id": "4e7911b2-63a4-43c0-a97b-61c6f360782b",
+      "name": "macos_rmm_staging_path",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/rmm_staging_path.sh"
+    },
+    {
+      "id": "be06a6b0-fa9f-4df4-9d4a-9f8794037508",
+      "name": "macos_reverse_shell_dev_tcp",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/reverse_shell_dev_tcp.sh",
+      "negatives": [
+        {
+          "script": "macos/reverse_shell_dev_tcp_port_check_negative.sh",
+          "marker": "rustinel_atomic_neg"
+        }
+      ]
+    },
+    {
+      "id": "7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01",
+      "name": "macos_keychain_dump_security",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/keychain_dump_security.sh"
+    },
+    {
+      "id": "6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012",
+      "name": "macos_osascript_admin_prompt",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/osascript_admin_prompt.sh"
+    },
+    {
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
+      "name": "macos_gatekeeper_bypass",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_bypass.sh"
+    },
+    {
+      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
+      "name": "macos_gatekeeper_bypass_clear",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_bypass_clear.sh",
+      "variant": "clear-attributes"
+    },
+    {
+      "id": "4d4f5162-7e80-4193-9da3-4e5f60712304",
+      "name": "macos_launch_persistence",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launch_persistence.sh"
+    },
+    {
+      "id": "3e506273-8f91-42a4-8eb4-5f6071823405",
+      "name": "macos_download_execute_cradle",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/download_execute_cradle.sh",
+      "negatives": [
+        {
+          "script": "macos/download_execute_checksum_negative.sh",
+          "marker": "rustinel_atomic_neg"
+        }
+      ]
+    },
+    {
+      "id": "2f617384-9012-43b5-9fc5-60718293a416",
+      "name": "macos_local_admin_account",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/local_admin_account.sh"
+    },
+    {
+      "id": "1a728495-a123-44c6-8ad6-718293a4b527",
+      "name": "macos_exec_from_world_writable",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/exec_from_world_writable.sh"
+    },
+    {
+      "id": "yara-macos-coinminer-strings",
+      "name": "macos_coinminer_yara_fixture",
+      "platform": "macos",
+      "engine": "yara",
+      "script": "macos/coinminer_yara_fixture.sh"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/canary_ioc.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-path"
+      }
+    },
+    {
+      "id": "ffd3b3b3-9fd4-4fd2-9988-fe837e062181",
+      "name": "macos_history_delete",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_delete.sh"
+    },
+    {
+      "id": "457c6ee7-e5d8-4f06-b25e-a7a3d40e354d",
+      "name": "macos_history_rename_away",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_rename_away.sh"
+    },
+    {
+      "id": "40b5bf5b-055e-4db2-90df-bd2968ddad9f",
+      "name": "macos_history_destruction",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/history_destruction.sh"
+    },
+    {
+      "id": "829cee70-a60f-4e8a-8b2f-38e1fff83e61",
+      "name": "macos_tcc_db_access",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/tcc_db_access.sh"
+    },
+    {
+      "id": "db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8",
+      "name": "macos_browser_credential_theft",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/browser_credential_theft.sh"
+    },
+    {
+      "id": "c92540cf-466d-4959-ab25-1c456bedf9d5",
+      "name": "macos_ssh_authorized_keys",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ssh_authorized_keys.sh"
+    },
+    {
+      "id": "578195d3-de1a-4c46-84c8-b246a060474c",
+      "name": "macos_launchctl_susp_load",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launchctl_susp_load.sh",
+      "negatives": [
+        {
+          "script": "macos/launchctl_unload_negative.sh",
+          "marker": "rustinel_atomic_launch_neg"
+        }
+      ]
+    },
+    {
+      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
+      "name": "macos_gatekeeper_global_disable",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/gatekeeper_global_disable.sh"
+    },
+    {
+      "id": "d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd",
+      "name": "macos_osascript_admin_shell",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/osascript_admin_shell.sh"
+    },
+    {
+      "id": "97b0f988-7268-4854-9251-4da5a8397da9",
+      "name": "macos_account_admin_group",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/account_admin_group.sh"
+    },
+    {
+      "id": "55eaad6e-88a1-4eae-8014-24d96a68f965",
+      "name": "macos_hidden_user_account",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/hidden_user_account.sh"
+    },
+    {
+      "id": "8da551dd-08cf-4b73-b3cc-a18708f548b4",
+      "name": "macos_launch_persistence_scripted",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/launch_persistence_scripted.sh"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_ip",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      },
+      "variant": "ip"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "macos_canary_ioc_domain",
+      "platform": "macos",
+      "engine": "ioc",
+      "script": "macos/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      },
+      "variant": "domain"
+    },
+    {
+      "id": "ac1a60e4-e530-43ff-8553-e0624f374305",
+      "name": "macos_sigma_correlation_fixture",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "macos_yara_memory_fixture",
+      "platform": "macos",
+      "engine": "yara",
+      "script": "macos/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "e6aa2995-f56a-454a-af2c-14db0ec296ee",
+      "name": "macos_shell_outbound_connect",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_outbound_connect.sh"
+    },
+    {
+      "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
+      "name": "macos_dns_tunnel_service",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "macos/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "3beb59ba-1bc7-4dbb-a0bb-7e101c4b51d4",
+      "name": "macos_dns_tunnel_name_shape",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "dns_query.sh"
+    },
+    {
+      "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
+      "name": "macos_ransomware_mass_rename",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "macos/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
+      "name": "macos_dscl_authonly",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dscl_authonly.sh"
+    },
+    {
+      "id": "abc435d7-cb05-4288-8e87-f549e189bbb0",
+      "name": "macos_authorization_plugin",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/authorization_plugin.sh"
+    },
+    {
+      "id": "b01a8433-8768-4825-8d7e-665e132f17b6",
+      "name": "macos_shell_profile_scripted",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/shell_profile_scripted.sh"
+    },
+    {
+      "id": "ba4c78ad-7cd1-4fce-b409-57af0f79c814",
+      "name": "macos_login_hook_or_item",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/login_hook.sh"
+    },
+    {
+      "id": "a360dda4-e2ba-42e1-8fda-4a787afebf2d",
+      "name": "macos_trusted_cert_added",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/trusted_cert_added.sh"
+    },
+    {
+      "id": "ae9f76d9-4f90-4111-ab43-0b11314d4ceb",
+      "name": "macos_cryptominer_cmdline",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/cryptominer_cmdline.sh"
+    },
+    {
+      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
+      "name": "macos_stealer_sudo_stdin",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/stealer_sudo_stdin.sh"
+    },
+    {
+      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
+      "name": "macos_stealer_jxa_bridge",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/stealer_jxa_bridge.sh",
+      "variant": "jxa-bridge"
+    },
+    {
+      "id": "0a001338-814e-44d5-aab5-b7bb7290938f",
+      "name": "macos_scheduled_job",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/scheduled_job.sh"
+    },
+    {
+      "id": "c35a831e-4046-4e9b-9378-a180d00814f7",
+      "name": "macos_configuration_profile_install",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/configuration_profile_install.sh"
+    },
+    {
+      "id": "52013862-0171-4b0c-a0d0-97bc065109e5",
+      "name": "macos_dyld_insert_libraries",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dyld_insert_libraries.sh"
+    }
+  ]
+}

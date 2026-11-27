@@ -135,7 +135,12 @@ class SigmaLifecycleTests(unittest.TestCase):
             tests = [
                 good,
                 {**good, "id": "skipped", "skip": "No coverage"},
-                {**good, "id": "allowed", "allow_failure": True},
+                {
+                    **good,
+                    "id": "allowed",
+                    "allow_failure": True,
+                    "allow_failure_reason": "Flaky on CI",
+                },
                 {**good, "id": "missing", "script": "missing.sh"},
                 {**good, "id": "yara", "engine": "yara"},
                 {**good, "id": "unrelated", "expect": {"field": "rule.name", "equals": "Other"}},
@@ -148,7 +153,13 @@ class SigmaLifecycleTests(unittest.TestCase):
                     ],
                 },
             ]
-            (root / "manifest.json").write_text(json.dumps({"tests": tests}), encoding="utf-8")
+            manifest_dir = root / "manifests" / "linux"
+            manifest_dir.mkdir(parents=True)
+            for test in tests:
+                test["name"] = test["id"]
+            (manifest_dir / "batch.json").write_text(
+                json.dumps({"tests": tests}), encoding="utf-8"
+            )
             titles = {test["id"]: "Fixture rule" for test in tests}
             self.assertEqual(
                 validate.load_gating_sigma_atomics(root, titles),

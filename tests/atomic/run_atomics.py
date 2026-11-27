@@ -43,6 +43,10 @@ from pathlib import Path
 HARNESS_ROOT = Path(__file__).resolve().parent  # tests/atomic
 RULES_ROOT = Path(__file__).resolve().parents[2]  # the rustinel-rules repo root
 ATOMICS_DIR = HARNESS_ROOT / "atomics"
+MANIFESTS_DIR = HARNESS_ROOT / "manifests"
+
+sys.path.insert(0, str(RULES_ROOT / "tools"))
+from atomic_manifest import load_manifest  # noqa: E402
 
 ID_RE = re.compile(r"^id:\s*(.+?)\s*$", re.MULTILINE)
 TITLE_RE = re.compile(r"^title:\s*(.+?)\s*$", re.MULTILINE)
@@ -439,17 +443,6 @@ def read_new_alerts(logs_dir: Path, snapshot: dict[str, int]) -> list[dict]:
 # --------------------------------------------------------------------------- #
 # Test selection + matching                                                    #
 # --------------------------------------------------------------------------- #
-def load_manifest(path: Path) -> list[dict]:
-    tests = json.loads(path.read_text(encoding="utf-8"))["tests"]
-    for t in tests:
-        # A test that may miss, or does not run, must say why; the report shows it.
-        if t.get("allow_failure") and not t.get("allow_failure_reason"):
-            sys.exit(f"manifest: {t['name']} sets allow_failure without allow_failure_reason")
-        if "skip" in t and not str(t["skip"]).strip():
-            sys.exit(f"manifest: {t['name']} has an empty skip reason")
-    return tests
-
-
 def select_tests(tests: list[dict], os_name: str, flt: str | None) -> list[dict]:
     out = [t for t in tests if t["platform"] == os_name]
     if flt:
@@ -664,7 +657,9 @@ def main() -> int:
         help="run against production pack content only, with no fixture overlay",
     )
     ap.add_argument("--pack", default="auto", help="pack id, or 'auto' for the most inclusive")
-    ap.add_argument("--manifest", type=Path, default=HARNESS_ROOT / "manifest.json")
+    ap.add_argument(
+        "--manifest", type=Path, default=MANIFESTS_DIR, help="manifest JSON file or directory"
+    )
     ap.add_argument("--filter", default=None, help="substring of test name or rule id")
     ap.add_argument("--timeout", type=int, default=30, help="seconds to wait for an alert")
     ap.add_argument(
@@ -704,13 +699,17 @@ def main() -> int:
 
     os_name = args.platform
     dist_dir = args.dist_dir or (args.rules_dir / "dist")
+    try:
+        manifest = load_manifest(args.manifest)
+    except (OSError, ValueError) as exc:
+        sys.exit(f"atomic manifest: {exc}")
     rules = index_rules(args.rules_dir)
-    tests = shard_tests(select_tests(load_manifest(args.manifest), os_name, args.filter), args.shard)
 
     if args.check_coverage:
         packs = load_source_packs(args.rules_dir)
-        return coverage(load_manifest(args.manifest), rules, packs, args.strict_essential)
+        return coverage(manifest, rules, packs, args.strict_essential)
 
+    tests = shard_tests(select_tests(manifest, os_name, args.filter), args.shard)
     if not tests:
         print(f"No tests selected for platform={os_name} filter={args.filter!r}")
         return 0
@@ -720,10 +719,9 @@ def main() -> int:
             _, desc = make_predicate(t, rules)
             tag = " [allow_failure]" if t.get("allow_failure") else ""
             print(f"  {t['name']:<28} {t['engine']:<6} -> {desc}{tag}")
-            for i, neg in enumerate(t.get("negatives", []), 1):
-                print(
-                    f"  {t['name'] + ':negative-' + str(i):<28} {t['engine']:<6} -> must stay silent"
-                )
+            for i, _ in enumerate(t.get("negatives", []), 1):
+                name = f"{t['name']}:negative-{i}"
+                print(f"  {name:<28} {t['engine']:<6} -> must stay silent")
         return 0
 
     # ---- real run: needs the engine + a built pack ----
@@ -864,9 +862,8 @@ def main() -> int:
                         ),
                     }
                 )
-                print(
-                    f"  [{'PASS' if nstatus == 'PASS' else 'FAIL'}] {neg_name:<28} (must stay silent)"
-                )
+                label = "PASS" if nstatus == "PASS" else "FAIL"
+                print(f"  [{label}] {neg_name:<28} (must stay silent)")
     finally:
         if not args.keep_running:
             proc.terminate()

@@ -41,6 +41,7 @@ import yaml
 
 import engine_contract
 import lib
+from atomic_manifest import load_manifest
 
 # Telemetry channels Rustinel supports.
 #
@@ -248,7 +249,8 @@ def _check_attack_id(ident: str, kind: str, where: str, rep: Report):
     metadata = lib.load_attack_metadata()
     if ident in metadata["deprecated"]:
         replacement = metadata["deprecated"][ident]
-        rep.error(where, f"deprecated ATT&CK ID '{ident}'. Use '{replacement}' instead")
+        guidance = f" Use '{replacement}' instead" if replacement else ""
+        rep.error(where, f"deprecated ATT&CK ID '{ident}'.{guidance}")
     elif ident not in metadata["software" if kind == "software" else "techniques"]:
         rep.error(where, f"unknown ATT&CK {kind} ID '{ident}' in attack_techniques.json")
 
@@ -657,7 +659,7 @@ def load_gating_sigma_atomics(
     atomic_dir: Path, titles: Mapping[str, str | None]
 ) -> set[tuple[str, str]]:
     """Positive manifest entries that run in CI and have a script in the harness."""
-    tests = json.loads((atomic_dir / "manifest.json").read_text(encoding="utf-8"))["tests"]
+    tests = load_manifest(atomic_dir / "manifests")
     atomics = (atomic_dir / "atomics").resolve()
     pairs = set()
     for test in tests:

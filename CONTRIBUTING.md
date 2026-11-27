@@ -103,10 +103,10 @@ and must not alert. Essential rules carry their negatives in
 
 ### ATT&CK and provenance
 
-Use the 14 Enterprise ATT&CK v18.1 tactic slugs and IDs from the curated
-[ATT&CK metadata](tools/attack_techniques.json). When adding an ID, confirm it
-against the linked MITRE release and add its name and, for techniques, primary
-tactic. Use a current replacement when the validator reports a deprecated or
+Use the tactic slugs and technique IDs from the complete Enterprise ATT&CK
+v18.1 [technique table](tools/attack_techniques.json). Confirm new software IDs
+against the linked MITRE release and add them to the curated `software` map as
+needed. Use a current replacement when the validator reports a deprecated or
 revoked ID. Production Sigma, YARA and IOC content needs a technical source
 that substantiates the detection, signature or indicator selection. Review
 source relevance when reviewing the rule.
@@ -183,6 +183,7 @@ Packs are cumulative: don't re-list a rule in Advanced if it's already in Essent
 ## Testing detections
 
 Rules marked `test_status: atomic` need a manifest entry for each platform whose packs include them.
+Add new atomic batches in their own JSON file, such as `tests/atomic/manifests/<platform>/<batch>.json`.
 Essential inclusion requires passing positive and negative evidence on the certified engine.
 For Sigma rules tested manually, document the limitation in `test_reason`.
 Run the coverage check before opening a PR:
@@ -193,6 +194,14 @@ uv run python tests/atomic/run_atomics.py --check-coverage --strict-essential
 
 The [atomic harness](tests/atomic/README.md) tests real alerts on Linux, Windows, and macOS in CI.
 Use [capture and replay](https://docs.rustinel.io/replay/) to iterate on event-based detections locally.
+CI discovers scripts in `tests/replay/` with an `if __name__ == "__main__":` entry point that
+accepts `--engine`. Put shared code in modules without an entry point or with a leading underscore
+in the filename. The `macos_detection_logic.py` suite runs on macOS and all other suites run on Linux.
+To run the suites locally with the installed engine, use:
+
+```bash
+uv run python tests/replay/run_all.py --engine tests/atomic/.engine/rustinel --platform all
+```
 
 ## False positives
 
