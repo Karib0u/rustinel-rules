@@ -12,6 +12,9 @@ collector configuration and field contract, so this tool only applies policy:
 
 Run `tools/build_packs.py` first, then:
     uv run python tools/sigma_doctor.py --engine tests/atomic/.engine/rustinel
+
+For Windows packs, point RUSTINEL_CONFIG at a config that enables
+windows.security_domain_controller_events, as the atomic workflow does.
 """
 
 from __future__ import annotations

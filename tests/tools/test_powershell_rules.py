@@ -1,7 +1,7 @@
 # ruff: noqa: E501
 """Positive/negative fixtures for the PowerShell and scheduled-task rules.
 
-A minimal Sigma evaluator (contains / startswith / endswith / re, `and`, `or`,
+A minimal Sigma evaluator (contains / startswith / endswith / re / cidr, `and`, `or`,
 `not`, parentheses) runs each rule's real detection block against sample events.
 It only has to cover the modifiers these rules use.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import unittest
+from ipaddress import ip_address, ip_network
 from pathlib import Path
 
 import yaml
@@ -22,6 +23,11 @@ def _load(name: str) -> dict:
 
 
 def _match_value(modifier: str, actual: str, expected: str) -> bool:
+    if modifier == "cidr":
+        try:
+            return ip_address(actual) in ip_network(expected)
+        except ValueError:
+            return False
     if modifier == "re":
         # The engine uses Rust regex; Python's `re` agrees on the subset used here.
         return re.search(expected, actual) is not None

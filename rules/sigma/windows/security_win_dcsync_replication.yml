@@ -1,0 +1,71 @@
+title: DCSync Directory Replication
+id: 361d95e4-185d-46bb-b357-b71f52898f97
+status: experimental
+description: >
+  Detects Security event 4662 with an Active Directory replication extended
+  right in Properties, a possible sign of DCSync. Machine accounts and the
+  MSOL_ and AAD_ synchronization account prefixes are excluded. On the domain
+  controller, enable Directory Service Access auditing and configure a SACL
+  for the replication rights on the domain naming context. Set
+  windows.security_domain_controller_events = true to collect event 4662.
+references:
+  - https://attack.mitre.org/techniques/T1003/006/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4662
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#domain-controller-events
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1003.006
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4662
+    Properties|contains:
+      - '1131f6aa-9c07-11d1-f79f-00c04fc2dcd2'
+      - '1131f6ad-9c07-11d1-f79f-00c04fc2dcd2'
+      - '89e95b76-444d-4c62-991a-0facbeda640c'
+  filter_machine:
+    SubjectUserName|endswith: '$'
+  filter_sync:
+    SubjectUserName|startswith:
+      - 'MSOL_'
+      - 'AAD_'
+  condition: selection and not (filter_machine or filter_sync)
+falsepositives:
+  - Directory synchronization or identity management using custom replication accounts.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    AD replication auditing requires a domain controller and a directory SACL.
+    Hosted Windows CI runners are standalone. Covered by offline replay and unit fixtures.
+  tuning:
+    - surface: filter_sync
+      guidance: Replace the default prefixes with exact names of approved replication accounts where possible.
+  negatives:
+    - reason: ordinary replication by a domain controller machine account
+      fields:
+        EventID: '4662'
+        Properties: '%%7688 {1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}'
+        SubjectUserName: 'DC01$'
+    - reason: replication by a Microsoft Entra Connect account
+      fields:
+        EventID: '4662'
+        Properties: '%%7688 {1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}'
+        SubjectUserName: 'MSOL_123456'
+    - reason: replication by an approved AAD synchronization account
+      fields:
+        EventID: '4662'
+        Properties: '%%7688 {1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}'
+        SubjectUserName: 'AAD_sync'
+    - reason: a directory operation without a replication right
+      fields:
+        EventID: '4662'
+        Properties: '%%7684 {bf967a86-0de6-11d0-a285-00aa003049e2}'
+        SubjectUserName: 'directory_operator'

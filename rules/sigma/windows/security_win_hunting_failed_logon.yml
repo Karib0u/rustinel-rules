@@ -1,0 +1,53 @@
+title: Failed Windows Logon from a Remote IP Address
+id: 3d1c7c39-da9e-495d-bfcd-8000f4861411
+status: experimental
+description: >
+  Detects Security event 4625 for a failed logon with a target username and
+  a usable non-loopback source IP address. Enable Logon failure auditing
+  on the Windows host that receives the logon. Audit Account Lockout can
+  also generate 4625 when an account is already locked out. Rustinel collects
+  4625 through its default Windows Security channel subscription.
+references:
+  - https://attack.mitre.org/techniques/T1110/003/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4625
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#audit-policy
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1110.003
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+    TargetUserName|re: '\S'
+    IpAddress|cidr:
+      - '0.0.0.0/0'
+      - '::/0'
+  filter_local_or_unspecified:
+    IpAddress|cidr:
+      - '0.0.0.0/32'
+      - '127.0.0.0/8'
+      - '::/128'
+      - '::1/128'
+      - '::ffff:0.0.0.0/128'
+      - '::ffff:127.0.0.0/104'
+  filter_unknown_user:
+    TargetUserName: '-'
+  condition: selection and not (filter_local_or_unspecified or filter_unknown_user)
+falsepositives:
+  - Mistyped credentials and network clients using stale passwords.
+level: informational
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    Offline replay and unit fixtures exercise remote addresses and audit
+    placeholders without changing the hosted runner's audit policy or credentials.
+  tuning:
+    - surface: IpAddress
+      guidance: Scope hunting to relevant networks or document shared authentication gateways before filtering.

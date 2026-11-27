@@ -1,0 +1,40 @@
+title: Windows Account Locked Out
+id: 016628c2-d888-410c-8c88-e87af7ea2fd1
+status: experimental
+description: >
+  Detects Security event 4740 when a user account is locked out. Requires
+  successful User Account Management auditing and an account lockout threshold
+  on the domain controller or local computer responsible for the account.
+  Rustinel v1.11.0 collects 4740 through its default Windows Security channel
+  subscription.
+references:
+  - https://attack.mitre.org/techniques/T1110/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4740
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-security-events.md
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1110
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4740
+  condition: selection
+falsepositives:
+  - Mistyped passwords and services or devices retrying stale credentials.
+level: informational
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    Hosted Windows CI runners are standalone. Live verification needs an
+    isolated account and a controlled lockout policy. Covered by offline replay
+    and unit fixtures.
+  tuning:
+    - surface: TargetUserName
+      guidance: Prioritize lockouts of sensitive accounts during hunting.

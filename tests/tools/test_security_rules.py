@@ -6,9 +6,14 @@ Security event reduced to the fields the rule selects on.
 
 from __future__ import annotations
 
+import sys
 import unittest
 
-from test_powershell_rules import _load, fires
+import yaml
+from test_powershell_rules import RULES, _load, fires
+
+sys.path.insert(0, str(RULES.parents[2] / "tests" / "replay"))
+from windows_security import SECURITY_CASES, security_cases
 
 
 class SecurityRuleCase(unittest.TestCase):
@@ -34,7 +39,7 @@ class AuditPolicyTests(SecurityRuleCase):
 
     def test_cases(self) -> None:
         self.check({"EventID": 4719, "AuditPolicyChanges": "%%8448"}, True)  # success removed
-        self.check({"EventID": 4719, "AuditPolicyChanges": "%%8450, %%8449"}, True)  # failure removed
+        self.check({"EventID": 4719, "AuditPolicyChanges": "%%8450, %%8449"}, True)
         self.check({"EventID": 4719, "AuditPolicyChanges": "%%8449"}, False)  # success added
         self.check({"EventID": 4719, "AuditPolicyChanges": "%%8451"}, False)  # failure added
         self.check({"EventID": 4720, "AuditPolicyChanges": "%%8448"}, False)
@@ -64,7 +69,9 @@ class ServiceInstallTests(SecurityRuleCase):
         self.check({"EventID": 4697, "ServiceFileName": "%COMSPEC% /c x"}, True)
         self.check({"EventID": 4697, "ServiceFileName": r"C:\Users\Public\a.exe"}, True)
         self.check({"EventID": 4697, "ServiceFileName": r"C:\Windows\PSEXESVC.exe"}, True)
-        self.check({"EventID": 4697, "ServiceFileName": r"C:\Windows\system32\svchost.exe -k x"}, False)
+        self.check(
+            {"EventID": 4697, "ServiceFileName": r"C:\Windows\system32\svchost.exe -k x"}, False
+        )
         self.check({"EventID": 4697, "ServiceFileName": r"C:\Program Files\App\app.exe"}, False)
         self.check({"EventID": 4698, "ServiceFileName": "cmd.exe /c whoami"}, False)
 
@@ -79,6 +86,43 @@ class SidHistoryAndDsrmTests(unittest.TestCase):
         det = _load("security_win_dsrm_password_set.yml")
         self.assertTrue(fires(det, {"EventID": 4794}))
         self.assertFalse(fires(det, {"EventID": 4793}))
+
+
+class AdAndAuthenticationTests(unittest.TestCase):
+    def test_security_detections(self) -> None:
+        for name in SECURITY_CASES:
+            rule = yaml.safe_load((RULES / f"{name}.yml").read_text())
+            for event, expected in security_cases(name, rule):
+                with self.subTest(rule=name, event=event):
+                    self.assertEqual(fires(rule["detection"], event), expected)
+
+    def test_lockout_burst(self) -> None:
+        rule = yaml.safe_load((RULES / "security_win_account_lockout_burst.yml").read_text())
+        base = yaml.safe_load((RULES / "security_win_hunting_account_lockout.yml").read_text())
+        self.assertEqual(
+            rule["correlation"],
+            {
+                "type": "event_count",
+                "rules": [base["id"]],
+                "group-by": ["TargetUserName"],
+                "timespan": "1h",
+                "condition": {"gte": 3},
+            },
+        )
+
+    def test_password_spray_burst(self) -> None:
+        rule = yaml.safe_load((RULES / "security_win_password_spray_burst.yml").read_text())
+        base = yaml.safe_load((RULES / "security_win_hunting_failed_logon.yml").read_text())
+        self.assertEqual(
+            rule["correlation"],
+            {
+                "type": "value_count",
+                "rules": [base["id"]],
+                "group-by": ["IpAddress"],
+                "timespan": "5m",
+                "condition": {"field": "TargetUserName", "gte": 10},
+            },
+        )
 
 
 if __name__ == "__main__":

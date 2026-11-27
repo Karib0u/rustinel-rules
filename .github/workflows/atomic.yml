@@ -147,6 +147,11 @@ jobs:
         run: |
           engine="$GITHUB_WORKSPACE/tests/atomic/.engine/rustinel"
           [ -f "$engine.exe" ] && engine="$engine.exe"
+          if [ "${{ matrix.platform }}" = windows ]; then
+            # Check the gated rules with their documented collector enabled.
+            export RUSTINEL_CONFIG="${engine%/*}/sigma-doctor.toml"
+            printf '%s\n' '[windows]' 'security_domain_controller_events = true' > "$RUSTINEL_CONFIG"
+          fi
           uv run python tools/sigma_doctor.py --engine "$engine" --platform "${{ matrix.platform }}"
         shell: bash
 
@@ -186,6 +191,11 @@ jobs:
       - name: Check Windows driver and DLL load replay regressions
         if: matrix.platform == 'linux'
         run: uv run python tests/replay/windows_image_load.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check Windows Security detection replay cases
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/windows_security.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
       - name: Check Essential rule negative-evidence replay cases

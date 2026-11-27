@@ -19,6 +19,7 @@ attack_coverage:
   - T1003.001
   - T1003.002
   - T1003.003
+  - T1003.006
   - T1014
   - T1027
   - T1033
@@ -38,6 +39,8 @@ attack_coverage:
   - T1090.001
   - T1098
   - T1105
+  - T1110
+  - T1110.003
   - T1134.005
   - T1136.001
   - T1136.002
@@ -61,6 +64,9 @@ attack_coverage:
   - T1547.004
   - T1547.006
   - T1548.002
+  - T1556
+  - T1558.003
+  - T1558.004
   - T1562.001
   - T1562.002
   - T1562.004
@@ -90,3 +96,7 @@ rules:
           - 3feb077a-6922-4052-93b8-7b95156ca1e5   # User Account Created (sigma)
           - 410d4870-cc7e-4cc9-a551-0fb32c136c7e   # Account Created and Added to Privileged Group (sigma)
           - 3248cbd6-6c77-4b5c-ab44-655e7fd75667   # Unsigned DLL Loaded from User-Writable Path (Hunting)
+          - 016628c2-d888-410c-8c88-e87af7ea2fd1   # Windows Account Locked Out (sigma)
+          - e16f7988-8fce-46f8-9987-8598d5d7682f   # Repeated Windows Account Lockouts (sigma)
+          - 3d1c7c39-da9e-495d-bfcd-8000f4861411   # Failed Windows Logon from a Remote IP Address (sigma)
+          - e312d76d-d216-4f92-a5f4-ee7a6ce53788   # Possible Windows Password Spray from a Single IP Address (sigma)
