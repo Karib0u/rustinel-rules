@@ -73,13 +73,13 @@ class FieldGuardTests(unittest.TestCase):
             ),
             (
                 "image_load",
-                "Signed",
-                "Kernel-Process image-load events contain no Authenticode result",
+                "User",
+                "Kernel-Process image-load events contain no user identity",
             ),
             (
-                "process_creation",
-                "CurrentDirectory",
-                "Microsoft-Windows-Kernel-Process does not expose the working directory",
+                "driver_load",
+                "User",
+                "Kernel-Process image-load events contain no user identity",
             ),
         ):
             with self.subTest(category=category, field=field):
@@ -100,6 +100,9 @@ class FieldGuardTests(unittest.TestCase):
             ("macos", "network_connection", "DestinationHostname"),
             ("linux", "file_rename", "SourceFilename"),
             ("windows", "process_creation", "CommandLine"),
+            ("windows", "process_creation", "CurrentDirectory"),
+            ("windows", "image_load", "Signed"),
+            ("windows", "driver_load", "SignatureStatus"),
         ):
             with self.subTest(platform=platform, category=category, field=field):
                 self.assertTrue(self.check_rule(platform, category, field).ok())
@@ -131,16 +134,14 @@ class FieldGuardTests(unittest.TestCase):
         )
 
     def test_contract_rows_supersede_overrides(self):
-        # The vendored contract now has its own ParentUser row, so that override
-        # no longer applies.
-        self.assertTrue(self.check_rule("windows", "process_creation", "ParentUser").ok())
-        for field in ("LogonId", "LogonGuid"):
+        for field in ("ParentUser", "LogonId"):
             with self.subTest(field=field):
-                self.assertFalse(self.check_rule("windows", "process_creation", field).ok())
-                blocked = engine_contract.parse_contract(
-                    contract_bytes([contract_row(field=field, availability="conditional")])
-                )
-                self.assertTrue(self.check_rule("windows", "process_creation", field, blocked).ok())
+                self.assertTrue(self.check_rule("windows", "process_creation", field).ok())
+        self.assertFalse(self.check_rule("windows", "process_creation", "LogonGuid").ok())
+        blocked = engine_contract.parse_contract(
+            contract_bytes([contract_row(field="LogonGuid", availability="conditional")])
+        )
+        self.assertTrue(self.check_rule("windows", "process_creation", "LogonGuid", blocked).ok())
 
 
 class SecurityChannelTests(unittest.TestCase):
@@ -202,10 +203,35 @@ class SecurityChannelTests(unittest.TestCase):
 
         report = validate.Report()
         validate.check_collected_event_ids(
-            self.security_rule({"selection": {"EventID": [4698, 4769]}}), report, self.collected
+            self.security_rule({"selection": {"EventID": [4698, 4767]}}), report, self.collected
         )
         self.assertEqual(len(report.errors), 1)
-        self.assertIn("EventID 4769", report.errors[0])
+        self.assertIn("EventID 4767", report.errors[0])
+
+    def test_new_security_event_ids_pass_and_set_the_floor(self):
+        for event_id in (
+            4661,
+            4662,
+            4672,
+            4673,
+            4740,
+            4742,
+            4768,
+            4769,
+            4799,
+            5137,
+            5140,
+            5141,
+            5379,
+        ):
+            with self.subTest(event_id=event_id):
+                rule = self.security_rule({"selection": {"EventID": event_id}})
+                report = validate.Report()
+                validate.check_collected_event_ids(rule, report, self.collected)
+                self.assertEqual(report.errors, [])
+                minimum, reasons = lib.artifact_min_engine(rule)
+                self.assertEqual(minimum, "1.11.0")
+                self.assertIn(f"EventID {event_id}", reasons[0])
 
     def test_event_ids_behind_modifiers_and_other_categories_are_not_checked(self):
         report = validate.Report()
@@ -233,7 +259,7 @@ class SecurityChannelTests(unittest.TestCase):
 
     def event_log_rule(self, telemetry, detection, **logsource):
         artifact = self.security_rule(detection)
-        artifact.meta["logsource"] = {"product": "windows", **logsource}
+        artifact.meta["logsource"] = logsource
         artifact.meta["rustinel"]["telemetry"] = [telemetry]
         return artifact
 
@@ -259,7 +285,7 @@ class SecurityChannelTests(unittest.TestCase):
             with self.subTest(telemetry=telemetry):
                 # EventID alone has no contract row; the channel sets the floor.
                 rule = self.event_log_rule(
-                    telemetry, {"selection": {"EventID": event_id}}, **logsource
+                    telemetry, {"selection": {"EventID": event_id}}, product="windows", **logsource
                 )
                 report = validate.Report()
                 validate.check_sigma_rule(rule, report)
@@ -271,12 +297,70 @@ class SecurityChannelTests(unittest.TestCase):
 
     def test_v1_9_0_event_log_channels_reject_uncollected_event_ids(self):
         rule = self.event_log_rule(
-            "windefend", {"selection": {"EventID": [1116, 1150]}}, service="windefend"
+            "windefend",
+            {"selection": {"EventID": [1116, 1150]}},
+            product="windows",
+            service="windefend",
         )
         report = validate.Report()
         validate.check_collected_event_ids(rule, report, self.collected)
         self.assertEqual(len(report.errors), 1)
         self.assertIn("EventID 1150", report.errors[0])
+
+    def test_v1_11_0_channels_validate_and_set_the_floor(self):
+        for telemetry, logsource, selection in (
+            ("driver_load", {"product": "windows", "category": "driver_load"}, {"EventID": 6}),
+            ("antivirus", {"category": "antivirus"}, {"EventID": [1116, 1117]}),
+            ("auditd", {"product": "linux", "service": "auditd"}, {"type": "EXECVE"}),
+        ):
+            with self.subTest(telemetry=telemetry):
+                rule = self.event_log_rule(telemetry, {"selection": selection}, **logsource)
+                report = validate.Report()
+                validate.check_sigma_rule(rule, report)
+                validate.check_collected_event_ids(rule, report, self.collected)
+                self.assertEqual(report.errors, [])
+                minimum, reasons = lib.artifact_min_engine(rule)
+                self.assertEqual(minimum, "1.11.0")
+                self.assertIn(telemetry, reasons[0])
+
+    def test_antivirus_alias_only_accepts_defender_detection_ids(self):
+        rule = self.event_log_rule(
+            "antivirus", {"selection": {"EventID": [1119, 5007]}}, category="antivirus"
+        )
+        report = validate.Report()
+        validate.check_collected_event_ids(rule, report, self.collected)
+        self.assertEqual(len(report.errors), 2)
+        self.assertTrue(all("collected: 1116, 1117" in error for error in report.errors))
+
+    def test_auditd_guard_uses_the_auditd_view(self):
+        rule = self.event_log_rule(
+            "auditd", {"selection": {"key": "anything"}}, product="linux", service="auditd"
+        )
+        _, blocked = engine_contract.load_contract()
+        report = validate.Report()
+        validate.check_engine_field_availability(rule, report, blocked)
+        self.assertEqual(len(report.errors), 1)
+        self.assertIn("selects on 'key'", report.errors[0])
+        self.assertNotIn("key", blocked.get(("linux", "process_creation"), {}))
+
+    def test_v1_11_0_dns_and_process_fields_set_the_floor(self):
+        for platform, category, field in (
+            *(
+                (platform, "dns", "QueryRegisteredDomain")
+                for platform in ("linux", "macos", "windows")
+            ),
+            ("windows", "process_creation", "CurrentDirectory"),
+            ("windows", "process_creation", "LogonId"),
+            ("linux", "process_creation", "LogonId"),
+            ("windows", "image_load", "Signed"),
+        ):
+            with self.subTest(platform=platform, category=category, field=field):
+                rule = self.event_log_rule(
+                    category, {"selection": {field: "value"}}, product=platform, category=category
+                )
+                minimum, reasons = lib.artifact_min_engine(rule)
+                self.assertEqual(minimum, "1.11.0")
+                self.assertIn(field, reasons[-1])
 
     def test_registry_sub_categories_reach_the_field_guard(self):
         blocked = {("windows", "registry_event"): {"Example": ("engine reason",)}}
@@ -373,7 +457,7 @@ class CorrelationTests(unittest.TestCase):
         self.assertTrue(any("mixes rules" in e for e in self.errors(mixed)))
 
     def test_group_by_and_telemetry_follow_the_referenced_rules(self):
-        errors = self.errors(self.correlation(**{"group-by": ["CurrentDirectory"]}))
+        errors = self.errors(self.correlation(**{"group-by": ["LogonGuid"]}))
         self.assertTrue(any("never populates" in e for e in errors))
         artifact = self.correlation()
         artifact.meta["rustinel"]["telemetry"] = ["file_event"]
