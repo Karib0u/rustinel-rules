@@ -4,20 +4,232 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from contextlib import redirect_stdout
 from copy import copy
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
+
+import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "tools"))
 
 import build_packs  # noqa: E402
 import lib  # noqa: E402
+import sync_ioc  # noqa: E402
+import sync_loldrivers  # noqa: E402
+import sync_lolrmm  # noqa: E402
 import validate  # noqa: E402
 
 DRIVERS = "ioc-loldrivers-vulnerable-hashes"
 POOLS = "ioc-cryptomining-pools"
 LOLRMM = "ioc-lolrmm-relay-domains"
+
+
+class IocSyncTest(unittest.TestCase):
+    def test_loldrivers_uses_verified_windows_full_file_sha256_and_keeps_provenance(self):
+        wanted, blocked, malicious, unverified, linux, alternate = (
+            digit * 64 for digit in "abcdef"
+        )
+        record = {
+            "Id": "driver-one",
+            "Verified": "TRUE",
+            "Category": "vulnerable driver",
+            "CVE": ["CVE-2024-12345", "CVE-2024-12344"],
+            "Commands": {"OperatingSystem": "Windows 11"},
+            "Tags": ["fallback.sys"],
+            "KnownVulnerableSamples": [
+                {"SHA256": wanted.upper(), "Filename": "driver.sys"},
+                {"SHA256": blocked, "Filename": "blocked.sys"},
+                {"SHA256": "z" * 64},
+                {"SHA256": "1" * 40},
+                {"Authentihash": {"SHA256": "0" * 64}, "Sections": [{"SHA256": "1" * 64}]},
+                {"SHA256": alternate},
+            ],
+        }
+        records = [
+            ("one.yaml", record),
+            (
+                "two.yaml",
+                {
+                    **record,
+                    "Id": "driver-two",
+                    "Verified": True,
+                    "KnownVulnerableSamples": [
+                        {"SHA256": wanted, "OriginalFilename": "alternate.sys"},
+                    ],
+                },
+            ),
+        ]
+        for name, digest, overrides in (
+            ("malicious", malicious, {"Category": "malicious"}),
+            ("unverified", unverified, {"Verified": "FALSE"}),
+            ("linux", linux, {"Commands": {"OperatingSystem": "Linux"}}),
+        ):
+            records.append(
+                (
+                    name + ".yaml",
+                    {**record, **overrides, "KnownVulnerableSamples": [{"SHA256": digest}]},
+                )
+            )
+        warninglists = {"hashes": [blocked.upper()]}
+        entries = sync_loldrivers.collect(records, warninglists)
+        self.assertEqual(entries, sync_loldrivers.collect(records[::-1], warninglists))
+        self.assertEqual([entry["value"] for entry in entries], [wanted, alternate])
+        comment = entries[0]["comment"]
+        for expected in (
+            "alternate.sys, driver.sys",
+            "vulnerable driver (CVE-2024-12344, CVE-2024-12345)",
+            f"LOLDrivers {sync_loldrivers.REVISION[:12]} (driver-one, driver-two)",
+        ):
+            self.assertIn(expected, comment)
+        self.assertTrue(entries[1]["comment"].startswith("fallback.sys | vulnerable driver"))
+
+    def test_loldrivers_preserves_cve_from_upstream_resource(self):
+        entries = sync_loldrivers.collect(
+            [
+                (
+                    "driver.yml",
+                    {
+                        "Verified": True,
+                        "Category": "vulnerable driver",
+                        "Resources": ["https://vendor.example.test/cve-2025-1234-advisory"],
+                        "KnownVulnerableSamples": [{"SHA256": "a" * 64, "Filename": "driver.sys"}],
+                    },
+                )
+            ],
+            {},
+        )
+        self.assertIn("driver.sys | vulnerable driver (CVE-2025-1234)", entries[0]["comment"])
+
+    def test_lolrmm_filters_warninglists_exclusions_and_invalid_matcher_syntax(self):
+        records = [
+            (
+                "agent.yaml",
+                {
+                    "Name": "Example Agent",
+                    "Details": {"Website": "https://unlisted-rmm.net"},
+                    "Artifacts": {
+                        "Network": [
+                            {
+                                "Domains": [
+                                    " *.Relay.Vendor-RMM.net. ",
+                                    ".relay.vendor-rmm.net",
+                                    "region.relay.vendor-rmm.net",
+                                    "client.teamviewer.com",
+                                    "*.teamviewer.com",
+                                    "teamviewer.com",
+                                    "support.teamviewer.com",
+                                    "blocked.service-fixture.net",
+                                    "*.child.blocked.service-fixture.net",
+                                    "*.service-fixture.net",
+                                    "service-fixture.net",
+                                    "notblocked.service-fixture.net",
+                                    "foo.github.com",
+                                    "notgithub.com",
+                                    "api.zoom.us",
+                                    "login.tailscale.com",
+                                    "tenant.firebaseapp.com",
+                                    "example.com",
+                                    "test.localhost",
+                                    "localhost",
+                                    "relay-*.vendor-rmm.net",
+                                    "node.*.vendor-rmm.net",
+                                    "*..vendor-rmm.net",
+                                    "https://vendor-rmm.net/path",
+                                    "vendor-rmm.net:443",
+                                    "vendor-rmm.net/svc",
+                                    "invalid_.vendor-rmm.net",
+                                    "-bad.vendor-rmm.net",
+                                    f"{'x' * 64}.vendor-rmm.net",
+                                    "192.0.2.1",
+                                    "user_managed",
+                                    "shared.vendor-rmm.net",
+                                ],
+                            },
+                            {"Domains": ["shared.vendor-rmm.net"], "Detection": False},
+                        ],
+                    },
+                },
+            ),
+            (
+                "companion.yaml",
+                {
+                    "Name": "Companion Agent",
+                    "Artifacts": {"Network": [{"Domains": ["region.relay.vendor-rmm.net"]}]},
+                },
+            ),
+        ]
+        warninglists = {
+            "domain_suffixes": ["github.com", "example.com", "blocked.service-fixture.net"]
+        }
+        entries = sync_lolrmm.collect(records, warninglists)
+        self.assertEqual(entries, sync_lolrmm.collect(records[::-1], warninglists))
+        self.assertEqual(
+            [entry["value"] for entry in entries],
+            [
+                "*.relay.vendor-rmm.net",
+                "client.teamviewer.com",
+                "notblocked.service-fixture.net",
+                "notgithub.com",
+                "service-fixture.net",
+            ],
+        )
+        self.assertEqual(
+            entries[0]["comment"],
+            f"LOLRMM {sync_lolrmm.REVISION[:12]} | "
+            "agent.yaml (Example Agent), companion.yaml (Companion Agent)",
+        )
+
+    def test_sync_commands_write_and_check_offline_with_fixture(self):
+        cases = (
+            (
+                sync_loldrivers,
+                "hashes",
+                {
+                    "Verified": True,
+                    "Category": "vulnerable driver",
+                    "KnownVulnerableSamples": [{"Filename": "driver.sys", "SHA256": "f" * 64}],
+                },
+            ),
+            (
+                sync_lolrmm,
+                "domains",
+                {
+                    "Name": "Fixture",
+                    "Artifacts": {"Network": [{"Domains": ["relay.vendor-rmm.net"]}]},
+                },
+            ),
+        )
+        for script, kind, fixture in cases:
+            with self.subTest(script=script.__name__), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "rule.yml"
+                source = Path(directory) / "fixture.yaml"
+                source.write_text(yaml.safe_dump(fixture), encoding="utf-8")
+                initial = "id: ioc-fixture\nreferences: [https://source.example.test]\n"
+                output.write_text(initial, encoding="utf-8")
+                with (
+                    patch.object(script, "OUTPUT", output),
+                    patch.object(sync_ioc, "fetch_records") as fetch,
+                    redirect_stdout(StringIO()),
+                ):
+                    args = ["--input", str(source)]
+                    self.assertEqual(script.main(["--check", *args]), 1)
+                    self.assertEqual(output.read_text(), initial)
+                    self.assertEqual(script.main(["--write", *args]), 0)
+                    generated = output.read_text()
+                    self.assertEqual(script.main(["--check", *args]), 0)
+                    self.assertEqual(script.main(["--write", *args]), 0)
+                    self.assertEqual(output.read_text(), generated)
+                    fetch.assert_not_called()
+                document = yaml.safe_load(generated)
+                self.assertEqual(document["id"], "ioc-fixture")
+                self.assertEqual(len(document["indicators"][kind]), 1)
+                self.assertIn(
+                    f"{script.REPOSITORY}/tree/{script.REVISION}/yaml", document["references"]
+                )
+                self.assertIn("https://source.example.test", document["references"])
 
 
 class IocSetsTest(unittest.TestCase):
@@ -39,10 +251,13 @@ class IocSetsTest(unittest.TestCase):
                 entries = artifact.indicators[ioc_type]
                 values = {value for value, _ in entries}
                 self.assertEqual(len(values), len(entries))
+                if set_id in {DRIVERS, LOLRMM}:
+                    self.assertEqual([value for value, _ in entries], sorted(values))
                 for value, comment in entries:
                     self.assertTrue(comment)
                     if ioc_type == "hashes":
                         self.assertRegex(value, r"^[0-9a-f]{64}$")
+                        self.assertIn(f"LOLDrivers {sync_loldrivers.REVISION[:12]}", comment)
                     elif set_id == POOLS:
                         self.assertFalse(value.startswith(("*", ".")))
 
@@ -50,8 +265,7 @@ class IocSetsTest(unittest.TestCase):
         artifact = self.artifacts[LOLRMM]
         entries = artifact.indicators["domains"]
         self.assertEqual(artifact.meta["license"], "Apache-2.0")
-        self.assertGreaterEqual(len(entries), 20)
-        self.assertLessEqual(len(entries), 35)
+        self.assertGreaterEqual(len(entries), 100)
         shared_zones = (
             "amazonaws.com",
             "azurewebsites.net",
@@ -64,10 +278,16 @@ class IocSetsTest(unittest.TestCase):
         for value, comment in entries:
             with self.subTest(value=value):
                 self.assertTrue(comment.startswith("LOLRMM "))
+                self.assertIn(f"LOLRMM {sync_lolrmm.REVISION[:12]}", comment)
                 host = value.removeprefix("*.")
                 self.assertFalse(
                     any(host == zone or host.endswith("." + zone) for zone in shared_zones)
                 )
+
+    def test_loldrivers_ships_the_expanded_sha256_corpus(self):
+        artifact = self.artifacts[DRIVERS]
+        self.assertEqual(artifact.meta["license"], "Apache-2.0")
+        self.assertGreaterEqual(len(artifact.indicators["hashes"]), 1000)
 
     def test_lolrmm_ships_only_in_windows_and_linux_hunting(self):
         hunting_packs = {"linux-hunting", "windows-hunting"}
