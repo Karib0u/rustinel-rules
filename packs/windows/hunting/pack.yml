@@ -7,7 +7,7 @@ description: >
 os: windows
 level: hunting
 pack_schema_version: 2
-requires_rustinel: ">=1.10.0"
+requires_rustinel: ">=1.11.0"
 default: false
 active_response_eligible: false
 expected_false_positive_level: high
@@ -19,6 +19,7 @@ attack_coverage:
   - T1003.001
   - T1003.002
   - T1003.003
+  - T1014
   - T1027
   - T1033
   - T1036.003
@@ -58,6 +59,7 @@ attack_coverage:
   - T1546.012
   - T1547.001
   - T1547.004
+  - T1547.006
   - T1548.002
   - T1562.001
   - T1562.002
@@ -68,6 +70,7 @@ attack_coverage:
   - T1567.002
   - T1569.002
   - T1572
+  - T1574.002
 telemetry_requirements:
   - process_creation
   - image_load
@@ -86,3 +89,4 @@ rules:
           - ad5acb04-ea4e-4d6d-9719-85042d2963b5   # File Timestamp Changed by Script Host (sigma)
           - 3feb077a-6922-4052-93b8-7b95156ca1e5   # User Account Created (sigma)
           - 410d4870-cc7e-4cc9-a551-0fb32c136c7e   # Account Created and Added to Privileged Group (sigma)
+          - 3248cbd6-6c77-4b5c-ab44-655e7fd75667   # Unsigned DLL Loaded from User-Writable Path (Hunting)

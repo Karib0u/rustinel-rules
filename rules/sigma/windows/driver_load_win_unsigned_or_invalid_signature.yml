@@ -1,0 +1,56 @@
+title: Unsigned or Invalid-Signature Kernel Driver Loaded
+id: 24867dcd-1aac-43e0-86fe-9d921490212d
+status: experimental
+description: >
+  Detects a loaded Windows kernel driver that Authenticode verifies as unsigned
+  or whose signature is expired, revoked, or otherwise invalid. Rustinel
+  leaves Signed and SignatureStatus absent when verification is inconclusive,
+  so an unknown verdict does not alert.
+references:
+  - https://github.com/Karib0u/rustinel/pull/843
+  - https://attack.mitre.org/techniques/T1014/
+  - https://attack.mitre.org/techniques/T1547/006/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1014
+  - attack.t1547.006
+logsource:
+  category: driver_load
+  product: windows
+detection:
+  selection_unsigned:
+    Signed: 'false'
+  selection_invalid:
+    SignatureStatus:
+      - Expired
+      - Revoked
+      - Invalid
+  condition: selection_unsigned or selection_invalid
+falsepositives:
+  - Legacy vendor drivers with trust failures and unsigned development drivers on test hosts.
+level: high
+rustinel:
+  telemetry:
+    - driver_load
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    Driver Signature Enforcement on hosted Windows runners prevents a reliable
+    live load of unsigned or rejected test drivers. Replay accepts synthetic
+    verdicts but does not run the live Authenticode verifier.
+  tuning:
+    - surface: selection_unsigned.Signed and selection_invalid.SignatureStatus
+      guidance: Review development and legacy driver workloads. Scope any exception to a verified full driver path and hash.
+  negatives:
+    - reason: properly signed Microsoft driver
+      fields:
+        ImageLoaded: 'C:\Windows\System32\drivers\stornvme.sys'
+        Signed: 'true'
+        SignatureStatus: Valid
+    - reason: driver whose backing file could not be verified
+      fields:
+        ImageLoaded: '\Device\HarddiskVolume3\Windows\System32\drivers\acmefilter.sys'

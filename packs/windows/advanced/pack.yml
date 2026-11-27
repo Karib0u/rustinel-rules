@@ -6,7 +6,7 @@ description: >
 os: windows
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.10.0"
+requires_rustinel: ">=1.11.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -17,6 +17,7 @@ attack_coverage:
   - T1003.001
   - T1003.002
   - T1003.003
+  - T1014
   - T1027
   - T1036.003
   - T1036.005
@@ -51,6 +52,7 @@ attack_coverage:
   - T1546.012
   - T1547.001
   - T1547.004
+  - T1547.006
   - T1548.002
   - T1562.001
   - T1562.002
@@ -61,6 +63,7 @@ attack_coverage:
   - T1567.002
   - T1569.002
   - T1572
+  - T1574.002
 telemetry_requirements:
   - process_creation
   - registry_event
@@ -70,6 +73,7 @@ telemetry_requirements:
   - ps_script
   - service_creation
   - image_load
+  - driver_load
   - network_connection
   - file_event
   - file_scan
@@ -130,6 +134,10 @@ rules:
           - 6655ed23-e516-4d6a-ab2e-c1bb5c8378d7   # Microsoft Defender Exclusion Written to the Registry (sigma)
           - a30c71e5-f274-46d8-838a-1c0f2b569368   # Windows System Process Name Executed from an Unexpected Path (sigma)
           - ecf18769-8140-452c-b00e-b9debc35375e   # Cryptominer Command Line (Windows) (sigma)
+          - 761f1dc0-47c2-43fa-8488-43d349cddd87   # Kernel Driver Loaded from a Potentially User-Writable Path
+          - 24867dcd-1aac-43e0-86fe-9d921490212d   # Unsigned or Invalid-Signature Kernel Driver Loaded
+          - 47a3a209-8e17-4150-85b1-2e8303700302   # Kernel Driver Loaded with a Known BYOVD Filename
+          - 0a98f9f8-817a-4cf7-b171-93e441c03ee1   # Unsigned DLL with a Common Side-Loading Name
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

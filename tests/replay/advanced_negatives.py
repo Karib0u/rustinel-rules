@@ -32,6 +32,7 @@ EVENT_SHAPE = {
     "registry_set": ("Registry", 13),
     "ps_script": ("Scripting", 4104),
     "service_creation": ("Service", 7045),
+    "driver_load": ("DriverLoad", 6),
     "image_load": ("ImageLoad", 7),
     "dns_query": ("Dns", 22),
     "registry_delete": ("Registry", 12),
@@ -47,8 +48,8 @@ EVENT_SHAPE = {
 EVENT_ID_FROM_FIELDS = {"Security", "Defender", "Application", "Wmi"}
 
 
-# Registry value-set events carry action code 39 in the opcode.
-OPCODE = {"Registry": 39}
+# Normalized registry value-set and image-load events carry their action code.
+OPCODE = {"Registry": 39, "DriverLoad": 10, "ImageLoad": 10}
 DELETE_OPCODE = 38
 
 

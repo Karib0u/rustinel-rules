@@ -1,0 +1,51 @@
+title: Kernel Driver Loaded from a Potentially User-Writable Path
+id: 761f1dc0-47c2-43fa-8488-43d349cddd87
+status: experimental
+description: >
+  Detects a Windows kernel driver loaded from a profile, shared application data,
+  or temporary directory. These locations can let an attacker stage a driver
+  before loading it for privilege escalation or to interfere with defenses.
+  Directory names indicate where to investigate; effective permissions vary.
+references:
+  - https://github.com/Karib0u/rustinel/issues/548
+  - https://attack.mitre.org/techniques/T1068/
+  - https://attack.mitre.org/techniques/T1562/001/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.privilege-escalation
+  - attack.defense-evasion
+  - attack.t1068
+  - attack.t1562.001
+logsource:
+  category: driver_load
+  product: windows
+detection:
+  selection_path:
+    ImageLoaded|re: '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\(?:Users|ProgramData|Temp|Windows\\Temp)|\\SystemRoot\\Temp)\\.+'
+  condition: selection_path
+falsepositives:
+  - Approved hardware installers or diagnostics that load drivers from staging directories.
+level: medium
+rustinel:
+  telemetry:
+    - driver_load
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    A reliable live positive requires a Windows lab and a loadable signed test
+    driver staged in a watched directory. Hosted runners enforce driver signing.
+    Offline replay covers the normalized driver path.
+  tuning:
+    - surface: selection_path.ImageLoaded
+      guidance: Add site-specific staging roots. Exclude only reviewed full driver paths with verified directory permissions.
+  negatives:
+    - reason: Microsoft storage driver loaded from the standard drivers directory
+      fields:
+        ImageLoaded: 'C:\Windows\System32\drivers\stornvme.sys'
+    - reason: hardware driver loaded from a protected product tree with a nested Temp directory
+      fields:
+        ImageLoaded: 'C:\Program Files\Acme\Temp\acmefilter.sys'
+    - reason: native volume path with a directory name that begins with Temp
+      fields:
+        ImageLoaded: '\Device\HarddiskVolume3\TemporaryDrivers\acmefilter.sys'

@@ -1,0 +1,66 @@
+title: Kernel Driver Loaded with a Known BYOVD Filename
+id: 47a3a209-8e17-4150-85b1-2e8303700302
+status: experimental
+description: >
+  Detects drivers loaded with filenames associated with bring-your-own-vulnerable-driver
+  activity. The curated list covers commonly abused drivers. A filename match
+  warrants checking the loaded file's hash and version against LOLDrivers.
+references:
+  - https://www.loldrivers.io/
+  - https://attack.mitre.org/techniques/T1068/
+  - https://attack.mitre.org/techniques/T1562/001/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.privilege-escalation
+  - attack.defense-evasion
+  - attack.t1068
+  - attack.t1562.001
+logsource:
+  category: driver_load
+  product: windows
+detection:
+  selection_filename:
+    ImageLoaded|endswith:
+      - '\RTCore64.sys'
+      - '\RTCore32.sys'
+      - '\DBUtil_2_3.sys'
+      - '\dbutildrv2.sys'
+      - '\AsIO64.sys'
+      - '\AsIO32.sys'
+      - '\gdrv.sys'
+      - '\iqvw64e.sys'
+      - '\procexp152.sys'
+      - '\zam64.sys'
+      - '\zamguard64.sys'
+      - '\TrueSight.sys'
+      - '\WinRing0x64.sys'
+      - '\WinRing0.sys'
+      - '\ene.sys'
+      - '\MsIo64.sys'
+      - '\GLCKIo2.sys'
+      - '\ATSZIO64.sys'
+      - '\ProcessHacker.sys'
+      - '\KProcessHacker.sys'
+  condition: selection_filename
+falsepositives:
+  - Legitimate hardware, diagnostics, monitoring, and administration tools can load drivers with these names.
+level: medium
+rustinel:
+  telemetry:
+    - driver_load
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Hosted runners enforce driver signing and may block vulnerable drivers.
+    Replay exercises the filename list without loading any driver.
+  tuning:
+    - surface: selection_filename.ImageLoaded
+      guidance: Maintain the filename list against LOLDrivers and review expected vendor drivers by full path, version, and hash before adding exceptions.
+  negatives:
+    - reason: legitimate driver whose filename ends with the same text
+      fields:
+        ImageLoaded: 'C:\Windows\System32\drivers\acme-RTCore64.sys'
+    - reason: regular Microsoft driver loaded from the system directory
+      fields:
+        ImageLoaded: 'C:\Windows\System32\drivers\stornvme.sys'
