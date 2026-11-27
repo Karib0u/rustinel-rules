@@ -1,0 +1,65 @@
+title: Messaging or File-Sharing DNS Query from Unexpected Process (Linux)
+id: 5618002a-49ca-4dbd-9a15-bb15ff596367
+status: experimental
+description: >
+  Detects an attributed DNS lookup for messaging, paste, or file-sharing
+  services from a process outside the browser and service-specific client
+  paths. These services can carry command-and-control traffic or exfiltrated
+  data. The event shows a DNS query, without the URL, API path, or transfer.
+references:
+  - https://attack.mitre.org/techniques/T1567/
+  - https://attack.mitre.org/techniques/T1102/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.exfiltration
+  - attack.t1567
+  - attack.t1102
+logsource:
+  category: dns_query
+  product: linux
+detection:
+  selection_domain:
+    QueryName|re: '(?i)^(?:api\.telegram\.org|discord\.com|discordapp\.com|cdn\.discordapp\.com|pastebin\.com|transfer\.sh|gofile\.io|file\.io|pixeldrain\.com)\.?$'
+  selection_image:
+    Image|re: '\S'
+  filter_browser:
+    Image|re:
+      - '^/usr/bin/(?:firefox|firefox-esr|chromium|chromium-browser|google-chrome(?:-stable)?|microsoft-edge(?:-stable)?|brave-browser)$'
+      - '^/usr/lib/(?:firefox(?:-esr)?/firefox(?:-esr)?|chromium(?:-browser)?/chromium(?:-browser)?)$'
+      - '^/opt/(?:google/chrome/chrome|microsoft/msedge/msedge|brave\.com/brave/brave)$'
+  filter_telegram:
+    QueryName|re: '(?i)^api\.telegram\.org\.?$'
+    Image|re: '^/usr/bin/telegram-desktop$'
+  filter_discord:
+    QueryName|re: '(?i)^(?:discord\.com|discordapp\.com|cdn\.discordapp\.com)\.?$'
+    Image|re: '^/(?:usr/bin/discord|opt/discord/Discord|usr/share/discord/Discord)$'
+  condition: all of selection_* and not 1 of filter_*
+falsepositives:
+  - Approved integrations, upload tooling, and legitimate clients installed outside the listed system paths.
+level: medium
+rustinel:
+  telemetry:
+    - dns_query
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: filter_browser, filter_telegram, filter_discord
+      guidance: Add anchored full executable paths from approved, administrator-controlled installations. Keep client exclusions scoped to their own service.
+  negatives:
+    - reason: Browser installed at its standard system path
+      fields:
+        QueryName: pastebin.com
+        Image: '/usr/bin/firefox'
+    - reason: Telegram client using its own service
+      fields:
+        QueryName: api.telegram.org
+        Image: '/usr/bin/telegram-desktop'
+    - reason: DNS query without process attribution
+      fields:
+        QueryName: gofile.io
+    - reason: Hostname with an unrelated suffix
+      fields:
+        QueryName: api.telegram.org.example.com
+        Image: '/usr/bin/curl'

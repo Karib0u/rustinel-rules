@@ -1,0 +1,61 @@
+title: Potential DNS Tunnel by Query Name Shape (Linux)
+id: 5172afac-6ce2-4f89-943b-57ddb23c9b40
+status: experimental
+description: >
+  Detects DNS names with a long label, a long total name, or an unusually
+  deep label hierarchy. Encoded data in DNS tunnels can produce these shapes.
+  Reverse lookups, mail authentication records, local names, and selected
+  CDN and cloud service discovery suffixes are filtered.
+references:
+  - https://attack.mitre.org/techniques/T1071/004/
+  - https://attack.mitre.org/techniques/T1572/
+  - https://attack.mitre.org/techniques/T1048/003/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.exfiltration
+  - attack.t1071.004
+  - attack.t1572
+  - attack.t1048.003
+logsource:
+  category: dns_query
+  product: linux
+detection:
+  selection_long_label:
+    QueryLongestLabel|gte: 50
+  selection_long_name:
+    QueryNameLength|gte: 150
+  selection_deep_name:
+    QueryLabelCount|gte: 8
+  filter_reverse_or_local:
+    QueryName|re: '(?i)(?:^|\.)(?:in-addr\.arpa|ip6\.arpa|local|internal)\.?$'
+  filter_mail_auth:
+    QueryName|re: '(?i)(?:^|\.)(?:_dmarc|_domainkey|_spf)\.'
+  filter_service_suffix:
+    QueryName|re: '(?i)(?:^|\.)(?:cloudfront\.net|akamaiedge\.net|azureedge\.net|vpce\.amazonaws\.com|elb\.amazonaws\.com)\.?$'
+  condition: 1 of selection_* and not 1 of filter_*
+falsepositives:
+  - Generated names from private service discovery, security products, and CDNs outside the listed suffixes.
+level: medium
+rustinel:
+  telemetry:
+    - dns_query
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_long_label, selection_long_name, selection_deep_name
+      guidance: Measure DNS name lengths and label counts in your fleet before changing the thresholds.
+    - surface: filter_service_suffix
+      guidance: Add approved infrastructure suffixes with a DNS label boundary and an end anchor.
+  negatives:
+    - reason: Ordinary public API hostname
+      fields:
+        QueryName: api.github.com
+        Image: '/usr/bin/curl'
+    - reason: IPv6 reverse lookup with a deep label hierarchy
+      fields:
+        QueryName: a.b.c.d.e.f.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa.
+    - reason: Long DKIM selector under the mail authentication label
+      fields:
+        QueryName: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa._domainkey.example.com

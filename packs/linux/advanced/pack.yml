@@ -7,7 +7,7 @@ description: >
 os: linux
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.8.0"
+requires_rustinel: ">=1.11.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -17,15 +17,18 @@ extends:
 attack_coverage:
   - T1014
   - T1027
+  - T1048.003
   - T1053.003
   - T1059.004
   - T1059.006
   - T1070.002
   - T1070.003
   - T1071
+  - T1071.004
   - T1090
   - T1095
   - T1098.004
+  - T1102
   - T1105
   - T1136.001
   - T1219
@@ -44,6 +47,8 @@ attack_coverage:
   - T1562.001
   - T1562.004
   - T1562.012
+  - T1567
+  - T1568
   - T1572
   - T1574.006
   - T1610
@@ -54,6 +59,7 @@ telemetry_requirements:
   - file_rename
   - process_creation
   - network_connection
+  - dns_query
   - file_scan
 test_status: mixed
 sources:
@@ -78,6 +84,9 @@ rules:
           - 0cb59840-b420-4332-b7d1-2c3d4343901f   # Security Service Stop (auditd / AppArmor / SELinux / EDR) (sigma)
           - b5df6758-24ff-49c0-ba6e-c67760177ddb   # Shell Running as Root Through a SUID Binary (sigma)
           - 300f4d0e-79ef-4c53-9461-7b3f4e468537   # DNS Query to Tunnel Service (Linux) (sigma)
+          - 5172afac-6ce2-4f89-943b-57ddb23c9b40   # Potential DNS Tunnel by Query Name Shape (Linux) (sigma)
+          - 5618002a-49ca-4dbd-9a15-bb15ff596367   # Messaging or File-Sharing DNS Query from Unexpected Process (Linux) (sigma)
+          - b3c5470f-25de-40c8-a66a-e1f2dd7a5c0d   # Burst of Distinct Tunnel-Shaped DNS Names (Linux) (sigma)
           - 8bebbe9b-32c6-4350-a686-7fbd7a55fcbb   # File Renamed to Ransomware-Style Extension (Linux) (sigma)
           - ae619e3b-9950-4cec-89f0-8874c142197b   # Mass File Rename to Ransomware-Style Extension (Linux) (sigma)
           - f7c3b270-a699-4597-a5b6-0e2860f3decf   # Scripted Reverse Shell via Python, Perl, PHP or Ruby (sigma)
