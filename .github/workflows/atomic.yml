@@ -233,9 +233,14 @@ jobs:
         run: python3 tests/replay/expansion_wave1.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
-      - name: Check shipped mining-pool IOC replay
+      - name: Check shipped mining-pool and LOLRMM IOC replay
         if: matrix.platform == 'linux'
         run: python3 tests/replay/ioc_pools.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
+      - name: Check remote management staging path replay
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/rmm_staging.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
       - name: Run atomic tests (Linux)

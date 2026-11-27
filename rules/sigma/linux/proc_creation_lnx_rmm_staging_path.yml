@@ -1,0 +1,58 @@
+title: Remote Management Tool Launched from a Staging Path (Linux)
+id: ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb
+status: experimental
+description: >-
+  Detects known remote management executable names launched from a home,
+  temporary, or shared-memory directory. Requires Linux eBPF process creation
+  telemetry with an absolute Image path. Standard installs under /usr or /opt
+  fall outside the selected roots. Portable and per-user deployments can match.
+  Interpreter-hosted clients such as ScreenConnect's Java client are outside
+  this image-name selection.
+references:
+  - https://attack.mitre.org/techniques/T1219/
+  - https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.t1219
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_path:
+    Image|startswith:
+      - /tmp/
+      - /var/tmp/
+      - /dev/shm/
+      - /home/
+  selection_name:
+    Image|re:
+      - '(?i)/(?:anydesk|ateraagent|alphaagent|splashtop|sragent|srserver|rustdesk|meshagent(?:32|64)?|simplehelp(?:customer)?|spsrv|teamviewer(?:d|_host)?|tacticalagent)$'
+      - '(?i)/(?:anydesk|rustdesk)(?:-[0-9][a-z0-9._-]*)?\.appimage$'
+  condition: selection_path and selection_name
+falsepositives:
+  - Approved portable clients and troubleshooting sessions.
+  - Managed per-user installations and vendor testing from home or temporary directories.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_path.Image
+      guidance: Adjust staging roots for local deployment. Exclude approved software only by its anchored full executable path with verified directory permissions.
+  negatives:
+    - reason: RustDesk from the system package directory
+      fields:
+        Image: /usr/bin/rustdesk
+    - reason: MeshAgent from its default service installation
+      fields:
+        Image: /usr/local/mesh_services/meshagent/meshagent
+    - reason: similarly named file in a temporary directory
+      fields:
+        Image: /tmp/not-rustdesk
+    - reason: a directory name starts with a staging root name
+      fields:
+        Image: /home-backup/meshagent

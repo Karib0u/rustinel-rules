@@ -61,6 +61,7 @@ attack_coverage:
   - T1218.009
   - T1218.010
   - T1218.011
+  - T1219
   - T1482
   - T1486
   - T1490
@@ -113,3 +114,6 @@ rules:
           - e16f7988-8fce-46f8-9987-8598d5d7682f   # Repeated Windows Account Lockouts (sigma)
           - 3d1c7c39-da9e-495d-bfcd-8000f4861411   # Failed Windows Logon from a Remote IP Address (sigma)
           - e312d76d-d216-4f92-a5f4-ee7a6ce53788   # Possible Windows Password Spray from a Single IP Address (sigma)
+          - fc961eef-9d89-4b01-a1ed-4ac6b8013d97   # Remote Management Tool Launched from a Staging Path (Windows) (sigma)
+        ioc:
+          - ioc-lolrmm-relay-domains

@@ -4,10 +4,11 @@
 function Invoke-AtomicCommandLines {
     param(
         [System.Collections.IDictionary]$Commands,
-        [string]$ParentName
+        [string]$ParentName,
+        [string]$Root = $PWD.Path
     )
 
-    $dir = Join-Path $PWD "rustinel-atomic-$([Guid]::NewGuid().ToString('N'))"
+    $dir = Join-Path $Root "rustinel-atomic-$([Guid]::NewGuid().ToString('N'))"
     $fixture = Join-Path $dir 'fixture.exe'
     $source = @'
 using System;

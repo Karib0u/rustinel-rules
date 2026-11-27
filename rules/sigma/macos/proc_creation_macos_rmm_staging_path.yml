@@ -1,0 +1,57 @@
+title: Remote Management Tool Launched from a Staging Path (macOS)
+id: 4e7911b2-63a4-43c0-a97b-61c6f360782b
+status: experimental
+description: >-
+  Detects known remote management executable names launched from temporary,
+  shared-user, or standard Downloads directories. Requires Endpoint Security
+  process creation telemetry with Image. Includes the resolved /private/tmp
+  and /private/var/tmp paths. Standard installs under /Applications and
+  /Library fall outside the selected roots. On-demand support can match.
+references:
+  - https://attack.mitre.org/techniques/T1219/
+  - https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml
+  - https://community.simple-help.com/t/online-installer-for-mac/48
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.t1219
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_path:
+    Image|re: '(?i)^(?:(?:/private)?/(?:tmp|var/tmp)|/Users/Shared|/Users/[^/]+/Downloads|/Downloads)/'
+  selection_name:
+    Image|re:
+      - '(?i)/(?:AnyDesk|AteraAgent|AlphaAgent|ScreenConnect|Splashtop(?: Business| Streamer| SOS)?|SRService|SRStreamerDaemon|RustDesk|MeshAgent|SimpleHelp(?:Customer)?|spsrv|TeamViewer(?:Host|QS|_Service|_Desktop)?|TacticalAgent)$'
+      - '(?i)/Remote Access\.app/Contents/MacOS/osxwrapper$'
+  condition: selection_path and selection_name
+falsepositives:
+  - Approved technicians or users running downloaded or portable support clients.
+  - Management tooling staging installers or upgrades in a monitored directory.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_path.Image
+      guidance: Adjust staging roots for local deployment. Exclude approved software only by its anchored full executable path with verified directory permissions.
+  negatives:
+    - reason: TeamViewer from a standard Applications install
+      fields:
+        Image: /Applications/TeamViewer.app/Contents/MacOS/TeamViewer
+    - reason: an unrelated app bundle in Downloads
+      fields:
+        Image: /Users/Alice/Downloads/TeamViewer-Notes.app/Contents/MacOS/Notes
+    - reason: installed app with a nested folder named Downloads
+      fields:
+        Image: /Applications/Acme.app/Contents/Downloads/AnyDesk
+    - reason: a directory name starts with a staging root name
+      fields:
+        Image: /Users/SharedTools/TeamViewer
+    - reason: an unrelated app uses a similarly named bundle launcher
+      fields:
+        Image: /Downloads/Other.app/Contents/MacOS/osxwrapper

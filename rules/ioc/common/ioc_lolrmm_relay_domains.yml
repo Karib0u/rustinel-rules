@@ -1,0 +1,93 @@
+id: ioc-lolrmm-relay-domains
+description: >-
+  Curated LOLRMM relay, rendezvous and agent service hostnames for remote
+  management inventory and hunting. Approved remote support can reach these
+  services. The selection covers public services and a few reported gateways.
+os: [common]
+attack: [T1219]
+severity: medium
+license: Apache-2.0
+test_status: dynamic
+test_reason: >-
+  Offline DNS replay against the built Windows and Linux Hunting feeds
+  exercises exact and suffix matching without resolving public hostnames.
+references:
+  - https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml
+  - https://github.com/magicsword-io/LOLRMM/blob/0c2d56639673a232ff9d2548e16c6d045d3a1217/LICENSE
+  - https://www.action1.com/documentation/firewall-configuration/region-north-america/
+  - https://www.action1.com/documentation/firewall-configuration/region-europe/
+  - https://support.atera.com/hc/en-us/articles/215955967-Troubleshoot-Atera-s-Windows-agent
+  - https://docs.meshcentral.com/meshcentral/
+  - https://github.com/rustdesk/hbb_common/blob/main/src/config.rs
+  - https://www.huntress.com/blog/screenconnect-power-bi
+  - https://www.huntress.com/blog/w2-malvertising-to-kernel-mode-edr-kill
+  - https://www.huntress.com/blog/employee-monitoring-simplehelp-abused-in-ransomware-operations
+  - https://support-splashtopbusiness.splashtop.com/hc/en-us/articles/115001811966-What-Are-the-Firewall-Exceptions-and-IP-addresses-of-Splashtop-Servers-Services
+  - https://docs.syncrosecure.com/syncro-exceptions-and-allowlists?kb_language=en_US
+  - https://docs.tacticalrmm.com/howitallworks/
+indicators:
+  domains:
+    - value: us.remote.app.action1.com
+      comment: LOLRMM action1.yaml, narrowed to a documented Action1 North America Remote Desktop Console host
+    - value: us.remote.na-2.action1.com
+      comment: LOLRMM action1.yaml, narrowed to a documented Action1 North America Remote Desktop Console host
+    - value: remote.eu.action1.com
+      comment: LOLRMM action1.yaml, narrowed to a documented Action1 Europe Remote Desktop Console host
+    - value: remote.eu-2.action1.com
+      comment: LOLRMM action1.yaml, narrowed to a documented Action1 Europe Remote Desktop Console host
+    - value: '*.net.anydesk.com'
+      comment: LOLRMM anydesk.yaml, AnyDesk connectivity zone covers boot.net.anydesk.com and numbered relay hosts
+    - value: agent-api.atera.com
+      comment: LOLRMM atera.yaml, Atera agent API
+    - value: agenthb.atera.com
+      comment: LOLRMM atera.yaml, Atera agent heartbeat
+    - value: agentreporting.atera.com
+      comment: LOLRMM atera.yaml, Atera agent reporting
+    - value: pubsub.atera.com
+      comment: LOLRMM atera.yaml, Atera messaging endpoint
+    - value: meshcentral.com
+      comment: LOLRMM meshcentral.yaml, public MeshCentral instance
+    - value: '*.ninjarmm.net'
+      comment: LOLRMM ninjarmm.yaml, NinjaOne remote service namespace
+    - value: '*.rmmservice.ca'
+      comment: LOLRMM ninjarmm.yaml, NinjaOne Canada service namespace
+    - value: '*.rmmservice.com.au'
+      comment: LOLRMM ninjarmm.yaml, NinjaOne Australia service namespace
+    - value: '*.rmmservice.eu'
+      comment: LOLRMM ninjarmm.yaml, NinjaOne Europe service namespace
+    - value: rs-ny.rustdesk.com
+      comment: LOLRMM rustdesk.yaml, RustDesk public rendezvous
+    - value: web.rustdesk.com
+      comment: LOLRMM rustdesk.yaml, RustDesk web client
+    - value: control.connectwise.com
+      comment: LOLRMM connectwise_control.yaml, ConnectWise Control service host
+    - value: instance-g01s1n-relay.screenconnect.com
+      comment: LOLRMM screenconnect.yaml relay pattern, narrowed to Huntress Power BI phishing relay
+    - value: instance-itsd8c-relay.screenconnect.com
+      comment: LOLRMM screenconnect.yaml relay pattern, narrowed to Huntress W-2 malvertising relay
+    - value: live.screenconnect.com
+      comment: LOLRMM connectwise_control.yaml, ScreenConnect service host
+    - value: dronemaker.org
+      comment: LOLRMM simplehelp.yaml, SimpleHelp gateway that accepted clients in Huntress Crazy ransomware reporting
+    - value: telesupportgroup.com
+      comment: LOLRMM simplehelp.yaml, SimpleHelp gateway that accepted clients in Huntress Crazy ransomware reporting
+    - value: '*.api.splashtop.com'
+      comment: LOLRMM splashtop_remote.yaml, Splashtop global session and API service
+    - value: '*.api.splashtop.eu'
+      comment: LOLRMM splashtop_remote.yaml, Splashtop Europe session and API service
+    - value: '*.relay.splashtop.com'
+      comment: LOLRMM splashtop_remote.yaml, Splashtop data relay service
+    - value: realtime.kabutoservices.com
+      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro agent WebSocket host
+    - value: rmm.syncromsp.com
+      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro RMM service host
+    - value: syncro-live.syncromsp.com
+      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro Live service host
+    - value: traversal.syncromsp.com
+      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro traversal host
+    - value: icanhazip.tacticalrmm.io
+      comment: LOLRMM tactical_rmm.yaml vendor documentation, dedicated Tactical RMM agent IP discovery service
+    - value: client.teamviewer.com
+      comment: LOLRMM teamviewer.yaml, TeamViewer client service
+    - value: router15.teamviewer.com
+      comment: LOLRMM teamviewer.yaml, TeamViewer routing service

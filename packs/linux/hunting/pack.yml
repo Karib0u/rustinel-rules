@@ -32,6 +32,7 @@ attack_coverage:
   - T1102
   - T1105
   - T1136.001
+  - T1219
   - T1222.002
   - T1486
   - T1496
@@ -64,3 +65,5 @@ rules:
     has:
         sigma:
           - 60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6   # Execution from World-Writable / Temporary Directory (Hunting) (sigma)
+        ioc:
+          - ioc-lolrmm-relay-domains

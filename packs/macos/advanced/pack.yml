@@ -37,6 +37,7 @@ attack_coverage:
   - T1136.001
   - T1176
   - T1204.002
+  - T1219
   - T1486
   - T1496
   - T1496.001
@@ -102,6 +103,7 @@ rules:
           - 0a001338-814e-44d5-aab5-b7bb7290938f   # Cron or At Job Submission (macOS) (sigma)
           - c35a831e-4046-4e9b-9378-a180d00814f7   # Configuration Profile Installation Attempt (macOS) (sigma)
           - 52013862-0171-4b0c-a0d0-97bc065109e5   # DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS) (sigma)
+          - 4e7911b2-63a4-43c0-a97b-61c6f360782b   # Remote Management Tool Launched from a Staging Path (macOS) (sigma)
         yara:
           - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)
         ioc:

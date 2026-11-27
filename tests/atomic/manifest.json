@@ -12,6 +12,27 @@
   ],
   "tests": [
     {
+      "id": "fc961eef-9d89-4b01-a1ed-4ac6b8013d97",
+      "name": "windows_rmm_staging_path",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/rmm_staging_path.ps1"
+    },
+    {
+      "id": "ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb",
+      "name": "linux_rmm_staging_path",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/rmm_staging_path.sh"
+    },
+    {
+      "id": "4e7911b2-63a4-43c0-a97b-61c6f360782b",
+      "name": "macos_rmm_staging_path",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/rmm_staging_path.sh"
+    },
+    {
       "id": "0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40",
       "name": "linux_ldso_preload_hijack",
       "platform": "linux",
