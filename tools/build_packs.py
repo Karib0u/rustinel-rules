@@ -147,6 +147,10 @@ def materialize_pack(pack: dict, by_id, artifact_index, version: str) -> dict:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(art.path, dest)
         if art.kind == "ioc":
+            if art.meta.get("license") == "Apache-2.0":
+                license_dir = out_dir / "LICENSES"
+                license_dir.mkdir(exist_ok=True)
+                shutil.copy2(lib.REPO_ROOT / "LICENSES/Apache-2.0.txt", license_dir)
             count = 0
             for ioc_type, entries in art.indicators.items():
                 for value, comment in entries:

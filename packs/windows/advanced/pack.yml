@@ -44,6 +44,7 @@ attack_coverage:
   - T1486
   - T1490
   - T1496
+  - T1496.001
   - T1505.003
   - T1543.003
   - T1546.003
@@ -134,3 +135,6 @@ rules:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)
           - yara-win-xmrig-coinminer   # XMRig miner presence in Windows PE binaries (yara)
+        ioc:
+          - ioc-loldrivers-vulnerable-hashes
+          - ioc-cryptomining-pools

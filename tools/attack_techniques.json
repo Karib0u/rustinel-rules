@@ -50,6 +50,7 @@
     "T1486": { "name": "Data Encrypted for Impact", "tactic": "impact" },
     "T1490":     { "name": "Inhibit System Recovery", "tactic": "impact" },
     "T1496":     { "name": "Resource Hijacking", "tactic": "impact" },
+    "T1496.001": { "name": "Resource Hijacking: Compute Hijacking", "tactic": "impact" },
     "T1505.003": { "name": "Server Software Component: Web Shell", "tactic": "persistence" },
     "T1204.002": { "name": "User Execution: Malicious File", "tactic": "execution" },
     "T1543.001": { "name": "Create or Modify System Process: Launch Agent", "tactic": "persistence" },

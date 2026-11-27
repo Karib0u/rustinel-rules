@@ -1,0 +1,67 @@
+id: ioc-cryptomining-pools
+description: >-
+  Public cryptocurrency mining pool endpoints that can help identify
+  unauthorized resource use. Approved mining can also reach these hosts.
+os: [common]
+attack: [T1496.001]
+severity: medium
+license: DRL-1.1
+test_status: dynamic
+test_reason: >-
+  Offline DNS replay against the built Advanced packs exercises matching
+  without querying any public pool.
+references:
+  - https://help.nanopool.org/hc/en-us/articles/4898903376157-Pool-information
+  - https://rvn.2miners.com/help
+  - https://ethw.2miners.com/help
+  - https://f2pool.io/mining/support/
+  - https://github.com/MoneroOcean/mo-pool-ui/blob/master/index.html
+  - https://herominers.com/help/ssl-mining-proxy/
+  - https://unmineable.com/support/article/how-to-setup-xmrig-for-cpu-mining
+  - https://unit42.paloaltonetworks.com/teamtnt-operations-cloud-environments/
+indicators:
+  domains:
+    - value: xmr-eu1.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-eu2.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-us-east1.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-us-west1.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-asia1.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-jp1.nanopool.org
+      comment: Nanopool Monero
+    - value: xmr-au1.nanopool.org
+      comment: Nanopool Monero
+    - value: rvn.2miners.com
+      comment: 2Miners Ravencoin
+    - value: us-rvn.2miners.com
+      comment: 2Miners Ravencoin
+    - value: asia-rvn.2miners.com
+      comment: 2Miners Ravencoin
+    - value: ethw.2miners.com
+      comment: 2Miners EthereumPoW
+    - value: btc.f2pool.com
+      comment: f2pool Bitcoin
+    - value: btc-asia.f2pool.com
+      comment: f2pool Bitcoin
+    - value: btc-na.f2pool.com
+      comment: f2pool Bitcoin
+    - value: btc-euro.f2pool.com
+      comment: f2pool Bitcoin
+    - value: etc.f2pool.com
+      comment: f2pool Ethereum Classic
+    - value: ltc.f2pool.com
+      comment: f2pool Litecoin
+    - value: gulf.moneroocean.stream
+      comment: MoneroOcean pool
+    - value: monero.herominers.com
+      comment: HeroMiners Monero
+    - value: rx.unmineable.com
+      comment: unMineable RandomX
+    - value: ghostrider.unmineable.com
+      comment: unMineable GhostRider
+    - value: pool.supportxmr.com
+      comment: SupportXMR Monero

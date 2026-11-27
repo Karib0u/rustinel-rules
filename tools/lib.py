@@ -452,6 +452,8 @@ def artifact_min_engine(
     contract). A rule may also state `rustinel.min_engine` directly, for a
     requirement the contract cannot see (a correlation rule needs v1.5.0
     whatever its fields are). The declared value only ever raises the result.
+    IOC sets may declare min_engine when their intended telemetry arrived
+    after the IOC format itself.
     """
     if field_since is None:
         field_since = _vendored_field_since()
@@ -498,6 +500,11 @@ def artifact_min_engine(
             if parse_version(declared) > parse_version(minimum):
                 minimum = declared
             reasons.append(f"declared rustinel.min_engine: {declared}")
+    elif artifact.kind == "ioc" and isinstance(artifact.meta, dict):
+        declared = artifact.meta.get("min_engine")
+        if isinstance(declared, str) and re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", declared):
+            minimum = max_version(minimum, declared)
+            reasons.append(f"declared IOC min_engine: {declared}")
 
     return minimum, reasons
 
