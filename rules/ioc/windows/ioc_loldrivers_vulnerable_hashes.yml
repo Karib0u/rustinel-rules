@@ -1,0 +1,95 @@
+id: ioc-loldrivers-vulnerable-hashes
+description: >-
+  Full-file SHA-256 digests of selected Windows drivers associated with
+  bring-your-own-vulnerable-driver activity. Matching bytes can also come from
+  legitimate software that ships an affected driver.
+os: [windows]
+attack: [T1068]
+severity: high
+license: Apache-2.0
+min_engine: "1.9.0"
+test_status: manual
+test_reason: >-
+  Live verification requires a vulnerable driver file. Replay does not read
+  artifacts. The engine matcher test checks the published digests directly,
+  and the canary atomic exercises live file hashing with harmless bytes.
+references:
+  - https://www.loldrivers.io/api/drivers.json
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/LICENSE
+  - https://www.dell.com/support/kbdoc/en-us/000186019/dsa-2021-088-dell-client-platform-security-update-for-an-insufficient-access-control-vulnerability-in-the-dell-dbutil-driver
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/2651f5c4-d9e1-4b06-92be-e9e7313f87c4.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/2d3178da-ea76-4f36-93f4-d76bf846c240.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/a4eabc75-edf6-4b74-9a24-6a26187adabf.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/bb808089-5857-4df2-8998-753a7106cb44.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/2bea1bca-753c-4f09-bc9f-566ab0193f4a.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/1d2cdef1-de44-4849-80e5-e2fa288df681.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/57354c82-ff9c-4a54-8377-d195e4ff0a26.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/6d21df78-d718-44df-b722-99eec654f5b2.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/0567c6c4-282f-406f-9369-7f876b899c25.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/e32bc3da-4db1-4858-a62c-6fbe4db6afbd.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/137daca4-0d7b-48aa-8574-f7eb6ad02526.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/e0e93453-1007-4799-ad02-9b461b7e0398.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/7bb5ff05-25f8-410d-ae99-c8e8f082d24f.yaml
+  - https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml/e5f12b82-8d07-474e-9587-8c7b3714d60c.yaml
+indicators:
+  hashes:
+    - value: "841335eeb6af68dce5b8b24151776281a751b95056a894991b23afae80e9f33b"
+      comment: AsIO64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "b48a309ee0960da3caaaaf1e794e8c409993aeb3a2b64809f36b97aac8a1e62a"
+      comment: AsIO64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "be131e30464c7be03bd2d16f99ea2b04c106b482cc5c52be659e4c0301206348"
+      comment: AsrDrv107.sys | vulnerable driver (CVE-2020-15368) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "12177d777345f60a579e7bd8f0df95296af6e293e5560ee544fcced99a5db0df"
+      comment: AsrDrv107n.sys | vulnerable driver (CVE-2020-15368) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "0296e2ce999e67c76352613a718e11516fe1b0efc3ffdb8918fc999dd76a73a5"
+      comment: dbutil_2_3.sys | vulnerable driver (CVE-2021-21551) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "87e38e7aeaaaa96efe1a74f59fca8371de93544b7af22862eb0e574cec49c7c3"
+      comment: dbutil_2_3.sys | vulnerable driver (CVE-2021-21551) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "ddbf5ecca5c8086afde1fb4f551e9e6400e94f4428fe7fb5559da5cffa654cc1"
+      comment: dbutil_2_3.sys | vulnerable driver (CVE-2021-21551) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "2e6b339597a89e875f175023ed952aaac64e9d20d457bbc07acf1586e7fe2df8"
+      comment: DBUtilDrv2.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "71fe5af0f1564dc187eea8d59c0fbc897712afa07d18316d2080330ba17cf009"
+      comment: DBUtilDrv2.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "31f4cfb4c71da44120752721103a16512444c13c2ac2d857a7e6f13cb679b427"
+      comment: gdrv.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "ff6729518a380bf57f1bc6f1ec0aa7f3012e1618b8d9b0f31a61d299ee2b4339"
+      comment: gdrv.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "4429f32db1cc70567919d7d47b844a91cf1329a6cd116f582305f3b7b60cd60b"
+      comment: iqvw64e.sys | vulnerable driver (CVE-2015-2291) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "ad2477632b9b07588cfe0e692f244c05fa4202975c1fe91dd3b90fa911ac6058"
+      comment: mhyprot2.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "b8b94c2646b62f6ac08f16514b6efaa9866aa3c581e4c0435a7aeafe569b2418"
+      comment: mhyprot2.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "509628b6d16d2428031311d7bd2add8d5f5160e9ecc0cd909f1e82bbbb3234d6"
+      comment: Mhyprot2.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "43ba8d96d5e8e54cab59d82d495eeca730eeb16e4743ed134cdd495c51a4fc89"
+      comment: MsIo64.sys | vulnerable driver (CVE-2020-17382) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "59b09bd69923c0b3de3239e73205b1846a5f69043546d471b259887bb141d879"
+      comment: procexp152.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "9b6a84f7c40ea51c38cc4d2e93efb3375e9d98d4894a85941190d94fbe73a4e4"
+      comment: procexp1627.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "01aa278b07b58dc46c84bd0b1b5c8e9ee4e62ea0bf7a695862444af32e87f1fd"
+      comment: RTCore64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "cdd2a4575a46bada4837a6153a79c14d60ee3129830717ef09e0e3efd9d00812"
+      comment: RTCore64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "f1c8ca232789c2f11a511c8cd95a9f3830dd719cad5aa22cb7c3539ab8cb4dc3"
+      comment: RTCore64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "22be050955347661685a4343c51f11c7811674e030386d2264cd12ecbf544b7c"
+      comment: speedfan.sys | vulnerable driver (CVE-2007-5633) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "347acba74fdcbeac671521739f8a34ec0e378caf716c31f55616f9f843e4d0d3"
+      comment: truesight.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "11bd2c9f9e2397c9a16e0990e4ed2cf0679498fe0fd418a3dfdac60b5c160ee5"
+      comment: WinRing0x64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "d5bca2ca464a6cc91344bd85e812a7bac6e7c67038c4929a29e0bc60c7eabe4d"
+      comment: WinRing0x64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "14d00976162a5d3238d183704fd84b50c3c5dcc762cab3c8adb5faf0a3caab99"
+      comment: WinRing0x64.sys | vulnerable driver | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "2bbc6b9dd5e6d0327250b32305be20c89b19b56d33a096522ee33f22d8c82ff1"
+      comment: zam64.sys | vulnerable driver (CVE-2018-5713) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "3c18ae965fba56d09a65770b4d8da54ccd7801f979d3ebd283397bc99646004b"
+      comment: zam64.sys | vulnerable driver (CVE-2018-5713) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "76614f2e372f33100a8d92bf372cdbc1e183930ca747eed0b0cf2501293b990a"
+      comment: zam64.sys | vulnerable driver (CVE-2018-5713) | LOLDrivers 39c70ca64ae9 (2026-10-27)
+    - value: "7cb594af6a3655daebc9fad9c8abf2417b00ba31dcd118707824e5316fc0cc21"
+      comment: zam64.sys | vulnerable driver (CVE-2018-5713) | LOLDrivers 39c70ca64ae9 (2026-10-27)

@@ -39,6 +39,7 @@ attack_coverage:
   - T1204.002
   - T1486
   - T1496
+  - T1496.001
   - T1543.001
   - T1543.004
   - T1546.004
@@ -103,3 +104,5 @@ rules:
           - 52013862-0171-4b0c-a0d0-97bc065109e5   # DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS) (sigma)
         yara:
           - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)
+        ioc:
+          - ioc-cryptomining-pools

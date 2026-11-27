@@ -39,6 +39,11 @@
     "license": {
       "type": "string"
     },
+    "min_engine": {
+      "type": "string",
+      "description": "First Rustinel release providing the telemetry and matcher needed by this set.",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
     "test_status": {
       "type": "string",
       "enum": ["none", "atomic", "manual", "dynamic"]

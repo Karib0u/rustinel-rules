@@ -35,6 +35,7 @@ attack_coverage:
   - T1222.002
   - T1486
   - T1496
+  - T1496.001
   - T1505.003
   - T1543.002
   - T1546.004
@@ -102,3 +103,5 @@ rules:
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
           - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)
+        ioc:
+          - ioc-cryptomining-pools

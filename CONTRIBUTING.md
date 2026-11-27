@@ -96,6 +96,8 @@ and must not alert. Essential rules carry their negatives in
 
 ## Adding an IOC set
 
+Review the [IOC policy](docs/ioc-policy.md) for sourcing, licensing, and upkeep.
+
 IOCs are stored as **typed sets**, not one file per indicator. A set groups
 related indicators (a campaign, a tool, an infrastructure cluster) and is the unit
 packs reference by `id`.
@@ -119,7 +121,7 @@ packs reference by `id`.
        - value: 0c2674c3a97c53082187d930efb645c2
          comment: dropper sample
      domains:
-       - "*.evil.example"        # leading "*." / "." matches subdomains
+       - "*.evil.example"        # leading "*." / "." matches the apex and its subdomains
      ips:
        - 198.51.100.7            # single IP or CIDR
      paths_regex:
@@ -128,6 +130,9 @@ packs reference by `id`.
 
 4. Reference the set's `id` in the relevant `pack.yml` under `rules.has` (see [Packs and build outputs](#packs-and-build-outputs)).
 5. Run `uv run python tools/validate.py` (it checks hash/IP/domain/regex well-formedness).
+
+Use `min_engine` when the telemetry or matching capability the set relies on
+arrived after the base IOC format.
 
 The build flattens every referenced set into the four files Rustinel's `[ioc]`
 config loads (`hashes.txt`, `ips.txt`, `domains.txt`, `paths_regex.txt`), tagging
