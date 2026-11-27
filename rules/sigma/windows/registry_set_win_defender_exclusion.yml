@@ -1,0 +1,52 @@
+title: Microsoft Defender Exclusion Written to the Registry
+id: 6655ed23-e516-4d6a-ab2e-c1bb5c8378d7
+status: experimental
+description: >
+  Detects a value written under the machine-wide Microsoft Defender path,
+  process, extension or IP address exclusion keys, including their policy
+  equivalents. Exclusions can leave activity outside Defender's monitoring.
+  This rule uses kernel registry telemetry and can alert independently of
+  Defender Operational event 5007.
+references:
+  - https://learn.microsoft.com/en-us/defender-endpoint/microsoft-defender-antivirus-exclusions-overview
+  - https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-admx-microsoftdefenderantivirus
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SOFTWARE\\(?:Policies\\)?Microsoft\\Windows Defender\\Exclusions\\(?:Paths|Processes|Extensions|IpAddresses)\\.+$'
+  condition: selection
+falsepositives:
+  - Administrators and endpoint management tools setting approved Defender exclusions.
+level: medium
+rustinel:
+  telemetry:
+    - registry_set
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: A live match requires writing to a protected machine-wide Defender exclusion key. Hosted tests replay synthetic writes to avoid changing endpoint protection.
+  tuning:
+    - surface: TargetObject
+      guidance: Filter only exact registry value paths for vetted exclusions in your fleet.
+  negatives:
+    - reason: configuring the Defender scan schedule
+      fields:
+        TargetObject: 'HKLM\SOFTWARE\Microsoft\Windows Defender\Scan\ScheduleDay'
+        Details: 'DWORD (0x00000000)'
+    - reason: writing to a namesake key under the current user hive
+      fields:
+        TargetObject: 'HKCU\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths\C:\Tools'
+        Details: 'DWORD (0x00000000)'
+    - reason: a similar but unrelated Defender key
+      fields:
+        TargetObject: '\REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows Defender\ExclusionsBackup\Extensions\tmp'
+        Details: 'DWORD (0x00000000)'
+    - reason: the exclusion key without a value name
+      fields:
+        TargetObject: 'HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths'

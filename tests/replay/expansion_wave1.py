@@ -1,4 +1,4 @@
-"""Check the measured-expansion wave 1 rules (#60) with the real engine, without sensors.
+"""Check measured-expansion wave 1 rules and Defender registry exclusion writes.
 
 Each case is one synthetic event; positives must alert and the near-misses next
 to them must not. The mass-rename correlation is replayed separately because it
@@ -18,6 +18,7 @@ TIMESTAMP = "2026-10-08T08:00:00Z"
 PROVIDERS = {"windows": "etw", "linux": "ebpf", "macos": "esf"}
 
 AMSI = "AMSI Provider Registration Removed"
+DEFENDER_EXCLUSION = "Microsoft Defender Exclusion Written to the Registry"
 PREFETCH = "Prefetch or Event Log File Deleted"
 RENAMED = "Renamed System Binary Execution"
 TIMESTOMP = "File Timestamp Changed by Script Host"
@@ -42,6 +43,7 @@ MASS = {
 RULE_FILES = {
     "windows": [
         "registry_delete_win_susp_amsi_provider_removed.yml",
+        "registry_set_win_defender_exclusion.yml",
         "file_delete_win_susp_prefetch_evtx_deleted.yml",
         "proc_creation_win_susp_renamed_system_binary.yml",
         "file_change_win_hunting_timestomp_script_host.yml",
@@ -123,6 +125,18 @@ def cases(platform):
     if platform == "windows":
         pf = "C:\\Windows\\Prefetch\\"
         logs = "C:\\Windows\\System32\\winevt\\Logs\\"
+        # A value write to each Defender exclusion family. Replay avoids
+        # creating exclusions on the machine that runs the suite.
+        for target in (
+            r"\REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths\C:\Apps",
+            r"HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Processes\C:\Apps\app.exe",
+            r"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender\Exclusions\Extensions\tmp",
+            r"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Exclusions\IpAddresses\192.0.2.1",
+        ):
+            fields = {"TargetObject": target, "Details": "DWORD (0x00000000)"}
+            out.append(("Registry", 13, 39, fields, DEFENDER_EXCLUSION))
+        # Removal of an exclusion is not a value set.
+        out.append(("Registry", 12, 38, fields, None))
         # AMSI provider key (opcode 38/41 are the registry delete opcodes).
         amsi = "HKLM\\SOFTWARE\\Microsoft\\AMSI\\Providers\\"
         for target in (

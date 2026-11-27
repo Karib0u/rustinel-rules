@@ -19,6 +19,7 @@ attack_coverage:
   - T1003.003
   - T1027
   - T1036.003
+  - T1036.005
   - T1047
   - T1053.005
   - T1059
@@ -54,6 +55,7 @@ attack_coverage:
   - T1562.001
   - T1562.002
   - T1562.004
+  - T1562.006
   - T1562.009
   - T1566.001
   - T1567.002
@@ -118,6 +120,11 @@ rules:
           - 68863af9-9225-4d43-8708-0fb73581d4c6   # Rclone Used to Copy Data to a Remote Storage (sigma)
           - ddada813-a945-40a5-af78-3131b2e93fe9   # Windows Firewall Disabled from the Command Line (sigma)
           - 021a78f0-210b-4932-bb12-26820eedc3c1   # Microsoft Defender Exclusion or Disable via PowerShell Command Line (sigma)
+          - d27324cd-1546-46de-b237-1cc7195e7210   # Windows Event Channel or ETW Session Stopped from the Command Line (sigma)
+          - c7eccf1c-329e-423d-8ba0-cdf572b52023   # Windows Audit Policy Cleared or Disabled from the Command Line (sigma)
+          - 6655ed23-e516-4d6a-ab2e-c1bb5c8378d7   # Microsoft Defender Exclusion Written to the Registry (sigma)
+          - a30c71e5-f274-46d8-838a-1c0f2b569368   # Windows System Process Name Executed from an Unexpected Path (sigma)
+          - ecf18769-8140-452c-b00e-b9debc35375e   # Cryptominer Command Line (Windows) (sigma)
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

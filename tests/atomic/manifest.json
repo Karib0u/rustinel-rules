@@ -1266,6 +1266,34 @@
       "script": "windows/defender_cli_tamper.ps1"
     },
     {
+      "id": "d27324cd-1546-46de-b237-1cc7195e7210",
+      "name": "windows_logging_disabled",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/logging_disabled.ps1"
+    },
+    {
+      "id": "c7eccf1c-329e-423d-8ba0-cdf572b52023",
+      "name": "windows_audit_policy_disabled_cli",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/audit_policy_disabled_cli.ps1"
+    },
+    {
+      "id": "a30c71e5-f274-46d8-838a-1c0f2b569368",
+      "name": "windows_system_binary_wrong_path",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/system_binary_wrong_path.ps1"
+    },
+    {
+      "id": "ecf18769-8140-452c-b00e-b9debc35375e",
+      "name": "windows_cryptominer_cmdline",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/cryptominer_cmdline.ps1"
+    },
+    {
       "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
       "name": "macos_dscl_authonly",
       "platform": "macos",

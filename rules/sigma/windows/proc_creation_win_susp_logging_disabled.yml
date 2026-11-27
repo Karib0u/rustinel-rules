@@ -1,0 +1,68 @@
+title: Windows Event Channel or ETW Session Stopped from the Command Line
+id: d27324cd-1546-46de-b237-1cc7195e7210
+status: experimental
+description: >
+  Detects attempts to disable an event log channel with wevtutil or stop a
+  live Event Trace Session with logman. Both actions can interrupt telemetry
+  used by security monitoring.
+references:
+  - https://attack.mitre.org/techniques/T1685/001/
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/wevtutil
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/logman-start-stop
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1562.002
+  - attack.t1562.006
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_wevtutil:
+    - Image|endswith: '\wevtutil.exe'
+    - OriginalFileName: 'wevtutil.exe'
+  selection_channel_disable:
+    CommandLine|re|all:
+      - '(?i)^\s*(?:"[^"]+"|\S+)\s+"?(?:sl|set-log)"?(?:\s|$)'
+      - '(?i)\s"?/e:false"?(?:\s|$)'
+  selection_logman:
+    - Image|endswith: '\logman.exe'
+    - OriginalFileName: 'logman.exe'
+  selection_trace_stop:
+    CommandLine|re|all:
+      - '(?i)^\s*(?:"[^"]+"|\S+)\s+"?stop"?(?:\s|$)'
+      - '(?i)\s"?-ets"?(?:\s|$)'
+  condition: (selection_wevtutil and selection_channel_disable) or (selection_logman and selection_trace_stop)
+falsepositives:
+  - Administrators disabling diagnostic channels or ending temporary ETW captures.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: CommandLine
+      guidance: Exclude exact channel or session names reserved for authorized temporary diagnostics.
+  negatives:
+    - reason: enabling an event log channel
+      fields:
+        Image: C:\Windows\System32\wevtutil.exe
+        CommandLine: wevtutil.exe sl Microsoft-Windows-PowerShell/Operational /e:true
+    - reason: clearing a log is handled by the separate event log clear rule
+      fields:
+        Image: C:\Windows\System32\wevtutil.exe
+        CommandLine: wevtutil.exe cl Application
+    - reason: querying a trace session named Stop
+      fields:
+        Image: C:\Windows\System32\logman.exe
+        CommandLine: logman.exe query stop -ets
+    - reason: stopping a scheduled performance collector
+      fields:
+        Image: C:\Windows\System32\logman.exe
+        CommandLine: logman.exe stop perf_log
+    - reason: an unrelated executable with similar arguments
+      fields:
+        Image: C:\Tools\collector.exe
+        CommandLine: collector.exe stop diagnostics -ets

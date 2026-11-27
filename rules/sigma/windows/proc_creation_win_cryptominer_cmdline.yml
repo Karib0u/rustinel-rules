@@ -1,0 +1,51 @@
+title: Cryptominer Command Line (Windows)
+id: ecf18769-8140-452c-b00e-b9debc35375e
+status: experimental
+description: >
+  Detects command lines with Stratum mining pool URLs or coin selection and
+  donation options used by miners such as XMRig. Argument-based detection
+  also covers packed binaries and miners launched under a different name.
+references:
+  - https://attack.mitre.org/techniques/T1496/
+  - https://xmrig.com/docs/miner/command-line-options
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.impact
+  - attack.t1496
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_pool:
+    CommandLine|contains:
+      - 'stratum+tcp://'
+      - 'stratum+ssl://'
+      - 'stratum+tls://'
+  selection_option:
+    CommandLine|re: '(?i)\s"?--(?:donate-level|coin)(?:=|"?\s|"?$)'
+  condition: selection_pool or selection_option
+falsepositives:
+  - Authorized miners, cryptocurrency tooling that uses a coin selection flag, and documentation tools given a pool URL.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: Image
+      guidance: Filter the full executable path of approved mining or cryptocurrency tools on designated hosts.
+  negatives:
+    - reason: an ordinary HTTP URL on a common mining port
+      fields:
+        Image: 'C:\Windows\System32\curl.exe'
+        CommandLine: curl.exe http://example.test:3333/health
+    - reason: an application option beginning with the same letters
+      fields:
+        Image: 'C:\Tools\inventory.exe'
+        CommandLine: inventory.exe --coin-count 10
+    - reason: reading a file with a mining option in its name
+      fields:
+        Image: 'C:\Windows\System32\findstr.exe'
+        CommandLine: 'findstr.exe donation C:\Docs\--donate-level.txt'
