@@ -16,6 +16,7 @@ license: DRL-1.1
 extends:
   - windows-advanced
 attack_coverage:
+  - T1003
   - T1003.001
   - T1003.002
   - T1003.003
@@ -38,6 +39,7 @@ attack_coverage:
   - T1069.002
   - T1070
   - T1070.001
+  - T1070.003
   - T1070.004
   - T1070.006
   - T1071.004
@@ -49,6 +51,8 @@ attack_coverage:
   - T1110
   - T1110.003
   - T1127.001
+  - T1134
+  - T1134.001
   - T1134.005
   - T1136.001
   - T1136.002
@@ -63,6 +67,7 @@ attack_coverage:
   - T1218.011
   - T1219
   - T1482
+  - T1484
   - T1486
   - T1490
   - T1496
@@ -95,6 +100,7 @@ telemetry_requirements:
   - process_creation
   - image_load
   - task_creation
+  - file_delete
 test_status: mixed
 sources:
     manual:
@@ -115,5 +121,6 @@ rules:
           - 3d1c7c39-da9e-495d-bfcd-8000f4861411   # Failed Windows Logon from a Remote IP Address (sigma)
           - e312d76d-d216-4f92-a5f4-ee7a6ce53788   # Possible Windows Password Spray from a Single IP Address (sigma)
           - fc961eef-9d89-4b01-a1ed-4ac6b8013d97   # Remote Management Tool Launched from a Staging Path (Windows) (sigma)
+          - f012555a-00ca-4849-a002-ae3de81d8903   # PowerShell PSReadLine Console History File Deleted
         ioc:
           - ioc-lolrmm-relay-domains

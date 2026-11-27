@@ -18,6 +18,7 @@
     "resource-development"
   ],
   "techniques": {
+    "T1003":     { "name": "OS Credential Dumping", "tactic": "credential-access" },
     "T1003.001": { "name": "OS Credential Dumping: LSASS Memory", "tactic": "credential-access" },
     "T1003.002": { "name": "OS Credential Dumping: Security Account Manager", "tactic": "credential-access" },
     "T1003.003": { "name": "OS Credential Dumping: NTDS", "tactic": "credential-access" },
@@ -68,6 +69,8 @@
     "T1113":     { "name": "Screen Capture", "tactic": "collection" },
     "T1115":     { "name": "Clipboard Data", "tactic": "collection" },
     "T1127.001": { "name": "Trusted Developer Utilities Proxy Execution: MSBuild", "tactic": "defense-evasion" },
+    "T1134":     { "name": "Access Token Manipulation", "tactic": "privilege-escalation" },
+    "T1134.001": { "name": "Access Token Manipulation: Token Impersonation/Theft", "tactic": "privilege-escalation" },
     "T1134.005": { "name": "Access Token Manipulation: SID-History Injection", "tactic": "defense-evasion" },
     "T1136.001": { "name": "Create Account: Local Account", "tactic": "persistence" },
     "T1136.002": { "name": "Create Account: Domain Account", "tactic": "persistence" },
@@ -85,6 +88,7 @@
     "T1219":     { "name": "Remote Access Software", "tactic": "command-and-control" },
     "T1222.002": { "name": "File and Directory Permissions Modification: Linux and Mac Permissions", "tactic": "defense-evasion" },
     "T1482":     { "name": "Domain Trust Discovery", "tactic": "discovery" },
+    "T1484":     { "name": "Domain or Tenant Policy Modification", "tactic": "privilege-escalation" },
     "T1486": { "name": "Data Encrypted for Impact", "tactic": "impact" },
     "T1490":     { "name": "Inhibit System Recovery", "tactic": "impact" },
     "T1496":     { "name": "Resource Hijacking", "tactic": "impact" },

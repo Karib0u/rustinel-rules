@@ -1238,6 +1238,20 @@
       "script": "windows/ps_module_offensive_cmdlet.ps1"
     },
     {
+      "id": "19a336c8-d058-43e3-b033-b128027ca367",
+      "name": "windows_named_pipe_echo",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/named_pipe_echo.ps1"
+    },
+    {
+      "id": "f012555a-00ca-4849-a002-ae3de81d8903",
+      "name": "windows_powershell_history_delete",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/powershell_history_delete.ps1"
+    },
+    {
       "id": "e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1",
       "name": "windows_defender_realtime_disabled",
       "platform": "windows",
