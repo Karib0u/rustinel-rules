@@ -1,0 +1,53 @@
+title: Linux SSH Startup File Written
+id: f817eb9c-254b-421d-a2f8-c0ee949fa811
+status: experimental
+description: >
+  Detects a write to a user's .ssh/rc or the system-wide /etc/ssh/sshrc.
+  OpenSSH can run these startup files before the user's shell or command,
+  making them persistence targets. The user file requires PermitUserRC
+  and must be allowed for the session. The system file is a fallback when
+  the user file is absent or cannot run.
+references:
+  - https://man.openbsd.org/sshd.8#SSHRC
+  - https://man.openbsd.org/sshd_config.5#PermitUserRC
+  - https://attack.mitre.org/techniques/T1546/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1546
+logsource:
+  category: file_event
+  product: linux
+detection:
+  selection_user:
+    TargetFilename|re: '/\.ssh/rc$'
+  selection_system:
+    TargetFilename|re: '^/etc/ssh/sshrc$'
+  filter_system_package:
+    Image|re: '^/(usr/)?bin/(dpkg|rpm|apt|apt-get|dnf|yum|pacman)$'
+  condition: selection_user or (selection_system and not filter_system_package)
+falsepositives:
+  - Administrators or configuration management installing approved SSH session hooks.
+level: medium
+rustinel:
+  telemetry:
+    - file_event
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: filter_system_package
+      guidance: Add anchored full paths for approved tools that provision the system hook.
+  negatives:
+    - reason: package manager updating the system hook
+      fields:
+        Image: /usr/bin/dpkg
+        TargetFilename: /etc/ssh/sshrc
+    - reason: ordinary SSH client configuration
+      fields:
+        Image: /usr/bin/vim
+        TargetFilename: /home/alice/.ssh/config
+    - reason: backup of a user startup file
+      fields:
+        Image: /usr/bin/cp
+        TargetFilename: /home/alice/.ssh/rc.bak

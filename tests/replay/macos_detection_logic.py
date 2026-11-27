@@ -40,6 +40,8 @@ STEALER = "sudo Password from Stdin or JXA Objective-C Import"
 SCHEDULED_JOB = "Cron or At Job Submission (macOS)"
 CONFIG_PROFILE = "Configuration Profile Installation Attempt (macOS)"
 DYLD_INSERT = "DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS)"
+SCREEN_CAPTURE = "Silent or Scripted Screen Capture Attempt via screencapture (macOS)"
+CLIPBOARD = "Scripted Clipboard Read via pbpaste or osascript (macOS)"
 
 RULE_FILES = {
     GK_GLOBAL: "proc_creation_macos_gatekeeper_bypass.yml",
@@ -67,6 +69,18 @@ RULE_FILES = {
     SCHEDULED_JOB: "proc_creation_macos_scheduled_job.yml",
     CONFIG_PROFILE: "proc_creation_macos_configuration_profile_install.yml",
     DYLD_INSERT: "proc_creation_macos_dyld_insert_libraries.yml",
+    SCREEN_CAPTURE: "proc_creation_macos_screen_capture.yml",
+    CLIPBOARD: "proc_creation_macos_scripted_clipboard_read.yml",
+}
+
+SCREEN_IMAGE = "/usr/sbin/screencapture"
+PBPASTE_IMAGE = "/usr/bin/pbpaste"
+OSASCRIPT_IMAGE = "/usr/bin/osascript"
+LOGIN_SHELL = {"ParentImage": "/bin/zsh", "ParentCommandLine": "-zsh"}
+SHELL_SCRIPT = {"ParentImage": "/bin/bash", "ParentCommandLine": "/bin/bash /opt/ops/task.sh"}
+PYTHON_SCRIPT = {
+    "ParentImage": "/usr/local/bin/python3.12",
+    "ParentCommandLine": "/usr/local/bin/python3.12 /opt/ops/task.py",
 }
 
 # (rule, Image, CommandLine, extra fields, alerts)
@@ -431,6 +445,60 @@ PROCESS_CASES = [
         {},
         False,
     ),
+    # Screen capture: silent options and script attribution are independent signals.
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture -x /tmp/test.png", {}, True),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture -D 1 -mx /tmp/test.png", LOGIN_SHELL, True),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture /tmp/test.png", SHELL_SCRIPT, True),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture /tmp/test.png", PYTHON_SCRIPT, True),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture -i /tmp/test.png", LOGIN_SHELL, False),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture /tmp/notes-x.png", {}, False),
+    (SCREEN_CAPTURE, SCREEN_IMAGE, "screencapture -- -x", {}, False),
+    (
+        SCREEN_CAPTURE,
+        SCREEN_IMAGE,
+        "screencapture /tmp/test.png",
+        {"ParentImage": "/bin/zsh", "IsPlatformBinary": True},
+        False,
+    ),
+    (SCREEN_CAPTURE, "/tmp/screencapture", "screencapture -x /tmp/test.png", SHELL_SCRIPT, False),
+    # Clipboard: both tools need evidence of scripting, and AppleScript must read.
+    (CLIPBOARD, PBPASTE_IMAGE, "pbpaste", SHELL_SCRIPT, True),
+    (CLIPBOARD, PBPASTE_IMAGE, "pbpaste -Prefer txt", PYTHON_SCRIPT, True),
+    (
+        CLIPBOARD,
+        PBPASTE_IMAGE,
+        "pbpaste",
+        {"ParentImage": "/bin/sh", "ParentCommandLine": "/bin/sh -lc pbpaste"},
+        True,
+    ),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -e the clipboard", SHELL_SCRIPT, True),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -e get the clipboard as text", SHELL_SCRIPT, True),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -e return (the clipboard)", SHELL_SCRIPT, True),
+    (
+        CLIPBOARD,
+        OSASCRIPT_IMAGE,
+        "osascript -l AppleScript -e set clipText to THE CLIPBOARD -e return clipText",
+        PYTHON_SCRIPT,
+        True,
+    ),
+    (CLIPBOARD, PBPASTE_IMAGE, "pbpaste", LOGIN_SHELL, False),
+    (CLIPBOARD, PBPASTE_IMAGE, "pbpaste", {"ParentImage": "/bin/bash"}, False),
+    (CLIPBOARD, PBPASTE_IMAGE, "pbpaste", {"ParentCommandLine": "/usr/bin/python3 -i"}, False),
+    (CLIPBOARD, "/tmp/pbpaste", "pbpaste", SHELL_SCRIPT, False),
+    (CLIPBOARD, "/usr/bin/pbcopy", "pbcopy", SHELL_SCRIPT, False),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -e return the clipboard", LOGIN_SHELL, False),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -e clipboard info", SHELL_SCRIPT, False),
+    (CLIPBOARD, OSASCRIPT_IMAGE, 'osascript -e set the clipboard to "hello"', SHELL_SCRIPT, False),
+    (
+        CLIPBOARD,
+        OSASCRIPT_IMAGE,
+        'osascript -e display dialog "the clipboard"',
+        SHELL_SCRIPT,
+        False,
+    ),
+    (CLIPBOARD, OSASCRIPT_IMAGE, 'osascript -e return "the clipboard"', SHELL_SCRIPT, False),
+    (CLIPBOARD, OSASCRIPT_IMAGE, 'osascript -e "the clipboard"', SHELL_SCRIPT, False),
+    (CLIPBOARD, OSASCRIPT_IMAGE, "osascript -l JavaScript -e the clipboard", SHELL_SCRIPT, False),
     # Staging execution: platform and team-signed binaries are excluded.
     (EXEC, "/tmp/payload", "/tmp/payload", {"IsPlatformBinary": False}, True),
     (EXEC, "/private/tmp/a/payload", "payload", {"IsPlatformBinary": False, "TeamId": ""}, True),

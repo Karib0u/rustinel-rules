@@ -33,6 +33,9 @@ NSENTER = "Nsenter Targeting PID 1 from a Container"
 DOCKER_SOCKET = "Docker CLI or Socket Access from a Container"
 IMMUTABLE = "Immutable Attribute Added to Linux Persistence Paths"
 FIREWALL = "Linux Firewall Rules Flushed or Firewall Disabled"
+SETCAP = "Dangerous Linux File Capability Grant Attempt via setcap"
+SSH_RC = "Linux SSH Startup File Written"
+ACCOUNT_DB = "Linux Local Account Database Written by an Unexpected Process"
 
 RULE_FILES = {
     BACKDOOR: "proc_creation_lnx_backdoor_account.yml",
@@ -55,10 +58,37 @@ RULE_FILES = {
     DOCKER_SOCKET: "proc_creation_lnx_docker_socket_container.yml",
     IMMUTABLE: "proc_creation_lnx_chattr_immutable_persistence.yml",
     FIREWALL: "proc_creation_lnx_firewall_disabled.yml",
+    SETCAP: "proc_creation_lnx_setcap_dangerous_grant.yml",
+    SSH_RC: "file_event_lnx_ssh_startup_file.yml",
+    ACCOUNT_DB: "file_event_lnx_account_database_write.yml",
 }
 
 # (rule, Image, CommandLine, alerts)
 PROCESS_CASES = [
+    # setcap: a named capability is raised in a complete capability expression.
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_setuid=ep /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap -n 1000 CAP_SETGID=p /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_sys_admin,cap_chown+ep /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_chown,cap_dac_override=ep /opt/helper", True),
+    (SETCAP, "/sbin/setcap", 'setcap "cap_chown=p cap_dac_read_search=ep" /opt/helper', True),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_sys_ptrace=+p /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_sys_module=ep /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_net_raw=ep /opt/helper", True),
+    (SETCAP, "/usr/sbin/setcap", "setcap all=p /opt/helper", True),
+    (
+        SETCAP,
+        "/opt/rustinel_atomic_setcap.d/setcap",
+        "/opt/rustinel_atomic_setcap.d/setcap -c sleep 1; : cap_setuid=ep /opt/dummy",
+        True,
+    ),
+    (SETCAP, "/usr/sbin/setcap", "setcap -q -v cap_net_raw=ep /usr/bin/ping", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap -r /usr/bin/ping", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_setuid= /opt/helper", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_setuid-ep /opt/helper", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_net_raw_backup=ep /opt/helper", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_net_bind_service=ep /opt/cap_setuid=ep", False),
+    (SETCAP, "/usr/sbin/setcap", "setcap cap_setuid=ep", False),
+    (SETCAP, "/usr/sbin/getcap", "getcap cap_setuid=ep /opt/helper", False),
     # Duplicate UID 0: the UID must be 0; --non-unique alone is not enough.
     (BACKDOOR, "/usr/sbin/useradd", "useradd -o -u 0 -g 0 backdoor", True),
     (BACKDOOR, "/usr/sbin/useradd", "useradd --non-unique --uid=0 backdoor", True),
@@ -296,6 +326,30 @@ FILE_CASES = [
     (PAM, PKG, "/etc/pam.d/common-auth", False),
     (PAM, "/usr/sbin/pam-auth-update", "/etc/pam.d/common-session", False),
     (PAM, "/bin/sh", "/etc/hostname", False),
+    (SSH_RC, "/bin/sh", "/home/alice/.ssh/rc", True),
+    (SSH_RC, "/usr/bin/vim", "/etc/ssh/sshrc", True),
+    (SSH_RC, PKG, "/etc/ssh/sshrc", False),
+    (SSH_RC, PKG, "/root/.ssh/rc", True),
+    (SSH_RC, "/bin/sh", "/home/alice/.ssh/rc.bak", False),
+    (SSH_RC, "/bin/sh", "/home/alice/.SSH/RC", False),
+    (SSH_RC, "/usr/bin/vim", "/tmp/rootfs/etc/ssh/sshrc", False),
+    (ACCOUNT_DB, "/usr/bin/tee", "/etc/passwd", True),
+    (ACCOUNT_DB, "/bin/sed", "/etc/shadow", True),
+    (ACCOUNT_DB, None, "/etc/passwd", True),
+    (ACCOUNT_DB, "/usr/sbin/useradd", "/etc/passwd", False),
+    (ACCOUNT_DB, "/sbin/usermod", "/etc/shadow", False),
+    (ACCOUNT_DB, "/usr/bin/passwd", "/etc/shadow", False),
+    (ACCOUNT_DB, "/bin/rpm", "/etc/passwd", False),
+    (ACCOUNT_DB, "/bin/sh", "/etc/passwd.bak", False),
+    (ACCOUNT_DB, "/bin/sh", "/mnt/rootfs/etc/shadow", False),
+]
+
+# (rule, Image, SourceFilename, TargetFilename, alerts)
+RENAME_CASES = [
+    (ACCOUNT_DB, "/usr/bin/mv", "/etc/passwd.tmp", "/etc/passwd", True),
+    (ACCOUNT_DB, "/usr/bin/mv", "/etc/shadow.tmp", "/etc/shadow", True),
+    (ACCOUNT_DB, "/usr/bin/mv", "/etc/shadow", "/etc/shadow.old", False),
+    (ACCOUNT_DB, "/usr/sbin/vipw", "/etc/passwd.edit", "/etc/passwd", False),
 ]
 
 
@@ -310,11 +364,16 @@ def process_event(index, image, command_line, container_id=None):
     }
 
 
-def file_event(index, image, path):
+def file_event(index, image, path, source=None):
+    fields = {"ProcessId": str(index), "TargetFilename": path}
+    if image is not None:
+        fields["Image"] = image
+    if source is not None:
+        fields["SourceFilename"] = source
     return {
         "category": "File",
-        "event_id": 11,
-        "fields": {"ProcessId": str(index), "Image": image, "TargetFilename": path},
+        "event_id": 11 if source is None else 71,
+        "fields": fields,
     }
 
 
@@ -341,6 +400,8 @@ def main():
         )
     for rule, image, path, alerts in FILE_CASES:
         cases.append((rule, alerts, lambda i, a=image, p=path: file_event(i, a, p)))
+    for rule, image, source, path, alerts in RENAME_CASES:
+        cases.append((rule, alerts, lambda i, a=image, p=path, s=source: file_event(i, a, p, s)))
     for index, (rule, alerts, build) in enumerate(cases, 1):
         event = build(index)
         event.update(

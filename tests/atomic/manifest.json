@@ -1280,6 +1280,20 @@
       "script": "linux/auditctl_disabled.sh"
     },
     {
+      "id": "862678f2-acca-4646-a500-57cfed335737",
+      "name": "linux_setcap_dangerous_grant",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/setcap_dangerous_grant.sh"
+    },
+    {
+      "id": "f817eb9c-254b-421d-a2f8-c0ee949fa811",
+      "name": "linux_ssh_startup_file",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ssh_startup_file.sh"
+    },
+    {
       "id": "51030a36-b4ae-492c-9e71-e6067bb66b34",
       "name": "linux_privileged_container",
       "platform": "linux",

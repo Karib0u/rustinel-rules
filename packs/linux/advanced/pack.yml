@@ -27,6 +27,7 @@ attack_coverage:
   - T1071.004
   - T1090
   - T1095
+  - T1098
   - T1098.004
   - T1102
   - T1105
@@ -38,9 +39,11 @@ attack_coverage:
   - T1496.001
   - T1505.003
   - T1543.002
+  - T1546
   - T1546.004
   - T1547
   - T1547.006
+  - T1548
   - T1548.001
   - T1548.003
   - T1552.005
@@ -101,6 +104,9 @@ rules:
           - 81c851b7-74ea-4cae-80aa-ee45b25fb0af   # Immutable Attribute Added to Linux Persistence Paths (sigma)
           - a66f0d92-6e07-47ff-8c9a-400a00e3caec   # Linux Firewall Rules Flushed or Firewall Disabled (sigma)
           - ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb   # Remote Management Tool Launched from a Staging Path (Linux) (sigma)
+          - 862678f2-acca-4646-a500-57cfed335737   # Dangerous Linux File Capability Grant Attempt via setcap (sigma)
+          - f817eb9c-254b-421d-a2f8-c0ee949fa811   # Linux SSH Startup File Written (sigma)
+          - be42af57-38e2-4292-af75-bdb6c1e1b1ca   # Linux Local Account Database Written by an Unexpected Process (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
           - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)
