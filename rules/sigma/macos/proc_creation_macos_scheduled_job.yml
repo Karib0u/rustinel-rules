@@ -1,0 +1,69 @@
+title: Cron or At Job Submission (macOS)
+id: 0a001338-814e-44d5-aab5-b7bb7290938f
+status: experimental
+description: >
+  Detects crontab loading from a file or stdin, crontab editing from a
+  recognizable script invocation, or at accepting a job time. Attackers can
+  use these commands to schedule execution. Queued at jobs need atrun to be
+  enabled to run.
+references:
+  - https://github.com/apple-oss-distributions/cron/blob/main/crontab/crontab.1
+  - https://attack.mitre.org/techniques/T1053/003/
+  - https://attack.mitre.org/techniques/T1053/002/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1053.003
+  - attack.t1053.002
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_crontab_install:
+    Image|endswith: '/crontab'
+    CommandLine|re: '^\S+\s+(?:-u\s+\S+\s+)?(?:--\s+)?(?:-|["'']?[^-\s"'']\S*)(?:\s|$)'
+  selection_crontab_edit:
+    Image|endswith: '/crontab'
+    CommandLine|re: '^\S+\s+(?:-u\s+\S+\s+)?-e(?:\s|$)'
+  selection_script_parent:
+    - ParentImage|re: '/(?:osascript|perl[0-9.]*|python[0-9.]*|ruby[0-9.]*)$'
+    - ParentCommandLine|re: '^(?:\S*/)?(?:sh|bash|zsh)\s+(?:-[A-Za-z]*c[A-Za-z]*|\S+\.(?:sh|bash|zsh))(?:\s|$)'
+  selection_at_submit:
+    Image|endswith: '/at'
+    CommandLine|re: '^\S+\s+(?:(?:-[mMv]+|-[fq]\s+(?:"[^"]+"|''[^'']+''|\S+))\s+)*(?:-t\s+\d|\d|\+|(?i:now|noon|midnight|teatime|tomorrow|today|next)\b)'
+  condition: selection_crontab_install or (selection_crontab_edit and selection_script_parent) or selection_at_submit
+falsepositives:
+  - Backup, maintenance, and provisioning scripts that install cron tables or queue one-time jobs.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Filter the full paths of approved job deployment tools, together with their expected arguments.
+  negatives:
+    - reason: provisioning script listing the current crontab
+      fields:
+        Image: /usr/bin/crontab
+        CommandLine: crontab -u alice -l
+        ParentImage: /bin/bash
+        ParentCommandLine: /bin/bash /opt/admin/audit.sh
+    - reason: interactive crontab edit
+      fields:
+        Image: /usr/bin/crontab
+        CommandLine: crontab -e
+        ParentImage: /bin/zsh
+        ParentCommandLine: -zsh
+    - reason: listing jobs in a specific queue
+      fields:
+        Image: /usr/bin/at
+        CommandLine: at -l -q a
+    - reason: deleting a queued one-time job
+      fields:
+        Image: /usr/bin/at
+        CommandLine: at -r 172
