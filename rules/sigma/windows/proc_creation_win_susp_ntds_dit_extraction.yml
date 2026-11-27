@@ -36,6 +36,7 @@ falsepositives:
   - Legitimate domain controller backup or migration performed by administrators.
 level: high
 rustinel:
+  roles: [domain_controller]
   telemetry:
     - process_creation
   expected_false_positive_level: low

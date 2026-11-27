@@ -19,12 +19,12 @@ import validate  # noqa: E402
 class SigmaLifecycleTests(unittest.TestCase):
     def setUp(self):
         self.rule = lib.Artifact(
-            "fixture-id",
+            "9349dcee-a97b-439f-bb68-66a8f7b14116",
             "sigma",
             lib.RULES_DIR / "sigma" / "linux" / "fixture.yml",
             {
                 "title": "Fixture rule",
-                "id": "fixture-id",
+                "id": "9349dcee-a97b-439f-bb68-66a8f7b14116",
                 "description": "Detect a fixture",
                 "status": "test",
                 "references": ["https://example.test/source"],

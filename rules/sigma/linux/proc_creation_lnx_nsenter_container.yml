@@ -26,6 +26,7 @@ falsepositives:
   - Approved containerized agents that inspect namespaces.
 level: high
 rustinel:
+  roles: [container_host]
   telemetry:
     - process_creation
   expected_false_positive_level: low

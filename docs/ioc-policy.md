@@ -48,6 +48,20 @@ browser visit when the pool and its dashboard share a hostname. Review the
 process and follow-on traffic and account for approved mining before taking
 action.
 
+## False-positive guard
+
+Validation rejects production IOC addresses or CIDRs that overlap special-use
+networks or public DNS resolvers. It also rejects warninglisted domain suffixes
+at the apex or below it, including indicators written with `*.` or `.` for
+suffix matching. The error names the IOC set, indicator, and matching entry.
+Use the original source to verify a more specific indicator outside the shared
+infrastructure match.
+
+The compact [warninglist](../tools/ioc_warninglists.json) records a pinned
+selection from MISP Warninglists under CC0-1.0 and the additional sources it
+uses. It runs offline and applies to `rules/ioc/`. Preview fixtures can use
+reserved values for replay and atomics.
+
 ## Review and expiry
 
 Review both sets quarterly and when a source corrects an indicator, a mining

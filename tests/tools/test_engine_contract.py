@@ -150,15 +150,15 @@ class SecurityChannelTests(unittest.TestCase):
 
     def security_rule(self, detection, **logsource):
         return lib.Artifact(
-            "security-rule",
+            "e2ed086b-123c-4d0b-a355-82a836a403f9",
             "sigma",
             lib.RULES_DIR / "security.yml",
             {
                 "title": "t",
-                "id": "security-rule",
+                "id": "e2ed086b-123c-4d0b-a355-82a836a403f9",
                 "status": "experimental",
                 "description": "d",
-                "references": ["r"],
+                "references": ["https://example.test/event-source"],
                 "author": "a",
                 "level": "high",
                 "tags": ["attack.persistence"],
@@ -399,15 +399,15 @@ class CorrelationTests(unittest.TestCase):
             **corr,
         }
         return lib.Artifact(
-            "corr",
+            "b30caf69-23c1-4a03-adea-2b7fddf20ba7",
             "sigma",
             lib.RULES_DIR / "corr.yml",
             {
                 "title": "t",
-                "id": "corr",
+                "id": "b30caf69-23c1-4a03-adea-2b7fddf20ba7",
                 "status": "experimental",
                 "description": "d",
-                "references": ["r"],
+                "references": ["https://example.test/event-source"],
                 "author": "a",
                 "level": "critical",
                 "tags": ["attack.impact"],

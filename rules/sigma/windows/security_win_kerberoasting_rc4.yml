@@ -33,6 +33,7 @@ falsepositives:
   - Legitimate access to legacy services that use RC4.
 level: medium
 rustinel:
+  roles: [domain_controller]
   telemetry:
     - security
   expected_false_positive_level: medium

@@ -7,14 +7,14 @@ description: >
   Unsigned software routinely loads libraries from these locations.
 references:
   - https://github.com/Karib0u/rustinel/pull/843
-  - https://attack.mitre.org/techniques/T1574/002/
+  - https://attack.mitre.org/techniques/T1574/001/
 author: rustinel-rules
 date: 2026-07-09
 modified: 2026-11-27
 tags:
   - attack.defense-evasion
   - attack.persistence
-  - attack.t1574.002
+  - attack.t1574.001
 logsource:
   category: image_load
   product: windows

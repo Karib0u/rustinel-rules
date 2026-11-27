@@ -52,10 +52,10 @@ uv run python tools/validate.py
 | Field                | Notes                                                       |
 | -------------------- | ----------------------------------------------------------- |
 | `title`              | Short, descriptive                                          |
-| `id`                 | UUID v4, unique across the repo                             |
+| `id`                 | Canonical lowercase UUID v4, unique across the repo         |
 | `status`             | `experimental` \| `test` \| `stable` \| `deprecated`. See the [Sigma rule lifecycle](docs/rule-lifecycle.md). |
 | `description`        | What it detects and why                                     |
-| `references`         | Source/CTI links                                            |
+| `references`         | Non-empty list of HTTP(S) technical sources specific to the detection |
 | `author`             | Attribution                                                 |
 | `level`              | `informational` \| `low` \| `medium` \| `high` \| `critical`|
 | `tags`               | ATT&CK tags, e.g. `attack.execution`, `attack.t1059.001`    |
@@ -71,7 +71,14 @@ rustinel:
   telemetry: [process_creation]      # Rustinel telemetry channels required
   expected_false_positive_level: low # low | medium | high
   test_status: atomic                # none | atomic | manual | dynamic
+  roles: [web_server]                # optional host applicability
 ```
+
+Use `rustinel.roles` when the detection applies to specific kinds of hosts. Set a
+non-empty list drawn from `workstation`, `server`, `domain_controller`,
+`web_server`, `developer` (developer endpoint), and `container_host`. Omit
+the field for rules that apply across roles. The catalog publishes the list as
+deployment guidance.
 
 Rules in an Advanced pack (that are not Essential) also document how to tune them
 and what they must ignore. `tools/validate.py` requires both:
@@ -93,6 +100,21 @@ Every negative is replayed against its own rule by `tests/replay/advanced_negati
 and must not alert. Essential rules carry their negatives in
 `tests/replay/essential_negatives.py` (or the replay/atomic noted in its
 `COVERED_ELSEWHERE` map); a unit test fails when an Essential Sigma rule has none.
+
+### ATT&CK and provenance
+
+Use the 14 Enterprise ATT&CK v18.1 tactic slugs and IDs from the curated
+[ATT&CK metadata](tools/attack_techniques.json). When adding an ID, confirm it
+against the linked MITRE release and add its name and, for techniques, primary
+tactic. Use a current replacement when the validator reports a deprecated or
+revoked ID. Production Sigma, YARA and IOC content needs a technical source
+that substantiates the detection, signature or indicator selection. Review
+source relevance when reviewing the rule.
+
+YARA `software` is an optional ATT&CK software ID, such as `S0002`. A YARA
+`attack` technique ID describes related behavior for triage. The catalog lists
+these as `software` and `related_techniques`, respectively. Technique coverage
+counts only behavioral mappings from rules that ship in a production pack.
 
 ## Adding an IOC set
 
@@ -123,13 +145,14 @@ packs reference by `id`.
      domains:
        - "*.evil.example"        # leading "*." / "." matches the apex and its subdomains
      ips:
-       - 198.51.100.7            # single IP or CIDR
+       - 198.51.100.7            # documentation address for a preview fixture
      paths_regex:
        - '^C:\\Users\\Public\\.*\.exe$'
    ```
 
 4. Reference the set's `id` in the relevant `pack.yml` under `rules.has` (see [Packs and build outputs](#packs-and-build-outputs)).
-5. Run `uv run python tools/validate.py` (it checks hash/IP/domain/regex well-formedness).
+5. Run `uv run python tools/validate.py` to check indicator syntax and the production
+   [false-positive guard](docs/ioc-policy.md#false-positive-guard).
 
 Use `min_engine` when the telemetry or matching capability the set relies on
 arrived after the base IOC format.
@@ -213,7 +236,7 @@ rules:
 ```
 
 See [the pack schema](schemas/pack.schema.json) for inheritance, inclusion, and exclusion options.
-After membership or rule metadata changes, run `uv run python tools/sync_packs.py` to regenerate each pack's `attack_coverage` and `test_status` from its member rules. Validation rejects drift in either, and insufficient `requires_rustinel` floors.
+After membership or rule metadata changes, run `uv run python tools/sync_packs.py` to regenerate each pack's `attack_coverage` and `test_status` from its member rules. The catalog derives the same summaries. Validation checks both fields for drift and verifies the `requires_rustinel` floor.
 
 ```bash
 uv run python tools/build_packs.py

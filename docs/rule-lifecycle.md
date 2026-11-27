@@ -19,6 +19,19 @@ expected alert identifies the rule by name. Atomic CI and the
 [benign replay suite](../tests/replay/advanced_negatives.py) check actual outcomes. Reviewers judge
 fixture realism, source relevance, prerequisite accuracy, and the scope the evidence justifies.
 
+## Rule identity and dates
+
+Keep the same UUID v4 for revisions of a rule and when moving it between source
+directories. Give a replacement with a separate identity a new file and ID.
+Use `YYYY-MM-DD` for `date` and `modified`. Update `modified` when changing
+`detection`, `logsource`, or `correlation`. Metadata-only edits can retain the
+existing date.
+
+PR validation compares the rule against the base revision, including
+Git-detected renames. To run that check locally, use
+`uv run python tools/validate.py --base origin/main`. Review rule identity for
+replacements and rewrites that Git cannot identify as renames.
+
 ## Promotion and demotion
 
 Promote to `test` once the evidence covers the rule's supported scope and the required checks pass.

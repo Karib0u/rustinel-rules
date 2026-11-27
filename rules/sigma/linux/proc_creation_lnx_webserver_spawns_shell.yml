@@ -50,6 +50,7 @@ falsepositives:
   - Web hosting control panels, deployment hooks or diagnostics that intentionally spawn shells from web runtimes.
 level: high
 rustinel:
+  roles: [web_server]
   telemetry:
     - process_creation
   expected_false_positive_level: low
