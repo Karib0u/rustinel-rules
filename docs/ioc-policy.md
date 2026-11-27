@@ -8,20 +8,19 @@ the evidence and false-positive criteria in [#44](https://github.com/Karib0u/rus
 
 ## Vulnerable Windows drivers
 
-The driver set is a curated subset of LOLDrivers records for drivers associated
-with bring-your-own-vulnerable-driver activity. Each full-file SHA-256 was
-cross-checked against the [public feed](https://www.loldrivers.io/api/drivers.json)
-and a [pinned snapshot](https://github.com/magicsword-io/LOLDrivers/tree/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/yaml)
-from 2026-10-27. The set lists each source record, and comments carry the sample
-filename, source revision, and vulnerable-driver category or CVE. Use the
-record's full-file digest field. Authenticode and PE-section hashes are computed
-over different bytes.
+The driver set covers the full filtered corpus of verified vulnerable Windows
+driver records at LOLDrivers commit `3fe1f4c5cf18f01953317a8850f5cefdde10123d`.
+The sync reads the full-file `SHA256` field of `KnownVulnerableSamples`.
+It excludes unverified and malicious-only records, malformed hashes, and exact
+SHA-256 matches in the shared warninglist's optional `hashes` group. The current
+warninglist supplies network and domain entries. Comments carry the sample
+filename, vulnerable-driver category, available CVEs, and upstream record IDs
+and revision. [Pinned LOLDrivers records](https://github.com/magicsword-io/LOLDrivers/tree/3fe1f4c5cf18f01953317a8850f5cefdde10123d/yaml)
 
-The [upstream repository license](https://github.com/magicsword-io/LOLDrivers/blob/39c70ca64ae9b66650e2c50e011eec6f7354e9cf/LICENSE)
-for these records is Apache-2.0. The selection and comments identify the source
-and describe the changes from upstream. Retain that attribution and the
-[Apache-2.0 license text](../LICENSES/Apache-2.0.txt) when redistributing
-the selection. Pack archives carrying the set include both.
+LOLDrivers publishes the records under Apache-2.0. Pack archives include the
+source attribution and Apache-2.0 license text. Retain both when redistributing
+the selection. [Upstream license](https://github.com/magicsword-io/LOLDrivers/blob/3fe1f4c5cf18f01953317a8850f5cefdde10123d/LICENSE)
+[Pack license text](../LICENSES/Apache-2.0.txt)
 
 An exact hit identifies the vulnerable file bytes. Legitimate vendor utilities
 can ship those same bytes. Correlate with the file path, writing process, and
@@ -51,28 +50,31 @@ action.
 
 ## Remote management services
 
-The LOLRMM set selects dedicated remote management service hostnames from the
-[pinned Apache-2.0 LOLRMM records](https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml)
-and narrows some catalog patterns using vendor documentation and primary
-research. Each comment identifies the source record and the service or
-reported gateway. Retain this attribution and the
-[Apache-2.0 license text](../LICENSES/Apache-2.0.txt) when redistributing the
-selection. Pack archives carrying the set include both.
+The LOLRMM set reads the network domain fields across the catalog at commit
+`0c2d56639673a232ff9d2548e16c6d045d3a1217`. It covers dedicated relay, rendezvous
+and agent services, including documented remote management gateways. Each comment
+names the upstream tool and record. Pack archives include the source attribution
+and Apache-2.0 license text. Retain both when redistributing the selection.
+[Pinned LOLRMM records](https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml)
+[Upstream license](https://github.com/magicsword-io/LOLRMM/blob/0c2d56639673a232ff9d2548e16c6d045d3a1217/LICENSE)
+[Pack license text](../LICENSES/Apache-2.0.txt)
 
-Prefer exact names and reserve suffixes for dedicated product service zones.
-Rustinel v1.11.0 matches a leading `*.` against the zone apex and its
-subdomains. The AnyDesk connectivity suffix covers both bootstrap and relay
-hosts. ScreenConnect entries use exact hostnames, including two documented
-cloud relays, because the engine cannot express an in-label wildcard.
-Exclude vendor support and marketing sites, shared cloud and CDN domains,
-and placeholder domains for self-hosted servers.
+The sync accepts exact DNS hostnames and anchored suffixes written with
+`*.` or `.`. It rejects IP addresses, URLs, placeholders, and in-label
+wildcards. A suffix matches the apex and its subdomains, so the sync
+discards suffixes that could cover an excluded hostname or warninglist
+zone. It also honors upstream network entries marked `Detection: false`.
+The script lists the additional consumer, collaboration, cloud and CDN
+zones, vendor marketing apexes, and incidental hosts it excludes.
+TeamViewer client and routing hosts can qualify while the `teamviewer.com`
+apex and suffix are excluded. [LOLRMM sync exclusions](../tools/sync_lolrmm.py)
 
-The set includes rendezvous and agent services alongside relays. Action1
-entries cover selected remote desktop console hosts, and the Tactical RMM
-entry covers its dedicated agent IP discovery service. Most customer-operated
-Tactical RMM, MeshCentral, SimpleHelp, RustDesk, and ScreenConnect servers use
-their own names. Confirm use with process and connection telemetry and the
-approved support inventory.
+The sync retains documented exact Action1, ScreenConnect, Syncro, and
+Tactical RMM hosts where upstream supplies a broader pattern, an unsupported
+pattern, or omits the hostname. It folds overlapping entries into their
+covering suffix and keeps their source attribution. Most self-hosted servers
+use customer-specific names. Confirm a match with process and connection
+telemetry and the approved support inventory.
 
 ## False-positive guard
 
@@ -92,11 +94,30 @@ reserved values for replay and atomics.
 
 Review these sets quarterly and when a source corrects an indicator, an
 endpoint closes or changes ownership, or new BYOVD abuse warrants an update.
-Verify each change against a primary source, record the revision or review date,
-and remove erroneous or stale entries. For reported RMM gateways, check whether
-the original report still supports retaining the exact name and remove entries
-that have been reassigned. Initial hostname review was on
-2026-11-27.
+For reported RMM gateways, verify that the original report still supports
+retaining the exact name. Remove entries that have been reassigned.
+
+To refresh a set, verify the new full commit SHA and Apache-2.0 license in the
+upstream repository, then update the corresponding script's `REVISION` and
+the pin in this document. Run both generators and review the YAML diff,
+including attribution and any widened domain match. Update the explicit
+exclusions or documented service hosts when the source evidence changes.
+
+```sh
+uv run python tools/sync_loldrivers.py --write
+uv run python tools/sync_lolrmm.py --write
+uv run python tools/sync_loldrivers.py --check
+uv run python tools/sync_lolrmm.py --check
+uv run python tools/validate.py --base origin/main
+```
+
+Each script uses Git to fetch the pinned YAML snapshot. `--check` exits
+with status 1 when the generated rule differs on disk. For offline testing,
+`--input` accepts a directory of upstream YAML files or one YAML or JSON
+fixture containing a record or list of records. The generators preserve
+handwritten rule metadata and regenerate the indicators and pinned references.
+[LOLDrivers sync](../tools/sync_loldrivers.py)
+[LOLRMM sync](../tools/sync_lolrmm.py)
 
 Current builds flatten sets to the engine's text feeds. Comments preserve
 provenance and alert severity comes from the engine's `ioc.default_severity`.

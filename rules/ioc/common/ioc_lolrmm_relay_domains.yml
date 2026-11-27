@@ -1,8 +1,8 @@
 id: ioc-lolrmm-relay-domains
 description: >-
-  Curated LOLRMM relay, rendezvous and agent service hostnames for remote
+  Filtered LOLRMM relay, rendezvous and agent service hostnames for remote
   management inventory and hunting. Approved remote support can reach these
-  services. The selection covers public services and a few reported gateways.
+  services. The selection also covers documented remote management gateways.
 os: [common]
 attack: [T1219]
 severity: medium
@@ -27,67 +27,587 @@ references:
   - https://docs.tacticalrmm.com/howitallworks/
 indicators:
   domains:
-    - value: us.remote.app.action1.com
-      comment: LOLRMM action1.yaml, narrowed to a documented Action1 North America Remote Desktop Console host
-    - value: us.remote.na-2.action1.com
-      comment: LOLRMM action1.yaml, narrowed to a documented Action1 North America Remote Desktop Console host
-    - value: remote.eu.action1.com
-      comment: LOLRMM action1.yaml, narrowed to a documented Action1 Europe Remote Desktop Console host
-    - value: remote.eu-2.action1.com
-      comment: LOLRMM action1.yaml, narrowed to a documented Action1 Europe Remote Desktop Console host
-    - value: '*.net.anydesk.com'
-      comment: LOLRMM anydesk.yaml, AnyDesk connectivity zone covers boot.net.anydesk.com and numbered relay hosts
-    - value: agent-api.atera.com
-      comment: LOLRMM atera.yaml, Atera agent API
-    - value: agenthb.atera.com
-      comment: LOLRMM atera.yaml, Atera agent heartbeat
-    - value: agentreporting.atera.com
-      comment: LOLRMM atera.yaml, Atera agent reporting
-    - value: pubsub.atera.com
-      comment: LOLRMM atera.yaml, Atera messaging endpoint
-    - value: meshcentral.com
-      comment: LOLRMM meshcentral.yaml, public MeshCentral instance
-    - value: '*.ninjarmm.net'
-      comment: LOLRMM ninjarmm.yaml, NinjaOne remote service namespace
-    - value: '*.rmmservice.ca'
-      comment: LOLRMM ninjarmm.yaml, NinjaOne Canada service namespace
-    - value: '*.rmmservice.com.au'
-      comment: LOLRMM ninjarmm.yaml, NinjaOne Australia service namespace
-    - value: '*.rmmservice.eu'
-      comment: LOLRMM ninjarmm.yaml, NinjaOne Europe service namespace
-    - value: rs-ny.rustdesk.com
-      comment: LOLRMM rustdesk.yaml, RustDesk public rendezvous
-    - value: web.rustdesk.com
-      comment: LOLRMM rustdesk.yaml, RustDesk web client
-    - value: control.connectwise.com
-      comment: LOLRMM connectwise_control.yaml, ConnectWise Control service host
-    - value: instance-g01s1n-relay.screenconnect.com
-      comment: LOLRMM screenconnect.yaml relay pattern, narrowed to Huntress Power BI phishing relay
-    - value: instance-itsd8c-relay.screenconnect.com
-      comment: LOLRMM screenconnect.yaml relay pattern, narrowed to Huntress W-2 malvertising relay
-    - value: live.screenconnect.com
-      comment: LOLRMM connectwise_control.yaml, ScreenConnect service host
-    - value: dronemaker.org
-      comment: LOLRMM simplehelp.yaml, SimpleHelp gateway that accepted clients in Huntress Crazy ransomware reporting
-    - value: telesupportgroup.com
-      comment: LOLRMM simplehelp.yaml, SimpleHelp gateway that accepted clients in Huntress Crazy ransomware reporting
+    - value: '*.01com.com'
+      comment: LOLRMM 0c2d56639673 | i'm_intouch.yaml (I'm InTouch)
+    - value: '*.247ithelp.com'
+      comment: LOLRMM 0c2d56639673 | 247ithelp.com_(connectwise).yaml (247ithelp.com (ConnectWise))
+    - value: '*.alpemix.com'
+      comment: LOLRMM 0c2d56639673 | alpemix.yaml (Alpemix)
+    - value: '*.ammyy.com'
+      comment: LOLRMM 0c2d56639673 | ammyyadmin.yml (Ammyy Admin)
+    - value: '*.analytics.insight.rapid7.com'
+      comment: LOLRMM 0c2d56639673 | rapid7.yaml (Rapid7)
+    - value: '*.anysupport.net'
+      comment: LOLRMM 0c2d56639673 | any_support.yaml (Any Support)
+    - value: '*.anyviewer.com'
+      comment: LOLRMM 0c2d56639673 | anyviewer.yaml (AnyViewer)
+    - value: '*.api.jumpcloud.com'
+      comment: LOLRMM 0c2d56639673 | jump_cloud.yaml (Jump Cloud)
+    - value: '*.api.netreo.com'
+      comment: LOLRMM 0c2d56639673 | netreo.yaml (Netreo)
     - value: '*.api.splashtop.com'
-      comment: LOLRMM splashtop_remote.yaml, Splashtop global session and API service
+      comment: LOLRMM 0c2d56639673 | splashtop_remote.yaml (Splashtop Remote)
     - value: '*.api.splashtop.eu'
-      comment: LOLRMM splashtop_remote.yaml, Splashtop Europe session and API service
+      comment: LOLRMM 0c2d56639673 | splashtop_remote.yaml (Splashtop Remote)
+    - value: '*.assist.jumpcloud.com'
+      comment: LOLRMM 0c2d56639673 | jump_cloud.yaml (Jump Cloud)
+    - value: '*.beamyourscreen.com'
+      comment: LOLRMM 0c2d56639673 | beamyourscreen.yaml (BeamYourScreen)
+    - value: '*.beanywhere.com'
+      comment: LOLRMM 0c2d56639673 | beanywhere.yaml (BeAnyWhere), n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.beinsync.com'
+      comment: LOLRMM 0c2d56639673 | beinsync.yaml (BeInSync)
+    - value: '*.beinsync.net'
+      comment: LOLRMM 0c2d56639673 | beinsync.yaml (BeInSync)
+    - value: '*.beyondtrustcloud.com'
+      comment: LOLRMM 0c2d56639673 | beyondtrust_(bomgar).yaml (BeyondTrust (Bomgar))
+    - value: '*.bluetrait.io'
+      comment: LOLRMM 0c2d56639673 | bluetrait.yml (Bluetrait)
+    - value: '*.bomgarcloud.com'
+      comment: LOLRMM 0c2d56639673 | beyondtrust_(bomgar).yaml (BeyondTrust (Bomgar))
+    - value: '*.cc.centrastage.net'
+      comment: LOLRMM 0c2d56639673 | centrastage_(now_datto).yaml (CentraStage (Now Datto))
+    - value: '*.cell-1.domotz.com'
+      comment: LOLRMM 0c2d56639673 | domotz.yaml (Domotz)
+    - value: '*.cloud.tanium.com'
+      comment: LOLRMM 0c2d56639673 | tanium.yaml (Tanium)
+    - value: '*.cloudbackup.management'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.cmdm.comodo.com'
+      comment: LOLRMM 0c2d56639673 | itarian.yaml (Itarian)
+    - value: '*.connect.backdrop.cloud'
+      comment: LOLRMM 0c2d56639673 | netop_remote_control_(impero_connect).yaml (Netop Remote Control (Impero Connect))
+    - value: '*.crossloop.com'
+      comment: LOLRMM 0c2d56639673 | crossloop.yaml (CrossLoop)
+    - value: '*.deskroll.com'
+      comment: LOLRMM 0c2d56639673 | skyfex.yaml (SkyFex)
+    - value: '*.desktop.qq.com'
+      comment: LOLRMM 0c2d56639673 | qq_im-remote_assistance.yaml (QQ IM-remote assistance)
+    - value: '*.desktopstreaming.com'
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: '*.distantdesktop.com'
+      comment: LOLRMM 0c2d56639673 | distant_desktop.yaml (Distant Desktop)
+    - value: '*.dms.zoho.com'
+      comment: LOLRMM 0c2d56639673 | manage_engine_(desktop_central).yaml (Manage Engine (Desktop Central))
+    - value: '*.dms.zoho.com.eu'
+      comment: LOLRMM 0c2d56639673 | manage_engine_(desktop_central).yaml (Manage Engine (Desktop Central))
+    - value: '*.domotz.co'
+      comment: LOLRMM 0c2d56639673 | domotz.yaml (Domotz)
+    - value: '*.duetdisplay.com'
+      comment: LOLRMM 0c2d56639673 | duet_display.yaml (Duet Display)
+    - value: '*.dwservice.net'
+      comment: LOLRMM 0c2d56639673 | dw_service.yaml (DW Service)
+    - value: '*.endpoint.ingress.rapid7.com'
+      comment: LOLRMM 0c2d56639673 | rapid7.yaml (Rapid7)
+    - value: '*.ezhelp.co.kr'
+      comment: LOLRMM 0c2d56639673 | ezhelp.yaml (ezHelp)
+    - value: '*.fastsupport.com'
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: '*.fastviewer.com'
+      comment: LOLRMM 0c2d56639673 | fastviewer.yaml (FastViewer)
+    - value: '*.fixme.it'
+      comment: LOLRMM 0c2d56639673 | fixme.yaml (FixMe.it)
+    - value: '*.fleetdeck.io'
+      comment: LOLRMM 0c2d56639673 | fleetdeck.yaml (FleetDeck.io)
+    - value: '*.gatherplace.com'
+      comment: LOLRMM 0c2d56639673 | gatherplace-desktop_sharing.yaml (GatherPlace-desktop sharing)
+    - value: '*.gatherplace.net'
+      comment: LOLRMM 0c2d56639673 | gatherplace-desktop_sharing.yaml (GatherPlace-desktop sharing)
+    - value: '*.getscreen.me'
+      comment: LOLRMM 0c2d56639673 | getscreen.yaml (GetScreen)
+    - value: '*.gotoassist.at'
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: '*.gotoassist.com'
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: '*.gotoassist.me'
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: '*.gotohttp.com'
+      comment: LOLRMM 0c2d56639673 | gotohttp.yaml (GotoHTTP)
+    - value: '*.gotomypc.com'
+      comment: LOLRMM 0c2d56639673 | gotomypc.yaml (GoToMyPC)
+    - value: '*.heartbeatrm.com'
+      comment: LOLRMM 0c2d56639673 | heartbeatrm.yaml (HeartbeatRM)
+    - value: '*.helpu.co.kr'
+      comment: LOLRMM 0c2d56639673 | helpu.yaml (HelpU)
+    - value: '*.hostedrmm.com'
+      comment: LOLRMM 0c2d56639673 | connectwise_automate_(labtech).yaml (Connectwise Automate (LabTech))
+    - value: '*.immy.bot'
+      comment: LOLRMM 0c2d56639673 | immybot.yaml (ImmyBot)
+    - value: '*.instanthousecall.com'
+      comment: LOLRMM 0c2d56639673 | instant_housecall.yaml (Instant Housecall), instanthousecall.yaml (Instant Housecall)
+    - value: '*.instanthousecall.net'
+      comment: LOLRMM 0c2d56639673 | instant_housecall.yaml (Instant Housecall), instanthousecall.yaml (Instant Housecall)
+    - value: '*.intelliadmin.com'
+      comment: LOLRMM 0c2d56639673 | intelliadmin_remote_control.yaml (IntelliAdmin Remote Control)
+    - value: '*.internetid.ru'
+      comment: LOLRMM 0c2d56639673 | remote_manipulator_system.yaml (Remote Manipulator System), remote_utilities.yaml (Remote Utilities)
+    - value: '*.iperius-rs.com'
+      comment: LOLRMM 0c2d56639673 | iperius_remote.yaml (Iperius Remote)
+    - value: '*.iperiusremote.com'
+      comment: LOLRMM 0c2d56639673 | iperius_remote.yaml (Iperius Remote)
+    - value: '*.islonline.com'
+      comment: LOLRMM 0c2d56639673 | isl_light.yaml (ISL Light), isl_online.yaml (ISL Online), islonline.yaml (ISL Online)
+    - value: '*.islonline.net'
+      comment: LOLRMM 0c2d56639673 | barracuda.yaml (Barracuda), isl_online.yaml (ISL Online), islonline.yaml (ISL Online)
+    - value: '*.itagent.com'
+      comment: LOLRMM 0c2d56639673 | duet_display.yaml (Duet Display)
+    - value: '*.itsm-us1.comodo.com'
+      comment: LOLRMM 0c2d56639673 | comodo_rmm.yaml (Comodo RMM), itarian.yaml (Itarian)
+    - value: '*.itsupport247.net'
+      comment: LOLRMM 0c2d56639673 | itsupport247_(connectwise).yaml (ITSupport247 (ConnectWise))
+    - value: '*.ivanticloud.com'
+      comment: LOLRMM 0c2d56639673 | ivanti_remote_control.yaml (Ivanti Remote Control), landesk.yaml (LANDesk)
+    - value: '*.jumpdesktop.com'
+      comment: LOLRMM 0c2d56639673 | jump_desktop.yaml (Jump Desktop)
+    - value: '*.jumpto.me'
+      comment: LOLRMM 0c2d56639673 | jump_desktop.yaml (Jump Desktop)
+    - value: '*.kabuto.io'
+      comment: LOLRMM 0c2d56639673 | kabuto.yaml (Kabuto), syncro.yaml (Syncro)
+    - value: '*.kabutoservices.com'
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro), syncro.yaml (Syncro, documented service)
+    - value: '*.kace.com'
+      comment: LOLRMM 0c2d56639673 | quest_kace_agent_(formerly_dell_kace).yaml (Quest KACE Agent (formerly Dell KACE))
+    - value: '*.kaseya.net'
+      comment: LOLRMM 0c2d56639673 | kaseya.yaml (Kaseya (VSA))
+    - value: '*.khelpdesk.com.br'
+      comment: LOLRMM 0c2d56639673 | khelpdesk.yaml (KHelpDesk)
+    - value: '*.litemanager.com'
+      comment: LOLRMM 0c2d56639673 | litemanager.yaml (LiteManager)
+    - value: '*.litemanager.ru'
+      comment: LOLRMM 0c2d56639673 | litemanager.yaml (LiteManager)
+    - value: '*.logicnow.com'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.logmein.com'
+      comment: LOLRMM 0c2d56639673 | logmein.yaml (LogMeIn)
+    - value: '*.logmein.eu'
+      comment: LOLRMM 0c2d56639673 | logmein.yaml (LogMeIn)
+    - value: '*.logmeinrescue.com'
+      comment: LOLRMM 0c2d56639673 | logmein.yaml (LogMeIn), logmein_rescue.yaml (LogMeIn rescue)
+    - value: '*.logmeinrescue.eu'
+      comment: LOLRMM 0c2d56639673 | logmein_rescue.yaml (LogMeIn rescue)
+    - value: '*.mdmsupport.comodo.com'
+      comment: LOLRMM 0c2d56639673 | comodo_rmm.yaml (Comodo RMM), itarian.yaml (Itarian)
+    - value: '*.mdt.qq.com'
+      comment: LOLRMM 0c2d56639673 | qq_im-remote_assistance.yaml (QQ IM-remote assistance)
+    - value: '*.mikogo.com'
+      comment: LOLRMM 0c2d56639673 | mikogo.yaml (Mikogo)
+    - value: '*.mikogo4.com'
+      comment: LOLRMM 0c2d56639673 | mikogo.yaml (Mikogo)
+    - value: '*.mspbackups.com'
+      comment: LOLRMM 0c2d56639673 | msp360.yaml (MSP360)
+    - value: '*.my.auvik.com'
+      comment: LOLRMM 0c2d56639673 | auvik.yaml (Auvik)
+    - value: '*.mygreenpc.com'
+      comment: LOLRMM 0c2d56639673 | mygreenpc.yaml (MyGreenPC)
+    - value: '*.nchuser.com'
+      comment: LOLRMM 0c2d56639673 | desktopnow.yaml (DesktopNow)
+    - value: '*.net.anydesk.com'
+      comment: LOLRMM 0c2d56639673 | anydesk.yaml (AnyDesk)
+    - value: '*.netsupportmanager.com'
+      comment: LOLRMM 0c2d56639673 | netsupport_manager.yaml (NetSupport Manager)
+    - value: '*.netviewer.com'
+      comment: LOLRMM 0c2d56639673 | netviewer_(gotomeet).yaml (Netviewer (GoToMeet))
+    - value: '*.ninja-backup.com'
+      comment: LOLRMM 0c2d56639673 | ninjarmm.yaml (NinjaRMM)
+    - value: '*.ninjarmm.net'
+      comment: LOLRMM 0c2d56639673 | ninjarmm.yaml (NinjaRMM)
+    - value: '*.ntrsupport.com'
+      comment: LOLRMM 0c2d56639673 | ntr_remote.yaml (NTR Remote)
+    - value: '*.opti-tune.com'
+      comment: LOLRMM 0c2d56639673 | optitune.yaml (OptiTune)
+    - value: '*.optitune.us'
+      comment: LOLRMM 0c2d56639673 | optitune.yaml (OptiTune)
+    - value: '*.parsec.app'
+      comment: LOLRMM 0c2d56639673 | parsec.yaml (Parsec)
+    - value: '*.pcvisit.de'
+      comment: LOLRMM 0c2d56639673 | pcvisit.yaml (Pcvisit)
     - value: '*.relay.splashtop.com'
-      comment: LOLRMM splashtop_remote.yaml, Splashtop data relay service
-    - value: realtime.kabutoservices.com
-      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro agent WebSocket host
-    - value: rmm.syncromsp.com
-      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro RMM service host
-    - value: syncro-live.syncromsp.com
-      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro Live service host
-    - value: traversal.syncromsp.com
-      comment: LOLRMM syncro.yaml, narrowed to the documented Syncro traversal host
-    - value: icanhazip.tacticalrmm.io
-      comment: LOLRMM tactical_rmm.yaml vendor documentation, dedicated Tactical RMM agent IP discovery service
+      comment: LOLRMM 0c2d56639673 | splashtop_remote.yaml (Splashtop Remote)
+    - value: '*.remmon.hu'
+      comment: LOLRMM 0c2d56639673 | remmon.yaml (Remmon)
+    - value: '*.remote.management'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.remotecall.com'
+      comment: LOLRMM 0c2d56639673 | remotecall.yaml (RemoteCall)
+    - value: '*.remotedesktop.com'
+      comment: LOLRMM 0c2d56639673 | remotepc.yaml (RemotePC)
+    - value: '*.rmm.datto.com'
+      comment: LOLRMM 0c2d56639673 | centrastage_(now_datto).yaml (CentraStage (Now Datto))
+    - value: '*.rmmservice.ca'
+      comment: LOLRMM 0c2d56639673 | ninjarmm.yaml (NinjaRMM)
+    - value: '*.rmmservice.com.au'
+      comment: LOLRMM 0c2d56639673 | ninjarmm.yaml (NinjaRMM)
+    - value: '*.rmmservice.eu'
+      comment: LOLRMM 0c2d56639673 | ninjarmm.yaml (NinjaRMM)
+    - value: '*.rudesktop.ru'
+      comment: LOLRMM 0c2d56639673 | rudesktop.yaml (RuDesktop)
+    - value: '*.rview.com'
+      comment: LOLRMM 0c2d56639673 | remoteview.yaml (RemoteView)
+    - value: '*.screenmeet.com'
+      comment: LOLRMM 0c2d56639673 | screenmeet.yaml (ScreenMeet)
+    - value: '*.scrn.mt'
+      comment: LOLRMM 0c2d56639673 | screenmeet.yaml (ScreenMeet)
+    - value: '*.search.namequery.com'
+      comment: LOLRMM 0c2d56639673 | absolute_(computrace).yaml (Absolute (Computrace))
+    - value: '*.senso.cloud'
+      comment: LOLRMM 0c2d56639673 | senso.cloud.yaml (Senso.cloud)
+    - value: '*.server-eye.de'
+      comment: LOLRMM 0c2d56639673 | servereye.yaml (ServerEye)
+    - value: '*.server.absolute.com'
+      comment: LOLRMM 0c2d56639673 | absolute_(computrace).yaml (Absolute (Computrace))
+    - value: '*.set.me'
+      comment: LOLRMM 0c2d56639673 | setme_pro.yaml (SetMe PRO)
+    - value: '*.showmypc.com'
+      comment: LOLRMM 0c2d56639673 | showmypc.yaml (ShowMyPC)
+    - value: '*.signalserver.xyz'
+      comment: LOLRMM 0c2d56639673 | distant_desktop.yaml (Distant Desktop)
+    - value: '*.sorillus.com'
+      comment: LOLRMM 0c2d56639673 | sorillus.yaml (Sorillus)
+    - value: '*.soti.net'
+      comment: LOLRMM 0c2d56639673 | pocket_controller_(soti_xsight).yaml (Pocket Controller (Soti Xsight))
+    - value: '*.spytech-web.com'
+      comment: LOLRMM 0c2d56639673 | spyanywhere.yaml (SpyAnywhere)
+    - value: '*.startsupport.com'
+      comment: LOLRMM 0c2d56639673 | remotecall.yaml (RemoteCall)
+    - value: '*.superopsalpha.com'
+      comment: LOLRMM 0c2d56639673 | superops.yaml (SuperOps)
+    - value: '*.superopsbeta.com'
+      comment: LOLRMM 0c2d56639673 | superops.yaml (SuperOps)
+    - value: '*.supremocontrol.com'
+      comment: LOLRMM 0c2d56639673 | supremo.yaml (Supremo)
+    - value: '*.swi-tc.com'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.syncroapi.com'
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro)
+    - value: '*.syspectr.com'
+      comment: LOLRMM 0c2d56639673 | laplink_everywhere.yaml (Laplink Everywhere), syspectr.yaml (Syspectr)
+    - value: '*.system-monitor.com'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-able_n-central.yaml (N-able N-central), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.systemmonitor.co.uk'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.systemmonitor.eu.com'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.systemmonitor.us'
+      comment: LOLRMM 0c2d56639673 | n-able_advanced_monitoring_agent.yaml (N-Able Advanced Monitoring Agent), n-ableadvancedmonitoringagent.yaml (N-Able Advanced Monitoring Agent)
+    - value: '*.techinline.net'
+      comment: LOLRMM 0c2d56639673 | fixme.yaml (FixMe.it)
+    - value: '*.teknopars.com'
+      comment: LOLRMM 0c2d56639673 | alpemix.yaml (Alpemix)
+    - value: '*.todesk.com'
+      comment: LOLRMM 0c2d56639673 | todesk.yaml (ToDesk)
+    - value: '*.ultraviewer.net'
+      comment: LOLRMM 0c2d56639673 | ultraviewer.yaml (UltraViewer)
+    - value: '*.vicarius.cloud'
+      comment: LOLRMM 0c2d56639673 | vicarius_vrx.yaml (Vicarius vRx)
+    - value: '*.weezo.me'
+      comment: LOLRMM 0c2d56639673 | weezo.yaml (Weezo)
+    - value: '*.wormhole.dataplicity.com'
+      comment: LOLRMM 0c2d56639673 | dataplicity.yaml (Dataplicity)
+    - value: '*.xeox.com'
+      comment: LOLRMM 0c2d56639673 | xeox.yaml (Xeox)
+    - value: '*.zohoassist.com'
+      comment: LOLRMM 0c2d56639673 | zohoassist.yaml (Zoho Assist)
+    - value: '*.zohoassist.com.cn'
+      comment: LOLRMM 0c2d56639673 | zohoassist.yaml (Zoho Assist)
+    - value: '*.zohoassist.jp'
+      comment: LOLRMM 0c2d56639673 | zohoassist.yaml (Zoho Assist)
+    - value: activation.netreo.net
+      comment: LOLRMM 0c2d56639673 | netreo.yaml (Netreo)
+    - value: agent-api.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: agent.tiflux.com
+      comment: LOLRMM 0c2d56639673 | tiflux.yaml (TiFLUX)
+    - value: agenthb.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: agentreporting.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: agents.addigy.com
+      comment: LOLRMM 0c2d56639673 | addigy.yaml (Addigy)
+    - value: agents.level.io
+      comment: LOLRMM 0c2d56639673 | level.yaml (Level)
+    - value: anyplace-control.com
+      comment: LOLRMM 0c2d56639673 | anyplace_control.yaml (Anyplace Control)
+    - value: api-ca-1.lavawall.com
+      comment: LOLRMM 0c2d56639673 | lavawall.yaml (Lavawall)
+    - value: api.allocentra.co.za
+      comment: LOLRMM 0c2d56639673 | allocentra.yaml (Allocentra)
+    - value: api.helpwire.app
+      comment: LOLRMM 0c2d56639673 | helpwire.yaml (HelpWire)
+    - value: api.hoptodesk.com
+      comment: LOLRMM 0c2d56639673 | hoptodesk.yaml (HopToDesk)
+    - value: api.idrive.com
+      comment: LOLRMM 0c2d56639673 | idrive.yaml (iDrive)
+    - value: api.monitic.com
+      comment: LOLRMM 0c2d56639673 | monitic.yaml (Monitic)
+    - value: api.mremote.io
+      comment: LOLRMM 0c2d56639673 | mremote.yaml (Mremote)
+    - value: api.remote.it
+      comment: LOLRMM 0c2d56639673 | remote.it.yaml (Remote.it)
+    - value: api.remsupp.com
+      comment: LOLRMM 0c2d56639673 | remsupp.yaml (RemSupp)
+    - value: api.rg-supervision.com
+      comment: LOLRMM 0c2d56639673 | rg_system.yaml (RG System (RG Supervision))
+    - value: api.rmmmax.com
+      comment: LOLRMM 0c2d56639673 | rmmmax.yaml (RMMmax)
+    - value: api.rustdesk.com
+      comment: LOLRMM 0c2d56639673 | rustdesk.yaml (RustDesk)
+    - value: app.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: app.deskday.ai
+      comment: LOLRMM 0c2d56639673 | deskday.yaml (DeskDay)
+    - value: app.gorelo.io
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: app.lunixar.com
+      comment: LOLRMM 0c2d56639673 | lunixar.yaml (Lunixar)
+    - value: app.monitic.com
+      comment: LOLRMM 0c2d56639673 | monitic.yaml (Monitic)
+    - value: app.pdq.com
+      comment: LOLRMM 0c2d56639673 | pdq_connect.yaml (PDQ Connect)
+    - value: app.tiflux.com
+      comment: LOLRMM 0c2d56639673 | tiflux.yaml (TiFLUX)
+    - value: app.zecurit.com
+      comment: LOLRMM 0c2d56639673 | zecurit.yaml (Zecurit)
+    - value: appcdn.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: assist.zoho.com
+      comment: LOLRMM 0c2d56639673 | zohoassist.yaml (Zoho Assist)
+    - value: attachments.servably.com
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro)
+    - value: auth.api.remote.it
+      comment: LOLRMM 0c2d56639673 | remote.it.yaml (Remote.it)
+    - value: builds.level.io
+      comment: LOLRMM 0c2d56639673 | level.yaml (Level)
+    - value: caremote1.lavawall.com
+      comment: LOLRMM 0c2d56639673 | lavawall.yaml (Lavawall)
+    - value: cfcdn.pdq.com
+      comment: LOLRMM 0c2d56639673 | pdq_connect.yaml (PDQ Connect)
+    - value: charon.netreo.net
+      comment: LOLRMM 0c2d56639673 | netreo.yaml (Netreo)
+    - value: client-api.aweray.com
+      comment: LOLRMM 0c2d56639673 | aweray.yaml (AweRay)
+    - value: client.oray.net
+      comment: LOLRMM 0c2d56639673 | sunlogin.yaml (SunLogin)
     - value: client.teamviewer.com
-      comment: LOLRMM teamviewer.yaml, TeamViewer client service
+      comment: LOLRMM 0c2d56639673 | teamviewer.yaml (TeamViewer)
+    - value: cloud.acronis.com
+      comment: LOLRMM 0c2d56639673 | acronis_cyber_protect_(remotix).yaml (Acronis Cyber Protect (Remotix))
+    - value: cloud.faronics.com
+      comment: LOLRMM 0c2d56639673 | faronics_deep_freeze.yaml (Faronics Deep Freeze)
+    - value: cloud.nsecsoft.com
+      comment: LOLRMM 0c2d56639673 | ping32.yaml (Ping32)
+    - value: cloud.shellhub.io
+      comment: LOLRMM 0c2d56639673 | shellhub.yaml (ShellHub)
+    - value: comserver.eu1.mspa.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: comserver.global.mspa.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: comserver.us1.mspa.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: comserver.us2.mspa.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: connect.acronis.com
+      comment: LOLRMM 0c2d56639673 | acronis_cyber_protect_(remotix).yaml (Acronis Cyber Protect (Remotix))
+    - value: control.connectwise.com
+      comment: LOLRMM 0c2d56639673 | connectwise_control.yaml (ConnectWise Control), screenconnect.yaml (ScreenConnect)
+    - value: dashboard.rg-supervision.com
+      comment: LOLRMM 0c2d56639673 | rg_system.yaml (RG System (RG Supervision))
+    - value: deploy.faronics.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: deploy01.kaseya.com
+      comment: LOLRMM 0c2d56639673 | kaseya.yaml (Kaseya (VSA))
+    - value: desktopcentral.manageengine.cn
+      comment: LOLRMM 0c2d56639673 | manage_engine_(desktop_central).yaml (Manage Engine (Desktop Central))
+    - value: desktopcentral.manageengine.com
+      comment: LOLRMM 0c2d56639673 | manage_engine_(desktop_central).yaml (Manage Engine (Desktop Central))
+    - value: desktopcentral.manageengine.com.eu
+      comment: LOLRMM 0c2d56639673 | manage_engine_(desktop_central).yaml (Manage Engine (Desktop Central))
+    - value: dms.zecurit.com
+      comment: LOLRMM 0c2d56639673 | zecurit.yaml (Zecurit)
+    - value: donkz.nl
+      comment: LOLRMM 0c2d56639673 | remote_desktop_plus.yaml (Remote Desktop Plus)
+    - value: dronemaker.org
+      comment: LOLRMM 0c2d56639673 | simplehelp.yaml (SimpleHelp)
+    - value: ehorus.com
+      comment: LOLRMM 0c2d56639673 | ehorus.yaml (eHorus)
+    - value: eu.2breeze.app
+      comment: LOLRMM 0c2d56639673 | breezermm.yaml (BreezeRMM)
+    - value: everywhere.laplink.com
+      comment: LOLRMM 0c2d56639673 | laplink_everywhere.yaml (Laplink Everywhere)
+    - value: feeds.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: fstools.freshasset.com
+      comment: LOLRMM 0c2d56639673 | freshservice.yaml (Freshservice)
+    - value: fstools.freshservice.com
+      comment: LOLRMM 0c2d56639673 | freshservice.yaml (Freshservice)
+    - value: gateway.miradore.com
+      comment: LOLRMM 0c2d56639673 | miradore.yaml (Miradore)
+    - value: geo.netsupportsoftware.com
+      comment: LOLRMM 0c2d56639673 | netsupport_manager.yaml (NetSupport Manager)
+    - value: get.helpwire.app
+      comment: LOLRMM 0c2d56639673 | helpwire.yaml (HelpWire)
+    - value: getalphacontrol.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: grtmprod.addigy.com
+      comment: LOLRMM 0c2d56639673 | addigy.yaml (Addigy)
+    - value: gw.remotix.com
+      comment: LOLRMM 0c2d56639673 | acronis_cyber_protect_(remotix).yaml (Acronis Cyber Protect (Remotix))
+    - value: gw.usw.gorelo.tech
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: helpme.net
+      comment: LOLRMM 0c2d56639673 | gotoassist.yaml (GoToAssist)
+    - value: icanhazip.tacticalrmm.io
+      comment: LOLRMM 0c2d56639673 | tactical_rmm.yaml (Tactical RMM, documented service)
+    - value: instance-g01s1n-relay.screenconnect.com
+      comment: LOLRMM 0c2d56639673 | screenconnect.yaml (ScreenConnect, documented service)
+    - value: instance-itsd8c-relay.screenconnect.com
+      comment: LOLRMM 0c2d56639673 | screenconnect.yaml (ScreenConnect, documented service)
+    - value: instances-info.invgate.com
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: instances-list.invgate.com
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: invgate.net
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: lavawinupdate.lavawall.com
+      comment: LOLRMM 0c2d56639673 | lavawall.yaml (Lavawall)
+    - value: lb-insight-001.invgate.net
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: ld.aurelius.host
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro)
+    - value: le.laplink.com
+      comment: LOLRMM 0c2d56639673 | laplink_everywhere.yaml (Laplink Everywhere)
+    - value: lisa.rg-supervision.com
+      comment: LOLRMM 0c2d56639673 | rg_system.yaml (RG System (RG Supervision))
+    - value: live.screenconnect.com
+      comment: LOLRMM 0c2d56639673 | connectwise_control.yaml (ConnectWise Control)
+    - value: logmein-gateway.com
+      comment: LOLRMM 0c2d56639673 | logmein.yaml (LogMeIn)
+    - value: lr.rmm.pod1.usw.gorelo.tech
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: meshcentral.com
+      comment: LOLRMM 0c2d56639673 | meshcentral.yaml (MeshCentral)
+    - value: microuptime.com
+      comment: LOLRMM 0c2d56639673 | simplehelp.yaml (SimpleHelp)
+    - value: my.kickidler.com
+      comment: LOLRMM 0c2d56639673 | kickidler.yaml (KickIdler)
+    - value: neturo.uplus.co.kr
+      comment: LOLRMM 0c2d56639673 | neturo.yaml (Neturo)
+    - value: networkservice.cyou
+      comment: LOLRMM 0c2d56639673 | trustconnect.yaml (TrustConnect)
+    - value: online.level.io
+      comment: LOLRMM 0c2d56639673 | level.yaml (Level)
+    - value: opsbridge.digital
+      comment: LOLRMM 0c2d56639673 | opsbridge_agent.yaml (OpsBridge Agent)
+    - value: paternal-angrily.com
+      comment: LOLRMM 0c2d56639673 | netsupport_manager.yaml (NetSupport Manager)
+    - value: pilixo.com
+      comment: LOLRMM 0c2d56639673 | pilixo.yaml (Pilixo)
+    - value: portal.ehorus.com
+      comment: LOLRMM 0c2d56639673 | pandora_rc_(ehorus).yaml (Pandora RC (eHorus))
+    - value: prod.addigy.com
+      comment: LOLRMM 0c2d56639673 | addigy.yaml (Addigy)
+    - value: ps.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: public.rmm.pod1.usw.gorelo.tech
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: pubsub.atera.com
+      comment: LOLRMM 0c2d56639673 | atera.yaml (Atera)
+    - value: r1.rmm.uw.gorelo.tech
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: releases.invgate.com
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: releases.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: remote.eu-2.action1.com
+      comment: LOLRMM 0c2d56639673 | action1.yaml (Action1, documented service)
+    - value: remote.eu.action1.com
+      comment: LOLRMM 0c2d56639673 | action1.yaml (Action1, documented service)
+    - value: remoteaccess.itarian.com
+      comment: LOLRMM 0c2d56639673 | itarian.yaml (Itarian)
+    - value: remotepro-ap-southeast-1.faronicsdeploy.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: remotepro-ca-central-1.faronics.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: remotepro-eu-west-1.faronicsdeploy.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: remotepro-sa-east-1.faronicsdeploy.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: remotepro-us-east-1.faronics.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: remotepro-us-west-2.faronics.com
+      comment: LOLRMM 0c2d56639673 | faronics_deploy.yaml (Faronics Deploy)
+    - value: rescue-data-cetner.logmein-gateway.com
+      comment: LOLRMM 0c2d56639673 | logmein_rescue.yaml (LogMeIn rescue)
+    - value: rmansys.ru
+      comment: LOLRMM 0c2d56639673 | remote_manipulator_system.yaml (Remote Manipulator System)
+    - value: rmm.barracudamsp.com
+      comment: LOLRMM 0c2d56639673 | barracuda.yaml (Barracuda)
+    - value: rmm.syncromsp.com
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro, documented service)
     - value: router15.teamviewer.com
-      comment: LOLRMM teamviewer.yaml, TeamViewer routing service
+      comment: LOLRMM 0c2d56639673 | teamviewer.yaml (TeamViewer)
+    - value: rs-ny.rustdesk.com
+      comment: LOLRMM 0c2d56639673 | rustdesk.yaml (RustDesk)
+    - value: rt.teramind.co
+      comment: LOLRMM 0c2d56639673 | teramind.yaml (Teramind)
+    - value: seetrol.co.kr
+      comment: LOLRMM 0c2d56639673 | seetrol.yaml (Seetrol)
+    - value: servicedesk.itarian.com
+      comment: LOLRMM 0c2d56639673 | itarian.yaml (Itarian)
+    - value: services.glpi-network.com
+      comment: LOLRMM 0c2d56639673 | glpi.yaml (GLPI Agent)
+    - value: signal.hoptodesk.com
+      comment: LOLRMM 0c2d56639673 | hoptodesk.yaml (HopToDesk)
+    - value: sis.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: skyfex.com
+      comment: LOLRMM 0c2d56639673 | skyfex.yaml (SkyFex)
+    - value: socket.lunixar.com
+      comment: LOLRMM 0c2d56639673 | lunixar.yaml (Lunixar)
+    - value: softbymade.top
+      comment: LOLRMM 0c2d56639673 | rmmcrat.yaml (RMMCRAT)
+    - value: spyanywhere.com
+      comment: LOLRMM 0c2d56639673 | spyanywhere.yaml (SpyAnywhere)
+    - value: sr.rmm.pod1.usw.gorelo.tech
+      comment: LOLRMM 0c2d56639673 | gorelormm.yaml (Gorelo RMM)
+    - value: stun.helpwire.app
+      comment: LOLRMM 0c2d56639673 | helpwire.yaml (HelpWire)
+    - value: sunlogin.oray.com
+      comment: LOLRMM 0c2d56639673 | sunlogin.yaml (SunLogin)
+    - value: swi-rc.cdn-sw.net
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: syncro-live.syncromsp.com
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro, documented service)
+    - value: taf.teamviewer.com
+      comment: LOLRMM 0c2d56639673 | teamviewer.yaml (TeamViewer)
+    - value: tele-desk.com
+      comment: LOLRMM 0c2d56639673 | teledesktop.yaml (TeleDesktop)
+    - value: telesupportgroup.com
+      comment: LOLRMM 0c2d56639673 | simplehelp.yaml (SimpleHelp)
+    - value: traversal.syncromsp.com
+      comment: LOLRMM 0c2d56639673 | syncro.yaml (Syncro, documented service)
+    - value: trust-access.invgate.com
+      comment: LOLRMM 0c2d56639673 | invgate.yaml (InvGate)
+    - value: trustconnectsoftware.com
+      comment: LOLRMM 0c2d56639673 | trustconnect.yaml (TrustConnect)
+    - value: trusted.panorama9.com
+      comment: LOLRMM 0c2d56639673 | panorama9.yaml (Panorama9)
+    - value: turn.hoptodesk.com
+      comment: LOLRMM 0c2d56639673 | hoptodesk.yaml (HopToDesk)
+    - value: turn.monitic.com
+      comment: LOLRMM 0c2d56639673 | monitic.yaml (Monitic)
+    - value: update.n-able.com
+      comment: LOLRMM 0c2d56639673 | n-able_n-central.yaml (N-able N-central)
+    - value: us.2breeze.app
+      comment: LOLRMM 0c2d56639673 | breezermm.yaml (BreezeRMM)
+    - value: us.remote.app.action1.com
+      comment: LOLRMM 0c2d56639673 | action1.yaml (Action1, documented service)
+    - value: us.remote.na-2.action1.com
+      comment: LOLRMM 0c2d56639673 | action1.yaml (Action1, documented service)
+    - value: vicarius-static-organizationinstallations.vicarius-cdn.com
+      comment: LOLRMM 0c2d56639673 | vicarius_vrx.yaml (Vicarius vRx)
+    - value: vizor.cloud
+      comment: LOLRMM 0c2d56639673 | vizor.yaml (VIZOR)
+    - value: web.rustdesk.com
+      comment: LOLRMM 0c2d56639673 | rustdesk.yaml (RustDesk)
+    - value: webserv.logistical-software.co.uk
+      comment: LOLRMM 0c2d56639673 | ls_rmm.yaml (LS RMM)
