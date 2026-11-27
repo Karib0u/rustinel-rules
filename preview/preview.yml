@@ -23,24 +23,6 @@
 # references anything listed below.
 schema: rustinel-rules/preview@1
 entries:
-  - id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
-    kind: sigma
-    path: sigma/windows/image_load_win_hunting_unsigned_dll_userwritable.yml
-    state: telemetry-blocked
-    missing_fields:
-      - image_load.Signed
-    reason: >
-      The single selection requires `Signed: 'false'`. Kernel-Process image-load
-      events carry no Authenticode result, so `Signed` is `never` in the engine
-      field-availability contract and the rule cannot match any event. Was
-      shipped in Windows Hunting.
-    blocker: https://github.com/Karib0u/rustinel/issues/320
-    notes: >
-      Needs Authenticode enrichment (rustinel#320), which in turn needs the async
-      enrichment contract (rustinel#427). Without #427 a rule on `Signed` still
-      evaluates before enrichment and still never matches. Re-checked against the
-      certified pin (Rustinel 1.9.1): `image_load.Signed` is still `never`.
-
   - id: ioc-eicar-test
     kind: ioc
     path: ioc/common/ioc_eicar_test.yml

@@ -1,0 +1,43 @@
+title: Unsigned DLL Loaded from User-Writable Path (Hunting)
+id: 3248cbd6-6c77-4b5c-ab44-655e7fd75667
+status: experimental
+description: >
+  Hunting signal for DLL side-loading. Authenticode reports an unsigned DLL
+  loaded from a profile, shared application data, or temporary directory.
+  Unsigned software routinely loads libraries from these locations.
+references:
+  - https://github.com/Karib0u/rustinel/pull/843
+  - https://attack.mitre.org/techniques/T1574/002/
+author: rustinel-rules
+date: 2026-07-09
+modified: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.t1574.002
+logsource:
+  category: image_load
+  product: windows
+detection:
+  selection_unsigned:
+    Signed: 'false'
+  selection_path:
+    ImageLoaded|re: '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\(?:Users|ProgramData|Temp|Windows\\Temp|(?:[^\\]+\\)*AppData)|\\SystemRoot\\Temp)\\.+'
+  selection_dll:
+    ImageLoaded|endswith: '.dll'
+  condition: selection_unsigned and selection_path and selection_dll
+falsepositives:
+  - Unsigned third-party software using DLLs from these directories.
+level: low
+rustinel:
+  telemetry:
+    - image_load
+  expected_false_positive_level: high
+  test_status: manual
+  test_reason: >
+    The hosted atomics have no fixture for deferred Authenticode on an unsigned
+    DLL. Live verification needs a harmless unsigned DLL in a watched directory.
+    Replay exercises the rule with synthetic verdicts.
+  tuning:
+    - surface: selection_path.ImageLoaded
+      guidance: Adjust observed directory roots. Scope any recurring application exception to verified full DLL or host paths.
