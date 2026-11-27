@@ -7,7 +7,7 @@ description: >
 os: linux
 level: hunting
 pack_schema_version: 2
-requires_rustinel: ">=1.6.0"
+requires_rustinel: ">=1.8.0"
 default: false
 active_response_eligible: false
 expected_false_positive_level: high
@@ -30,6 +30,7 @@ attack_coverage:
   - T1105
   - T1136.001
   - T1219
+  - T1222.002
   - T1486
   - T1496
   - T1505.003
@@ -42,9 +43,12 @@ attack_coverage:
   - T1552.005
   - T1556.003
   - T1562.001
+  - T1562.004
   - T1562.012
   - T1572
   - T1574.006
+  - T1610
+  - T1611
 telemetry_requirements:
   - process_creation
 test_status: mixed

@@ -2,15 +2,16 @@ title: Systemd Unit Persistence
 id: 3d4e5f60-7182-4394-9da5-2e3f4a5b6c73
 status: experimental
 description: >
-  Detects creation of a systemd service, timer or socket unit in a system or
-  per-user unit directory, a durable persistence mechanism. Noisy on hosts where
-  packages are installed/updated, so intended for the Advanced tier with tuning.
+  Detects creation of a systemd service, timer, socket or drop-in override in a
+  system, runtime or per-user unit directory. Package installations and updates
+  can produce these events.
 references:
   - https://github.com/Karib0u/rustinel/issues/686
   - https://attack.mitre.org/techniques/T1543/002/
+  - https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html
 author: rustinel-rules
 date: 2026-06-04
-modified: 2026-10-02
+modified: 2026-11-27
 tags:
   - attack.persistence
   - attack.privilege-escalation
@@ -22,20 +23,25 @@ detection:
   selection_path:
     TargetFilename|contains:
       - '/etc/systemd/system/'
+      - '/run/systemd/system/'
       - '/lib/systemd/system/'
       - '/usr/lib/systemd/system/'
+      - '/etc/systemd/user/'
+      - '/run/systemd/user/'
       - '/.config/systemd/user/'
   selection_ext:
     TargetFilename|endswith:
       - '.service'
       - '.timer'
       - '.socket'
+  selection_ext_dropin:
+    TargetFilename|re: '\.d/[^/]+\.conf$'
   filter_container_unpack:
     Image|re: '^/usr/(local/)?s?bin/(containerd|dockerd)$'
     TargetFilename|startswith:
       - '/var/lib/containerd/'
       - '/var/lib/docker/'
-  condition: (selection_path and selection_ext) and not filter_container_unpack
+  condition: selection_path and (selection_ext or selection_ext_dropin) and not filter_container_unpack
 falsepositives:
   - Image unpacking under custom runtime storage paths or by other runtimes.
   - Package installation and updates that ship systemd units.
@@ -69,3 +75,15 @@ rustinel:
       fields:
         Image: "/usr/bin/vim"
         TargetFilename: "/etc/systemd/system/README.txt"
+    - reason: "a conf file outside a drop-in directory"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/run/systemd/system/notes.conf"
+    - reason: "a backup copy of a user unit drop-in"
+      fields:
+        Image: "/usr/bin/vim"
+        TargetFilename: "/etc/systemd/user/app.service.d/override.conf.bak"
+    - reason: "containerd unpacking an image layer that ships a user unit drop-in"
+      fields:
+        Image: "/usr/bin/containerd"
+        TargetFilename: "/var/lib/containerd/snapshots/12/fs/etc/systemd/user/app.service.d/override.conf"

@@ -1,4 +1,4 @@
-"""Check container-unpacking exclusions with the real engine, without sensors."""
+"""Check Linux persistence paths and container-unpacking exclusions without sensors."""
 
 import argparse
 import hashlib
@@ -74,6 +74,22 @@ def main():
                 "/var/lib/containerd/layer/etc/profile",
                 False,
             ),
+        ]
+    )
+    systemd = RULES["systemd"][0]
+    drop_in = "/etc/systemd/system/ssh.service.d/override.conf"
+    cases.extend(
+        [
+            (systemd, "/bin/sh", drop_in, True),
+            (systemd, "/bin/sh", "/run/systemd/system/example.timer", True),
+            (systemd, "/bin/sh", "/etc/systemd/user/example.service", True),
+            (systemd, "/bin/sh", "/run/systemd/user/service.d/10-policy.conf", True),
+            (systemd, "/bin/sh", "/run/systemd/system/example.conf", False),
+            (systemd, "/bin/sh", "/etc/systemd/user/example.service.d/override.conf.bak", False),
+            (systemd, "/bin/sh", "/tmp/ssh.service.d/override.conf", False),
+            (systemd, "/usr/bin/containerd", "/var/lib/containerd/layer" + drop_in, False),
+            (systemd, "/usr/bin/dockerd", "/var/lib/docker/overlay2/layer" + drop_in, False),
+            (systemd, "/tmp/dockerd", "/var/lib/docker/overlay2/layer" + drop_in, True),
         ]
     )
     events = []
