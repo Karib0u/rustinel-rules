@@ -19,3 +19,4 @@
 - [ ] ATT&CK tags and Rustinel telemetry metadata are present where relevant.
 - [ ] Expected false-positive level is documented.
 - [ ] Atomic or manual test coverage is documented where relevant.
+- [ ] Sigma status changes include a [lifecycle evidence record](https://github.com/Karib0u/rustinel-rules/blob/main/docs/rule-lifecycle.md#evidence-record-for-pull-requests).

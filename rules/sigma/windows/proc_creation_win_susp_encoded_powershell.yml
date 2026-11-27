@@ -44,3 +44,18 @@ rustinel:
     - process_creation
   expected_false_positive_level: low
   test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: >
+        If approved administration tools or installers repeatedly alert, scope a local
+        exclusion to the verified parent and script context. Keep encoded commands from
+        other parents visible.
+  negatives:
+    - reason: PowerShell 7 reading a file with an explicit text encoding
+      fields:
+        Image: 'C:\Program Files\PowerShell\7\pwsh.exe'
+        CommandLine: 'pwsh.exe -NoProfile -Command "Get-Content settings.json -Encoding utf8"'
+    - reason: Windows PowerShell running an approved script from a file
+      fields:
+        Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
+        CommandLine: 'powershell.exe -ExecutionPolicy RemoteSigned -File "C:\Admin\Inventory.ps1"'
