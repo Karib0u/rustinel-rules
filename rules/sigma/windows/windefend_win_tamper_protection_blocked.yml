@@ -1,0 +1,43 @@
+title: Microsoft Defender Tamper Protection Blocked a Change
+id: 817ab77e-25b5-46b9-bd89-197575987377
+status: experimental
+description: >
+  Detects Microsoft Defender Operational event 5013, recorded when Tamper
+  Protection blocks a change to a protected Defender setting. An unexpected
+  blocked attempt can indicate defense evasion.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-microsoft-defender-antivirus#event-id-5013
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  product: windows
+  service: windefend
+detection:
+  selection:
+    EventID: 5013
+  condition: selection
+falsepositives:
+  - Approved management tooling attempting to change a protected setting.
+level: medium
+rustinel:
+  telemetry:
+    - windefend
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Reproducing 5013 requires enabled Tamper Protection and an attempted change
+    to a protected setting. Hosted runners cannot guarantee that protection is enabled.
+  tuning:
+    - surface: Value
+      guidance: Review the blocked change against verified management policy. Value is optional in the event.
+  negatives:
+    - reason: Defender configuration changed
+      fields:
+        EventID: '5007'
+    - reason: A threat was detected
+      fields:
+        EventID: '1116'

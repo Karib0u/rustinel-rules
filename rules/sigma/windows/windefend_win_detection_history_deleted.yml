@@ -1,0 +1,46 @@
+title: Microsoft Defender Malware Detection History Deleted
+id: 159f409d-a736-4916-bbdc-3b6ecfd67bdb
+status: experimental
+description: >
+  Detects Microsoft Defender Operational event 1013, recorded when Defender
+  removes history of malware or potentially unwanted software. An unexpected
+  purge can conceal prior detections.
+references:
+  - https://attack.mitre.org/techniques/T1070/
+  - https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-microsoft-defender-antivirus#event-id-1013
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1070
+logsource:
+  product: windows
+  service: windefend
+detection:
+  selection:
+    EventID: 1013
+  condition: selection
+falsepositives:
+  - Routine retention purges or approved maintenance of Defender history.
+level: medium
+rustinel:
+  telemetry:
+    - windefend
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    A live test requires populated Defender history and a purge of that evidence.
+    Use a disposable Windows VM with test history for live testing.
+  tuning:
+    - surface: User
+      guidance: Verify the user and timing against approved retention jobs before filtering known purges.
+  negatives:
+    - reason: Quarantined item deleted
+      fields:
+        EventID: '1011'
+    - reason: Malware history deletion failed
+      fields:
+        EventID: '1014'
+    - reason: A threat was detected
+      fields:
+        EventID: '1116'

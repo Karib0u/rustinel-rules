@@ -529,6 +529,13 @@
       "script": "windows/sc_stop_security.ps1"
     },
     {
+      "id": "7bc2737f-007f-4184-a75c-fb1c6773a707",
+      "name": "windows_ransomware_recovery_inhibition",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/ransomware_recovery_inhibition.ps1"
+    },
+    {
       "id": "6c46cc68-2e66-4834-b058-0a2cfd115409",
       "name": "windows_netsh_portproxy",
       "platform": "windows",

@@ -1,0 +1,63 @@
+title: Ransomware Recovery Inhibition and Security Service Interference
+id: 7bc2737f-007f-4184-a75c-fb1c6773a707
+status: experimental
+description: >
+  Detects attempts to delete shadow copies, tamper with boot recovery or backups,
+  and stop or disable a security service within ten minutes. All three process
+  detections must share a ParentImage. This combination can precede ransomware
+  encryption. The events record process starts and command lines.
+references:
+  - https://attack.mitre.org/techniques/T1490/
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://attack.mitre.org/techniques/T1562/009/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.impact
+  - attack.defense-evasion
+  - attack.t1490
+  - attack.t1562.001
+  - attack.t1562.009
+generate: true
+correlation:
+  type: temporal
+  rules:
+    - 1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04
+    - e86de5fe-3908-4a95-b4e8-930a93bf4555
+    - 43c59081-d5ec-4153-9e26-04e66e07461a
+  group-by:
+    - ParentImage
+  timespan: 10m
+  condition:
+    gte: 3
+falsepositives:
+  - An approved maintenance tool performing all three actions during a recovery drill.
+level: critical
+rustinel:
+  # v1.10.0 skips events missing ParentImage instead of grouping them together.
+  min_engine: '1.10.0'
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: timespan
+      guidance: Shorten the window if routine maintenance combines these signals.
+    - surface: ParentImage
+      guidance: Filter the full path of approved maintenance tooling in the relevant base rule.
+  negatives:
+    - reason: Listing shadow copies during backup verification
+      fields:
+        Image: 'C:\Windows\System32\vssadmin.exe'
+        CommandLine: 'vssadmin.exe list shadows'
+        ParentImage: 'C:\Program Files\Backup\backup.exe'
+    - reason: Querying boot configuration during recovery verification
+      fields:
+        Image: 'C:\Windows\System32\bcdedit.exe'
+        CommandLine: 'bcdedit.exe /enum'
+        ParentImage: 'C:\Program Files\Backup\backup.exe'
+    - reason: Checking security service status during recovery verification
+      fields:
+        Image: 'C:\Windows\System32\sc.exe'
+        CommandLine: 'sc.exe query WinDefend'
+        ParentImage: 'C:\Program Files\Backup\backup.exe'

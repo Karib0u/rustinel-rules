@@ -104,6 +104,25 @@ class DefenderChannelTests(unittest.TestCase):
         )
         self.assertFalse(fires(det, {"EventID": 5008, "NewValue": base % "Paths"}))
 
+    def test_scanning_disabled(self) -> None:
+        det = _load("windefend_win_scanning_disabled.yml")
+        for event_id in (5010, 5012):
+            self.assertTrue(fires(det, {"EventID": event_id}), event_id)
+        for event_id in (5001, 5007, 5009, 5011, 5013):
+            self.assertFalse(fires(det, {"EventID": event_id}), event_id)
+
+    def test_tamper_protection_blocked(self) -> None:
+        det = _load("windefend_win_tamper_protection_blocked.yml")
+        self.assertTrue(fires(det, {"EventID": 5013}))
+        for event_id in (5007, 5012, 1116):
+            self.assertFalse(fires(det, {"EventID": event_id}), event_id)
+
+    def test_detection_history_deleted(self) -> None:
+        det = _load("windefend_win_detection_history_deleted.yml")
+        self.assertTrue(fires(det, {"EventID": 1013}))
+        for event_id in (1011, 1014, 1116):
+            self.assertFalse(fires(det, {"EventID": event_id}), event_id)
+
 
 class AuditCveTests(unittest.TestCase):
     det = _load("application_win_audit_cve.yml")
@@ -129,10 +148,16 @@ class AccountCorrelationTests(unittest.TestCase):
     def test_references_and_grouping(self) -> None:
         corr = yaml.safe_load((RULES / "security_win_account_created_and_privileged.yml").read_text())["correlation"]
         ids = {yaml.safe_load(p.read_text()).get("id"): p.name for p in Path(RULES).glob("*.yml")}
-        self.assertEqual(corr["type"], "temporal")
-        self.assertEqual(corr["group-by"], ["SubjectLogonId"])
-        for rid in corr["rules"]:
-            self.assertIn(rid, ids)
+        self.assertEqual(corr["type"], "temporal_ordered")
+        self.assertEqual(corr["group-by"], ["SubjectLogonId", "AccountSid"])
+        self.assertEqual(
+            [ids[rule_id] for rule_id in corr["rules"]],
+            ["security_win_hunting_user_account_created.yml", "security_win_privileged_group_member_added.yml"],
+        )
+        self.assertEqual(
+            [corr["aliases"]["AccountSid"][rule_id] for rule_id in corr["rules"]],
+            ["TargetSid", "MemberSid"],
+        )
 
     def test_base_rule(self) -> None:
         det = _load("security_win_hunting_user_account_created.yml")

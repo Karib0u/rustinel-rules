@@ -1,0 +1,49 @@
+title: Microsoft Defender Antivirus or Antispyware Scanning Disabled
+id: f62ae349-cb8a-4ee0-8d2e-4ada4ccf601f
+status: experimental
+description: >
+  Detects Microsoft Defender Operational events 5010 and 5012, recorded when
+  antispyware or antivirus scanning is disabled. Unexpected changes can signal
+  an attempt to evade malware detection.
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-microsoft-defender-antivirus#event-id-5010
+  - https://learn.microsoft.com/en-us/defender-endpoint/troubleshoot-microsoft-defender-antivirus#event-id-5012
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1562.001
+logsource:
+  product: windows
+  service: windefend
+detection:
+  selection:
+    EventID:
+      - 5010
+      - 5012
+  condition: selection
+falsepositives:
+  - Approved endpoint protection migrations or Defender policy changes.
+level: high
+rustinel:
+  telemetry:
+    - windefend
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Triggering these events requires disabling Defender scanning on a host where
+    the protection settings can be changed. Use a disposable Windows VM for live testing.
+  tuning:
+    - surface: EventID
+      guidance: Correlate the affected host with approved protection migrations before suppressing either event type.
+  negatives:
+    - reason: Antispyware scanning enabled
+      fields:
+        EventID: '5009'
+    - reason: Antivirus scanning enabled
+      fields:
+        EventID: '5011'
+    - reason: Defender configuration changed
+      fields:
+        EventID: '5007'

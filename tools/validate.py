@@ -282,9 +282,8 @@ def check_correlation(
 
     condition = corr.get("condition")
     if ctype in TEMPORAL_CORRELATION_TYPES and (condition is None or isinstance(condition, str)):
-        # Omitted means every referenced rule must match: the Sigma default, which
-        # Rustinel restores at load time since v1.5.0. A string is an extended
-        # condition over rule names, e.g. "rule_a and rule_b".
+        # Rustinel restores the default for temporal at load time. The
+        # temporal_ordered evaluator already requires all rules in sequence.
         pass
     elif not isinstance(condition, dict) or not CORRELATION_OPERATORS & condition.keys():
         rep.error(where, "correlation condition needs an operator (gte, gt, lte, lt, eq, neq)")
@@ -299,6 +298,25 @@ def check_correlation(
     rule_ids = lib.correlation_rule_ids(doc)
     if not rule_ids:
         rep.error(where, "correlation rules must list at least one rule id")
+    aliases = corr.get("aliases", {})
+    if not isinstance(aliases, dict):
+        rep.error(where, "correlation aliases must map alias names to rule ids and fields")
+        aliases = {}
+    alias_fields = {}
+    for alias, mapping in aliases.items():
+        if not (
+            isinstance(alias, str)
+            and alias.strip()
+            and isinstance(mapping, dict)
+            and mapping.keys() == set(rule_ids)
+            and all(isinstance(field, str) and field.strip() for field in mapping.values())
+        ):
+            rep.error(
+                where, f"correlation alias {alias!r} must map each referenced rule id to a field"
+            )
+        else:
+            alias_fields[alias] = mapping
+
     referenced = []
     for rule_id in rule_ids:
         target = sigma_by_id.get(rule_id)
@@ -325,7 +343,8 @@ def check_correlation(
             )
         product, category = lib.contract_key(logsource)
         blocked = never_populated.get((product, category), {})
-        for field in group_by:
+        for group in group_by:
+            field = alias_fields[group][target.id] if group in alias_fields else group
             if field in blocked or "*" in blocked:
                 rep.error(
                     where,

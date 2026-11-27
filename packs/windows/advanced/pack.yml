@@ -6,7 +6,7 @@ description: >
 os: windows
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.9.0"
+requires_rustinel: ">=1.10.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -66,6 +66,7 @@ telemetry_requirements:
   - registry_event
   - task_creation
   - security
+  - windefend
   - ps_script
   - service_creation
   - image_load
@@ -90,6 +91,7 @@ rules:
           - 2a3c3182-80b8-42d4-bd39-83c55582ef70   # WMI Process Execution via WMIC
           - 52b94494-756b-40d7-af01-8d0c7d54a6cc   # Winlogon Helper DLL or Shell Modification (sigma)
           - 43c59081-d5ec-4153-9e26-04e66e07461a   # Security Service Stop or Disable via sc or net (sigma)
+          - 7bc2737f-007f-4184-a75c-fb1c6773a707   # Ransomware Recovery Inhibition and Security Service Interference (sigma)
           - 31ddbaff-1a32-4eb6-b7ce-647b59aeb901   # AMSI Bypass Pattern in PowerShell ScriptBlock (sigma)
           - 86c19f1a-add5-4553-9c24-f76e7fe3da9d   # Unmanaged PowerShell via Automation DLL in Foreign Host (sigma)
           - 6c46cc68-2e66-4834-b058-0a2cfd115409   # Netsh Port-Proxy Tunnel Configuration (sigma)
@@ -114,6 +116,9 @@ rules:
           - 4d591fa3-1112-4336-8bed-64e3b04b6619   # PowerShell Engine Started as Version 2 (Downgrade) (sigma)
           - e06d7901-46b7-4fe9-a7cb-bbcab05ac0b1   # Microsoft Defender Real-Time Protection Disabled (sigma)
           - efac4650-a3aa-4dd9-9f6f-679bfcf14c16   # Microsoft Defender Exclusion Added (sigma)
+          - f62ae349-cb8a-4ee0-8d2e-4ada4ccf601f   # Microsoft Defender Antivirus or Antispyware Scanning Disabled (sigma)
+          - 817ab77e-25b5-46b9-bd89-197575987377   # Microsoft Defender Tamper Protection Blocked a Change (sigma)
+          - 159f409d-a736-4916-bbdc-3b6ecfd67bdb   # Microsoft Defender Malware Detection History Deleted (sigma)
           - 6c7fb86b-bb5e-4de0-a414-e4865717f926   # Windows CVE Exploitation Attempt Audited (sigma)
           - e3136f60-ae86-4333-9ea5-64e4664a0bb1   # WMI Permanent Event Consumer Bound (5861) (sigma)
           - 157ffa4c-89d0-4b92-9119-66ca256eea60   # Web Server or SQL Server Spawning a Command Shell (sigma)

@@ -2,36 +2,45 @@ title: Account Created and Added to Privileged Group
 id: 410d4870-cc7e-4cc9-a551-0fb32c136c7e
 status: experimental
 description: >
-  Correlation: the same logon session creates a user account (Security 4720) and
-  adds a member to a privileged group (the "Member Added to Privileged Group"
-  rule) within ten minutes. Creating an account and immediately making it an
-  administrator is a typical backdoor-account sequence, and much stronger than
-  either event alone. Grouped by SubjectLogonId so unrelated administrators do
-  not combine. Needs both audit subcategories: "User Account Management" and
-  "Security Group Management".
+  Detects creation of a user account (Security 4720) followed within ten minutes
+  by that account being added to a privileged group (Security 4728, 4732 or 4756).
+  The created account's TargetSid must match the added account's MemberSid in
+  the same SubjectLogonId. Requires success auditing for User Account Management
+  and Security Group Management. The engine treats timestamps in the same second
+  as tied, so the rule can establish order only across different seconds.
 references:
   - https://attack.mitre.org/techniques/T1136/001/
   - https://attack.mitre.org/techniques/T1098/
 author: rustinel-rules
 date: 2026-10-08
+modified: 2026-11-27
 tags:
   - attack.persistence
   - attack.privilege-escalation
   - attack.t1136.001
   - attack.t1098
 correlation:
-  type: temporal
+  type: temporal_ordered
   rules:
     - 3feb077a-6922-4052-93b8-7b95156ca1e5
     - 859d9985-7720-42b1-a557-c1f6f8972642
+  aliases:
+    AccountSid:
+      3feb077a-6922-4052-93b8-7b95156ca1e5: TargetSid
+      859d9985-7720-42b1-a557-c1f6f8972642: MemberSid
   group-by:
     - SubjectLogonId
+    - AccountSid
   timespan: 10m
+  condition:
+    gte: 2
 falsepositives:
   - Provisioning scripts that create an account and grant administrative rights
     in one session; filter on SubjectUserName for the provisioning account.
 level: high
 rustinel:
+  # v1.10.0 skips events missing a group key field instead of grouping them together.
+  min_engine: '1.10.0'
   telemetry:
     - security
   expected_false_positive_level: medium
