@@ -1,0 +1,55 @@
+title: .NET Framework Runtime Loaded by a Script Host
+id: e41b0197-ceee-40dc-92e4-4fd2f25ad59e
+status: experimental
+description: >
+  Detects a .NET Framework runtime DLL or activation shim loading into
+  Windows Script Host or MSHTA. This can indicate managed code staged from
+  a native script host. Requires Windows image-load telemetry with the host
+  image and loaded module paths.
+references:
+  - https://learn.microsoft.com/en-us/dotnet/framework/deployment/how-to-debug-clr-activation-issues
+  - https://attack.mitre.org/techniques/T1059/005/
+  - https://attack.mitre.org/techniques/T1059/007/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1059.005
+  - attack.t1059.007
+logsource:
+  category: image_load
+  product: windows
+detection:
+  selection:
+    Image|endswith:
+      - '\wscript.exe'
+      - '\cscript.exe'
+      - '\mshta.exe'
+    ImageLoaded|endswith:
+      - '\clr.dll'
+      - '\mscoree.dll'
+      - '\clrjit.dll'
+  condition: selection
+falsepositives:
+  - Approved legacy scripts that activate a managed COM component.
+level: medium
+rustinel:
+  roles: [workstation, server]
+  telemetry: [image_load]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection
+      guidance: >
+        Scope to hosts where script-driven managed COM activation is unexpected.
+        Correlate the PID with process creation to identify the script before
+        suppressing an approved workflow. An image-load event has no script path.
+  negatives:
+    - reason: A managed desktop application loading its own runtime
+      fields:
+        Image: 'C:\Program Files\Contoso\Inventory.exe'
+        ImageLoaded: 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\clr.dll'
+    - reason: Windows Script Host loading its native VBScript engine
+      fields:
+        Image: 'C:\Windows\System32\wscript.exe'
+        ImageLoaded: 'C:\Windows\System32\vbscript.dll'

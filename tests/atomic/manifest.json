@@ -1455,6 +1455,41 @@
       "script": "windows/office_startup_drop.ps1"
     },
     {
+      "id": "e41b0197-ceee-40dc-92e4-4fd2f25ad59e",
+      "name": "windows_dotnet_script_host",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dotnet_script_host.ps1"
+    },
+    {
+      "id": "439b4c58-8ead-4719-8a84-dca5d7e4f612",
+      "name": "windows_certutil_decode",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/certutil_decode.ps1"
+    },
+    {
+      "id": "27ef6465-457b-4442-a6cc-3af7b595d1df",
+      "name": "windows_web_root_script_create",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/web_root_script_create.ps1"
+    },
+    {
+      "id": "ca63dcb9-6578-41fa-be10-e73f1111f2ff",
+      "name": "windows_reverse_shell_scriptblock",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/reverse_shell_scriptblock.ps1"
+    },
+    {
+      "id": "f6599547-6e3e-4c33-be91-245433216c75",
+      "name": "windows_tunneling_tools",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/tunneling_tools.ps1"
+    },
+    {
       "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
       "name": "macos_dscl_authonly",
       "platform": "macos",

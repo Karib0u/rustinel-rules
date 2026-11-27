@@ -1,0 +1,60 @@
+title: PowerShell Socket Stream With Command Execution
+id: ca63dcb9-6578-41fa-be10-e73f1111f2ff
+status: experimental
+description: >
+  Detects PowerShell script-block text containing a TCP client or socket,
+  stream handling, and dynamic command execution or bidirectional shell
+  redirection. The combination is consistent with a scripted reverse shell.
+  Requires Windows PowerShell Script Block Logging (Event 4104) and the
+  relevant operations visible together in the collected script block.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_logging?view=powershell-5.1
+  - https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient.getstream
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: ps_script
+  product: windows
+detection:
+  selection_socket:
+    ScriptBlockText|re: '(?i)\b(?:System\.)?Net\.Sockets\.(?:TCPClient|Socket)\b'
+  selection_stream:
+    ScriptBlockText|re: '(?i)\b(?:GetStream\s*\(|Stream(?:Reader|Writer)\b)'
+  selection_evaluation:
+    ScriptBlockText|re:
+      - '(?i)(?:^|[\s(;|])(?:Invoke-Expression|iex)\s+(?:-Command\s+)?(?:\$|\()'
+      - '(?i)\[\s*scriptblock\s*\]\s*::\s*Create\s*\('
+  selection_redirection:
+    ScriptBlockText|contains|all:
+      - 'RedirectStandardInput'
+      - 'RedirectStandardOutput'
+  selection_shell:
+    ScriptBlockText|re: '(?i)\b(?:cmd|powershell|pwsh)(?:\.exe)?\b'
+  condition: selection_socket and selection_stream and (selection_evaluation or (selection_redirection and selection_shell))
+falsepositives:
+  - Approved remote management scripts and controlled security testing.
+level: high
+rustinel:
+  roles: [workstation, server]
+  telemetry: [ps_script]
+  expected_false_positive_level: low
+  test_status: atomic
+  tuning:
+    - surface: Path
+      guidance: Add exact paths for approved remote management scripts stored in protected directories.
+    - surface: selection_evaluation
+      guidance: Add locally observed invocation forms while keeping the socket and stream requirements.
+  negatives:
+    - reason: TCP health check reads a stream without evaluating commands or launching a shell
+      fields:
+        ScriptBlockText: '$client = [System.Net.Sockets.TcpClient]::new(); $stream = $client.GetStream(); $stream.ReadByte()'
+    - reason: Local build automation creates a script block without a network stream
+      fields:
+        ScriptBlockText: '$reader = [System.IO.StreamReader]::new($localFile); & ([scriptblock]::Create($reader.ReadToEnd()))'
+    - reason: Socket diagnostics mention a method but do not handle a stream
+      fields:
+        ScriptBlockText: '$socket = [Net.Sockets.Socket]; Invoke-Expression $localDiagnostic'

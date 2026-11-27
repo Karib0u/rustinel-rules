@@ -1,0 +1,98 @@
+title: Tunneling Tool Execution
+id: f6599547-6e3e-4c33-be91-245433216c75
+status: experimental
+description: >
+  Detects launches of ngrok, Chisel or frpc, Cloudflare Tunnel client commands,
+  and Plink with remote port forwarding. Matches the process image, PE original
+  filename when present, or the command line's executable token. Windows
+  process creation telemetry is required, with command-line enrichment for
+  Cloudflare Tunnel and Plink. A process launch can indicate attempted
+  tunneling without evidence of a connection.
+references:
+  - https://attack.mitre.org/techniques/T1572/
+  - https://attack.mitre.org/techniques/T1090/
+  - https://ngrok.com/docs/gateway/agent/cli
+  - https://developers.cloudflare.com/tunnel/reference/run-parameters/
+  - https://github.com/jpillora/chisel
+  - https://github.com/fatedier/frp
+  - https://the.earth.li/~sgtatham/putty/latest/htmldoc/Chapter7.html
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.t1572
+  - attack.t1090
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tunnel_client:
+    - Image|endswith:
+        - '\ngrok.exe'
+        - '\chisel.exe'
+        - '\frpc.exe'
+    - OriginalFileName:
+        - 'ngrok.exe'
+        - 'chisel.exe'
+        - 'frpc.exe'
+    - CommandLine|re: '(?i)^\s*(?:"(?:[^"]*\\)?(?:ngrok|chisel|frpc)(?:\.exe)?"|(?:[^\s"]*\\)?(?:ngrok|chisel|frpc)(?:\.exe)?)(?:\s|$)'
+  selection_cloudflared:
+    - Image|re: '(?i)\\cloudflared(?:-windows-(?:amd64|386|arm64))?\.exe$'
+    - OriginalFileName: 'cloudflared.exe'
+    - CommandLine|re: '(?i)^\s*(?:"(?:[^"]*\\)?cloudflared(?:\.exe)?"|(?:[^\s"]*\\)?cloudflared(?:\.exe)?)(?:\s|$)'
+  selection_cloudflared_tunnel:
+    # The first verb is tunnel. Inventory and other subcommands lack the launch markers.
+    CommandLine|re: >-
+      (?ix)^\s*(?:"[^"]+"|[^\s"]+)(?:\s+"?--[\w-]+(?:=[^\s"]+)?"?)*
+      \s+"?tunnel"?(?:\s*$|(?:\s+(?:"[^"]*"|[^\s"]+))*\s+"?(?:run"?(?:\s|$)|--url(?:=|"?\s+)))
+  selection_plink:
+    - Image|endswith: '\plink.exe'
+    - OriginalFileName: 'Plink.exe'
+    - CommandLine|re: '(?i)^\s*(?:"(?:[^"]*\\)?plink(?:\.exe)?"|(?:[^\s"]*\\)?plink(?:\.exe)?)(?:\s|$)'
+  selection_plink_remote:
+    # A case-sensitive, standalone flag outside quoted remote command text.
+    CommandLine|re: '^\s*(?:"[^"]+"|[^\s"]+)(?:\s+(?:"[^"]*"|[^\s"]+))*\s+"?(?-i:-R)"?\s+'
+  filter_help_version:
+    CommandLine|re: '(?i)(?:^|\s)"?(?:--help|--version|-help|-version)"?(?:\s|$)'
+  condition: >
+    (selection_tunnel_client or (selection_cloudflared and selection_cloudflared_tunnel)
+    or (selection_plink and selection_plink_remote)) and not filter_help_version
+falsepositives:
+  - Approved developer tunnels, application connectors and SSH remote forwarding.
+  - Local configuration or diagnostics run with a dedicated tunneling client.
+level: medium
+rustinel:
+  roles: [workstation, server, developer]
+  telemetry: [process_creation]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: Image
+      guidance: Filter sanctioned clients by their anchored full installation path and approved host or service context.
+    - surface: selection_cloudflared_tunnel
+      guidance: Extend the tunnel verb and flag selectors for other connector invocation forms approved for monitoring.
+  negatives:
+    - reason: Monitoring utility with a lookalike executable name
+      fields:
+        Image: 'C:\Tools\acme-ngrok.exe'
+        CommandLine: 'acme-ngrok.exe check'
+    - reason: Cloudflare Tunnel inventory command
+      fields:
+        Image: 'C:\Tools\cloudflared.exe'
+        CommandLine: 'cloudflared.exe tunnel list'
+    - reason: Plink SSH session with no remote forwarding flag
+      fields:
+        Image: 'C:\Tools\plink.exe'
+        CommandLine: 'plink.exe -batch jump.example.test'
+    - reason: Plink command with a forwarding flag mentioned inside a quoted remote shell argument
+      fields:
+        Image: 'C:\Tools\plink.exe'
+        CommandLine: 'plink.exe jump.example.test "echo -R disabled"'
+    - reason: FRP client version query
+      fields:
+        Image: 'C:\Tools\frpc.exe'
+        CommandLine: 'frpc.exe --version'
+    - reason: A shell prints the tool name from a status check
+      fields:
+        Image: 'C:\Windows\System32\cmd.exe'
+        CommandLine: 'cmd.exe /c echo chisel.exe'
