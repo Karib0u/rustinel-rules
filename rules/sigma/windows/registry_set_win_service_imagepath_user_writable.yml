@@ -1,0 +1,50 @@
+title: Windows Service ImagePath Set to a Potentially User-Writable Location
+id: 580ff05e-9f19-45c0-aa58-ff84cbc5024c
+status: experimental
+description: >
+  Detects a machine-wide service ImagePath set to an executable under a
+  profile, shared application data, or temporary directory. This covers
+  direct changes to existing services as well as registration of new services.
+  Captured registry value data is required. Directory names indicate where
+  to investigate because effective permissions vary across systems.
+references:
+  - https://attack.mitre.org/techniques/T1543/003/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1543.003
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection_service:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SYSTEM\\(?:CurrentControlSet|ControlSet[0-9]{3})\\Services\\[^\\]+\\ImagePath$'
+  selection_image:
+    Details|re: '(?i)^\s*"?(?:(?:(?:\\\?\?\\|\\\\\?\\)?[a-z]:|%SystemDrive%|\\Device\\HarddiskVolume[0-9]+)\\(?:Users|Public|ProgramData|Temp|Windows\\Temp)|\\SystemRoot\\Temp|%SystemRoot%\\Temp|%(?:UserProfile|LocalAppData|AppData|Public|ProgramData|Temp|Tmp)%)\\[^"\s]+'
+  condition: selection_service and selection_image
+falsepositives:
+  - Approved services installed in ProgramData or temporary directories by deployment tools.
+level: high
+rustinel:
+  telemetry: [registry_set]
+  roles: [workstation, server, domain_controller, developer]
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: A live positive would change a protected service ImagePath. Synthetic value sets exercise direct registry writes without installing or reconfiguring a service.
+  tuning:
+    - surface: selection_image.Details
+      guidance: Suppress an approved service only when its exact service value path and full executable path match and the directory permissions are verified.
+  negatives:
+    - reason: a protected service executable with a temporary path only in its arguments
+      fields:
+        TargetObject: 'HKLM\SYSTEM\CurrentControlSet\Services\VendorAgent\ImagePath'
+        Details: '"C:\Program Files\Vendor\agent.exe" --log C:\Temp\agent.log'
+    - reason: updating a service parameter that is not its executable path
+      fields:
+        TargetObject: 'HKLM\SYSTEM\CurrentControlSet\Services\VendorAgent\Parameters\ImagePath'
+        Details: 'C:\ProgramData\Vendor\agent.exe'
+    - reason: a closely named directory outside the shared application data root
+      fields:
+        TargetObject: 'HKLM\SYSTEM\CurrentControlSet\Services\VendorAgent\ImagePath'
+        Details: 'C:\ProgramDataBackup\Vendor\agent.exe'

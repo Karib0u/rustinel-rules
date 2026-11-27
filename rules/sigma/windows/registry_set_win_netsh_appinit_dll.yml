@@ -1,0 +1,59 @@
+title: Netsh Helper or AppInit DLL Registration Changed
+id: 5a8c1b74-52b2-40e5-847e-f97e9a13a000
+status: experimental
+description: >
+  Detects a machine-wide Netsh helper value set, a non-empty AppInit DLL
+  list written, or AppInit loading enabled. Both the native and 32-bit
+  registry views are covered. AppInit matching requires captured registry
+  value data and Secure Boot can prevent the configured DLLs from loading.
+references:
+  - https://attack.mitre.org/techniques/T1546/007/
+  - https://attack.mitre.org/techniques/T1546/010/
+  - https://learn.microsoft.com/en-us/windows/win32/dlls/secure-boot-and-appinit-dlls
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1546.007
+  - attack.t1546.010
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection_netsh:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SOFTWARE\\(?:Wow6432Node\\)?Microsoft\\NetSh\\[^\\]+$'
+  selection_appinit_dlls:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SOFTWARE\\(?:Wow6432Node\\)?Microsoft\\Windows NT\\CurrentVersion\\Windows\\AppInit_DLLs$'
+    Details|re: '\S'
+  selection_appinit_enabled:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SOFTWARE\\(?:Wow6432Node\\)?Microsoft\\Windows NT\\CurrentVersion\\Windows\\LoadAppInit_DLLs$'
+    Details: 'DWORD (0x00000001)'
+  condition: 1 of selection_*
+falsepositives:
+  - Windows servicing or approved networking tools registering Netsh helpers.
+  - Legacy software configuring AppInit DLLs on compatible systems.
+level: medium
+rustinel:
+  telemetry: [registry_set]
+  roles: [workstation, server, domain_controller, developer]
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: A live positive would change protected machine-wide DLL loader settings. Synthetic value sets cover Netsh, AppInit DLL lists, and the enable flag.
+  tuning:
+    - surface: selection_netsh.TargetObject
+      guidance: Allow approved helper registrations by exact value path and expected DLL data when available.
+    - surface: selection_appinit_dlls.Details
+      guidance: Compare the full configured DLL list with your approved legacy software baseline.
+  negatives:
+    - reason: disabling AppInit DLL loading
+      fields:
+        TargetObject: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\LoadAppInit_DLLs'
+        Details: 'DWORD (0x00000000)'
+    - reason: clearing the AppInit DLL list
+      fields:
+        TargetObject: 'HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows\AppInit_DLLs'
+        Details: ''
+    - reason: a product configuration key with a similar Netsh name
+      fields:
+        TargetObject: 'HKLM\SOFTWARE\Microsoft\NetShBackup\VendorHelper'
+        Details: VendorHelper.dll

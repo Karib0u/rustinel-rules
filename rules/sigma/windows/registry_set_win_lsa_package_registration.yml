@@ -1,0 +1,53 @@
+title: LSA Package Registration Changed
+id: 05f67c0c-8336-4ddf-8321-81bc18d574c9
+status: experimental
+description: >
+  Detects writes to machine-wide Security Packages, Authentication Packages,
+  or Notification Packages used by the Local Security Authority. These
+  changes can register modules for startup or password notification.
+  Kernel registry telemetry identifies the value changed even when its data
+  is unavailable, so correlate the write with approved authentication changes.
+references:
+  - https://attack.mitre.org/techniques/T1547/002/
+  - https://attack.mitre.org/techniques/T1547/005/
+  - https://attack.mitre.org/techniques/T1556/002/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.credential-access
+  - attack.t1547.002
+  - attack.t1547.005
+  - attack.t1556.002
+logsource:
+  category: registry_set
+  product: windows
+detection:
+  selection_package:
+    TargetObject|re: '(?i)^(?:HKLM|HKEY_LOCAL_MACHINE|\\REGISTRY\\MACHINE)\\SYSTEM\\(?:CurrentControlSet|ControlSet[0-9]{3})\\Control\\Lsa\\(?:Authentication Packages|Notification Packages|(?:OSConfig\\)?Security Packages)$'
+  condition: selection_package
+falsepositives:
+  - Approved authentication packages, password filters, or Windows servicing.
+level: high
+rustinel:
+  telemetry: [registry_set]
+  roles: [workstation, server, domain_controller, developer]
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: A live positive would write protected LSA package settings and could disrupt authentication. Synthetic registry value sets exercise each package value without changing the host.
+  tuning:
+    - surface: selection_package.TargetObject
+      guidance: Suppress an approved change using the exact value path, complete package list in Details, and verified writer Image together.
+  negatives:
+    - reason: enabling LSA protection under the neighboring RunAsPPL value
+      fields:
+        TargetObject: 'HKLM\SYSTEM\CurrentControlSet\Control\Lsa\RunAsPPL'
+        Details: 'DWORD (0x00000001)'
+    - reason: updating the LSA notification package backup value
+      fields:
+        TargetObject: '\REGISTRY\MACHINE\SYSTEM\ControlSet001\Control\Lsa\Notification Packages Backup'
+        Details: scecli
+    - reason: application configuration in a user hive with the same value name
+      fields:
+        TargetObject: 'HKCU\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages'
+        Details: VendorPackage

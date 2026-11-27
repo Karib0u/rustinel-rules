@@ -193,6 +193,11 @@ jobs:
         run: uv run python tests/replay/windows_image_load.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check Windows persistence replay regressions
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/windows_persistence.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Check Windows Security detection replay cases
         if: matrix.platform == 'linux'
         run: uv run python tests/replay/windows_security.py --engine tests/atomic/.engine/rustinel

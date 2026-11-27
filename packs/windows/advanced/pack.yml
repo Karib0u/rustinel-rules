@@ -48,6 +48,9 @@ attack_coverage:
   - T1134.001
   - T1134.005
   - T1136.001
+  - T1137
+  - T1137.001
+  - T1137.006
   - T1190
   - T1197
   - T1204.004
@@ -65,13 +68,19 @@ attack_coverage:
   - T1505.003
   - T1543.003
   - T1546.003
+  - T1546.007
   - T1546.008
+  - T1546.010
   - T1546.012
+  - T1546.015
   - T1547.001
+  - T1547.002
   - T1547.004
+  - T1547.005
   - T1547.006
   - T1548.002
   - T1556
+  - T1556.002
   - T1558.003
   - T1558.004
   - T1562.001
@@ -177,6 +186,12 @@ rules:
           - 213ed58b-d2bf-4466-8254-859da950fb4b   # Active Directory Resource-Based Constrained Delegation Modified
           - 19a336c8-d058-43e3-b033-b128027ca367   # Cmd Echo Redirected to a Local Named Pipe
           - 0d3044af-fba1-4dda-a5c7-2c0e2b57912c   # Service Account Parent Spawning an Interpreter as SYSTEM
+          - 7d68c414-c638-4f68-9837-1c4002df6127   # Per-User COM Server Registered To a Suspicious Path
+          - 05f67c0c-8336-4ddf-8321-81bc18d574c9   # LSA Package Registration Changed
+          - 5a8c1b74-52b2-40e5-847e-f97e9a13a000   # Netsh Helper or AppInit DLL Registration Changed
+          - 580ff05e-9f19-45c0-aa58-ff84cbc5024c   # Windows Service ImagePath Set to a Potentially User-Writable Location
+          - 224c94fc-da38-4e9e-8fa5-b892f8abb71d   # Windows Accessibility Binary Written in System32
+          - 11a1e1f0-f49f-4f26-8205-3cdee4e52756   # Office Startup Macro or Add-in File Written
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

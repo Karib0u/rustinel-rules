@@ -1,0 +1,53 @@
+title: Windows Accessibility Binary Written in System32
+id: 224c94fc-da38-4e9e-8fa5-b892f8abb71d
+status: experimental
+description: >
+  Detects a file event targeting an accessibility executable directly under
+  Windows System32 outside the usual servicing image paths. Review the writer
+  and validate the file identity to determine whether it was replaced.
+  The writer Image can be absent if process attribution was unavailable.
+references:
+  - https://attack.mitre.org/techniques/T1546/008/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1546.008
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_binary:
+    TargetFilename|re: '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\Windows|\\SystemRoot)\\System32\\(?:sethc|utilman|osk|magnify|narrator|displayswitch|atbroker)\.exe$'
+  filter_servicing:
+    Image|re:
+      - '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\Windows|\\SystemRoot)\\servicing\\TrustedInstaller\.exe$'
+      - '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\Windows|\\SystemRoot)\\WinSxS\\(?:amd64|arm64|x86)_microsoft-windows-servicingstack_[^\\]+\\TiWorker\.exe$'
+      - '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\Windows|\\SystemRoot)\\(?:System32|SysWOW64)\\msiexec\.exe$'
+  condition: selection_binary and not filter_servicing
+falsepositives:
+  - Approved repair or recovery tools rewriting system files outside the usual servicing paths.
+level: high
+rustinel:
+  telemetry: [file_event]
+  roles: [workstation, server, domain_controller, developer]
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: A live positive would write a protected accessibility executable under System32. Synthetic file events cover target paths and servicing exclusions.
+  tuning:
+    - surface: filter_servicing.Image
+      guidance: Add only verified full paths of repair or servicing binaries used on your systems.
+  negatives:
+    - reason: the Windows Modules Installer servicing an accessibility binary
+      fields:
+        TargetFilename: 'C:\Windows\System32\sethc.exe'
+        Image: 'C:\Windows\servicing\TrustedInstaller.exe'
+    - reason: an archived copy outside the live System32 directory
+      fields:
+        TargetFilename: 'C:\Windows\System32\Backup\utilman.exe'
+        Image: 'C:\Windows\System32\robocopy.exe'
+    - reason: writing a renamed backup of a system executable
+      fields:
+        TargetFilename: 'C:\Windows\System32\osk.exe.bak'
+        Image: 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
