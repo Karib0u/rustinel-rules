@@ -1,0 +1,58 @@
+title: Script Host Running a Downloaded or Archive-Extracted Script
+id: 68d288c3-75fa-4773-b195-684657984534
+status: experimental
+description: >
+  Detects Windows Script Host or Mshta given a script path in Downloads, the
+  user temp directory, or a common archive extraction directory. These paths
+  are delivery clues and do not establish the file's download origin.
+references:
+  - https://www.microsoft.com/en-us/wdsi/threats/malware-encyclopedia-description?Name=Trojan%3AJS%2FGootloader.E
+  - https://attack.mitre.org/techniques/T1059/005/
+  - https://attack.mitre.org/techniques/T1059/007/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1059.005
+  - attack.t1059.007
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_host:
+    - Image|endswith:
+        - '\wscript.exe'
+        - '\cscript.exe'
+        - '\mshta.exe'
+    - OriginalFileName:
+        - 'wscript.exe'
+        - 'cscript.exe'
+        - 'mshta.exe'
+  selection_script:
+    # Skip argv[0] and match a complete quoted or unquoted path argument.
+    CommandLine|re:
+      - '(?i)^\s*(?:"[^"]*"|[^\s"]+)(?:\s+(?:"[^"]*"|[^\s"]+))*?\s+"(?:[a-z]:\\|\\\\|\\)?(?:[^"\\:*?<>|]+\\)*(?:Downloads|AppData\\Local\\Temp|Temp\\(?:Rar\$|7z)[^"\\]*|[^"\\]+\.zip)\\[^"]*\.(?:js|jse|vbs|vbe|wsf|hta)"(?:\s|$)'
+      - '(?i)^\s*(?:"[^"]*"|[^\s"]+)(?:\s+(?:"[^"]*"|[^\s"]+))*?\s+(?:[^\s"]*\\)?(?:Downloads|AppData\\Local\\Temp|Temp\\(?:Rar\$|7z)[^\s"\\]*|[^\s"\\]+\.zip)\\[^\s"]*\.(?:js|jse|vbs|vbe|wsf|hta)(?:\s|$)'
+  condition: selection_host and selection_script
+falsepositives:
+  - Approved scripts or legacy HTA applications launched from Downloads or a temporary directory.
+level: medium
+rustinel:
+  telemetry: [process_creation]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: CommandLine
+      guidance: >
+        Exclude only a verified script's exact full path as a complete argument.
+        Review the launcher and script provenance before adding an exclusion
+        for a writable location.
+  negatives:
+    - reason: Approved inventory script in a managed directory
+      fields:
+        Image: 'C:\Windows\System32\cscript.exe'
+        CommandLine: 'cscript.exe //nologo "C:\Program Files\Contoso\Inventory.vbs"'
+    - reason: Downloads data file passed to a managed script
+      fields:
+        Image: 'C:\Windows\System32\cscript.exe'
+        CommandLine: 'cscript.exe C:\Admin\inventory.vbs "C:\Users\Alice\Downloads\devices.js.txt"'

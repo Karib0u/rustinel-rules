@@ -1,0 +1,91 @@
+title: .NET Build or Registration Tool Using a User-Writable Path
+id: 386d44a5-be07-4868-b53e-3af359b0fb18
+status: experimental
+description: >
+  Detects MSBuild, InstallUtil, RegAsm or RegSvcs running from a commonly
+  user-writable directory or referencing a project, solution or assembly there.
+  The tool identity comes from the process path or PE metadata.
+references:
+  - https://attack.mitre.org/techniques/T1127/001/
+  - https://attack.mitre.org/techniques/T1218/004/
+  - https://attack.mitre.org/techniques/T1218/009/
+  - https://learn.microsoft.com/en-us/visualstudio/msbuild/msbuild
+  - https://github.com/dotnet/msbuild/blob/main/documentation/wiki/MSBuild-Tips-%26-Tricks.md
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1127.001
+  - attack.defense-evasion
+  - attack.t1218.004
+  - attack.t1218.009
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_tool:
+    - Image|endswith:
+        - '\msbuild.exe'
+        - '\installutil.exe'
+        - '\regasm.exe'
+        - '\regsvcs.exe'
+    - OriginalFileName:
+        - 'MSBuild.exe'
+        - 'InstallUtil.exe'
+        - 'RegAsm.exe'
+        - 'RegSvcs.exe'
+  selection_writable_image:
+    Image|re: '(?i)^[a-z]:\\(?:Users|ProgramData|Temp|Windows\\Temp|PerfLogs)\\'
+  selection_writable_argument:
+    # Match a complete positional path or a path supplied as an option value.
+    CommandLine|re:
+      - '(?i)^\s*(?:[^\s"]|"[^"]*")+(?:\s+(?:[^\s"]|"[^"]*")+)*?\s+(?:[-/][^\s"]*[:=])?"(?:[-/][^\s"]*[:=])?[a-z]:\\(?:Users|ProgramData|Temp|Windows\\Temp|PerfLogs)\\[^"]+\.(?:[a-z0-9_]*proj|slnx?|dll|exe|xml|targets|props)"(?:\s|$)'
+      - '(?i)^\s*(?:[^\s"]|"[^"]*")+(?:\s+(?:[^\s"]|"[^"]*")+)*?\s+(?:[-/][^\s"]*[:=])?[a-z]:\\(?:Users|ProgramData|Temp|Windows\\Temp|PerfLogs)\\[^\s"]+\.(?:[a-z0-9_]*proj|slnx?|dll|exe|xml|targets|props)(?:\s|$)'
+  # Require the installed MSBuild and its actual development host before
+  # filtering a complete, narrowly shaped temporary WPF project invocation.
+  filter_installed_msbuild:
+    Image|re: '(?i)^[a-z]:\\Program Files(?: \(x86\))?\\Microsoft Visual Studio\\(?:2019|2022|18|2026)\\(?:Community|Professional|Enterprise|BuildTools)\\MSBuild\\Current\\Bin\\(?:(?:amd64|arm64)\\)?MSBuild\.exe$'
+  filter_development_parent:
+    ParentImage|re:
+      - '(?i)^[a-z]:\\Program Files(?: \(x86\))?\\Microsoft Visual Studio\\(?:2019|2022|18|2026)\\(?:Community|Professional|Enterprise)\\Common7\\IDE\\devenv\.exe$'
+      - '(?i)^[a-z]:\\Program Files(?: \(x86\))?\\dotnet\\dotnet\.exe$'
+  filter_generated_project:
+    CommandLine|re: '(?i)^\s*(?:"[^"]+"|[^\s"]+)(?:\s+[-/]nologo)?\s+"[a-z]:\\Users\\[^\s."\\][^"\\]*\\(?:AppData\\Local\\Temp\\|(?:[^\s."\\][^"\\]*\\)*obj\\)(?:[^\s."\\][^"\\]*\\)*[^\s."\\][^"\\]*_[a-z0-9]{8}(?:_wpftmp\.csproj|\.tmp_proj)"(?:\s+[-/]nologo)?\s*$'
+  condition: >
+    selection_tool and (selection_writable_image or selection_writable_argument)
+    and not (filter_installed_msbuild and filter_development_parent and filter_generated_project)
+falsepositives:
+  - Legitimate builds from developer workspaces or administrative assembly registration.
+level: medium
+rustinel:
+  telemetry: [process_creation]
+  expected_false_positive_level: high
+  test_status: atomic
+  tuning:
+    - surface: filter_installed_msbuild
+      guidance: >
+        Extend the filter with anchored paths for approved MSBuild installations.
+        Keep the development parent and generated project checks together.
+    - surface: filter_development_parent
+      guidance: >
+        Add only anchored full paths to approved Visual Studio or .NET SDK hosts.
+    - surface: filter_generated_project
+      guidance: >
+        Add narrowly scoped generated project or approved workspace invocations
+        with anchored paths and full argument checks. Ordinary SDK builds using
+        dotnet.exe with MSBuild.dll and workers without project paths are outside
+        the selection.
+  negatives:
+    - reason: Installed Visual Studio MSBuild handling a generated WPF project
+      fields:
+        Image: 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64\MSBuild.exe'
+        ParentImage: 'C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe'
+        CommandLine: 'MSBuild.exe /nologo "C:\Users\Alice\AppData\Local\Temp\App_a1b2c3d4_wpftmp.csproj"'
+    - reason: Installed .NET SDK invoking its managed MSBuild
+      fields:
+        Image: 'C:\Program Files\dotnet\dotnet.exe'
+        CommandLine: '"C:\Program Files\dotnet\dotnet.exe" "C:\Program Files\dotnet\sdk\10.0.100\MSBuild.dll" C:\Users\Alice\src\App.csproj'
+    - reason: MSBuild worker started without a writable input path
+      fields:
+        Image: 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe'
+        CommandLine: 'MSBuild.exe /nologo /nodemode:1 /nodeReuse:true /low:false'

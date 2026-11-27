@@ -1357,6 +1357,41 @@
       "script": "windows/cryptominer_cmdline.ps1"
     },
     {
+      "id": "68d288c3-75fa-4773-b195-684657984534",
+      "name": "windows_script_host_downloaded_script",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/script_host_downloaded_script.ps1"
+    },
+    {
+      "id": "386d44a5-be07-4868-b53e-3af359b0fb18",
+      "name": "windows_dotnet_build_tool_user_writable",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dotnet_build_tool_user_writable.ps1"
+    },
+    {
+      "id": "aff3a851-eda8-49fa-8e1e-f353a909541e",
+      "name": "windows_wmi_winrm_spawning_shell",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/wmi_winrm_spawning_shell.ps1"
+    },
+    {
+      "id": "c28cddd0-5518-4a27-b412-dcf69191825d",
+      "name": "windows_psexec_execution",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/psexec_execution.ps1"
+    },
+    {
+      "id": "77d79285-57e8-459d-9b8d-2a2627010d1e",
+      "name": "windows_explorer_clickfix_command",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/explorer_clickfix_command.ps1"
+    },
+    {
       "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
       "name": "macos_dscl_authonly",
       "platform": "macos",
