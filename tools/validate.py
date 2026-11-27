@@ -38,17 +38,18 @@ import lib
 # Mirrors the engine's authoritative is_supported_category() in
 # src/engine/logsource.rs (ETW on Windows, eBPF on Linux), plus "file_scan"
 # for YARA / IOC executable hashing on process-start. The registry_*, image_load,
-# ps_script, ps_module, wmi_event, service_creation and task_creation families
-# are Windows-only; rules using them must set logsource product: windows.
+# driver_load, ps_script, ps_module, wmi_event, service_creation and task_creation
+# families are Windows-only; rules using them must set logsource product: windows.
 # "security" is the Windows Security event log, selected in Sigma with
 # `product: windows, service: security` and no category; "windefend" (Defender
 # Operational) and "application" follow the same pattern with their own
 # service names. "ps_classic_start" is classic PowerShell engine start (400),
 # selected by that category or by `service: powershell-classic` alone. These
-# three arrived in v1.9.0. The file_*
-# family is collected on all three platforms, but only Windows emits file_change,
-# and only Linux/macOS populate SourceFilename on a rename (see
-# the vendored engine field contract).
+# three arrived in v1.9.0. Since v1.11.0, product-less `category: antivirus`
+# routes to Defender detections and `product: linux, service: auditd` uses the
+# auditd view. The file_* family is collected on all three platforms, but only
+# Windows emits file_change and only Linux/macOS populate SourceFilename on a
+# rename (see the vendored engine field contract).
 SUPPORTED_TELEMETRY = {
     "process_creation",
     "network_connection",
@@ -63,10 +64,13 @@ SUPPORTED_TELEMETRY = {
     "registry_delete",
     "dns_query",
     "image_load",
+    "driver_load",
     "ps_script",
     "ps_module",
     "security",
     "windefend",
+    "antivirus",
+    "auditd",
     "application",
     "ps_classic_start",
     "wmi_event",
@@ -79,7 +83,13 @@ SUPPORTED_TELEMETRY = {
 # collect can never match. Sysmon-style categories are left out: the engine
 # maps their Sysmon event IDs onto its own sources (DNS EventID 22 still
 # matches the DNS Client's 3006/3008).
-EVENT_ID_ROUTED_CATEGORIES = {"security", "windefend", "application", "ps_classic_start"}
+EVENT_ID_ROUTED_CATEGORIES = {
+    "security",
+    "windefend",
+    "antivirus",
+    "application",
+    "ps_classic_start",
+}
 
 
 def _detection_fields(detection: dict) -> set[str]:
@@ -287,7 +297,7 @@ def check_correlation(
         else:
             referenced.append(target)
 
-    products = {str((t.meta.get("logsource") or {}).get("product") or "") for t in referenced}
+    products = {lib.contract_key(t.meta.get("logsource") or {})[0] for t in referenced}
     if len(products) > 1:
         rep.error(where, f"correlation mixes rules for {sorted(products)}; use one platform")
 
@@ -301,8 +311,8 @@ def check_correlation(
                 f"rustinel.telemetry lacks {sorted(missing)} needed by referenced rule "
                 f"'{target.id}'",
             )
-        product = str(logsource.get("product") or "").lower()
-        blocked = never_populated.get((product, lib.contract_category(logsource)), {})
+        product, category = lib.contract_key(logsource)
+        blocked = never_populated.get((product, category), {})
         for field in group_by:
             if field in blocked or "*" in blocked:
                 rep.error(
@@ -320,8 +330,7 @@ def check_engine_field_availability(
     if not isinstance(doc, dict):
         return
     logsource = doc.get("logsource") or {}
-    product = str(logsource.get("product") or "").lower()
-    category = lib.contract_category(logsource)
+    product, category = lib.contract_key(logsource)
     blocked = never_populated.get((product, category))
     if not blocked:
         return
@@ -336,43 +345,17 @@ def check_engine_field_availability(
         )
 
 
-def _selected_event_ids(detection: dict) -> set[str]:
-    """Literal EventID values a rule selects on, as strings. Values behind a
-    modifier (|gt, |re, ...) are not literal IDs and are skipped."""
-    ids: set[str] = set()
-
-    def walk(node):
-        if isinstance(node, dict):
-            for key, value in node.items():
-                if str(key) == "EventID":
-                    for item in value if isinstance(value, list) else [value]:
-                        if isinstance(item, (int, str)) and not isinstance(item, bool):
-                            ids.add(str(item).strip())
-                else:
-                    walk(value)
-        elif isinstance(node, list):
-            for item in node:
-                walk(item)
-
-    for name, selection in (detection or {}).items():
-        if name in ("condition", "timeframe"):
-            continue
-        walk(selection)
-    return ids
-
-
 def check_collected_event_ids(art, rep: Report, collected: engine_contract.EventIds):
     """Reject a rule that selects an event ID its channel never collects."""
     doc = art.meta
     if not isinstance(doc, dict):
         return
     logsource = doc.get("logsource") or {}
-    product = str(logsource.get("product") or "").lower()
-    category = lib.contract_category(logsource)
+    product, category = lib.contract_key(logsource)
     if category not in EVENT_ID_ROUTED_CATEGORIES:
         return
     known = collected.get((product, category), set())
-    for event_id in sorted(_selected_event_ids(doc.get("detection") or {}) - known):
+    for event_id in sorted(lib.selected_event_ids(doc.get("detection") or {}) - known):
         rep.error(
             art.rel_path,
             f"selects EventID {event_id}, which Rustinel does not collect on "

@@ -26,7 +26,7 @@ FIELD_OVERRIDES = {
     # Schema 1 omits ParentUser; v1.6.0 does not resolve the parent's user.
     # Superseded by its own row from the v1.8.0 contract onward.
     ("windows", "process_creation", "ParentUser"): "ETW does not resolve the parent's user",
-    # No contract row: the ETW process path does not resolve logon sessions.
+    # Superseded by its own row from the v1.11.0 contract onward.
     ("windows", "process_creation", "LogonId"): "no logon ID resolution on the ETW process path",
     # The contract has LogonGuid only for Security events, not process creation.
     ("windows", "process_creation", "LogonGuid"): "ETW does not resolve process logon GUIDs",
@@ -48,6 +48,17 @@ BlockedFields = dict[tuple[str, str], dict[str, tuple[str, ...]]]
 EventIds = dict[tuple[str, str], set[str]]
 # {(platform, category): {field: first release it is populated, None = always}}
 FieldSince = dict[tuple[str, str], dict[str, str | None]]
+
+
+def _contract_categories(entry: dict) -> tuple[str, ...]:
+    category = entry["category"]
+    if entry.get("view") == "auditd":
+        # The auditd log source covers both process and file records.
+        return ("auditd",)
+    if category == "windefend" and entry.get("event_id") in (1116, 1117):
+        # Only Defender detection and remediation events reach this alias.
+        return (category, "antivirus")
+    return (category,)
 
 
 def parse_contract(raw: bytes) -> BlockedFields:
@@ -85,8 +96,9 @@ def parse_contract(raw: bytes) -> BlockedFields:
             since = entry["since"]
             if since is not None and not (isinstance(since, str) and _SINCE_RE.fullmatch(since)):
                 raise ValueError(f"field contract entry {index} has invalid since")
-        key = (entry["platform"], entry["category"], entry["field"])
-        groups.setdefault(key, []).append(entry)
+        for category in _contract_categories(entry):
+            key = (entry["platform"], category, entry["field"])
+            groups.setdefault(key, []).append(entry)
 
     blocked: BlockedFields = {}
     for (platform, category, field), rows in groups.items():
@@ -117,12 +129,17 @@ def parse_field_since(raw: bytes, version: str) -> FieldSince:
             continue
         since = entry["since"]
         since = corrections.get(since, since) if since is not None else None
-        fields = result.setdefault((entry["platform"], entry["category"]), {})
-        current = fields.get(entry["field"], "")
-        if current is None:
-            continue
-        if since is None or current == "" or lib.parse_version(since) < lib.parse_version(current):
-            fields[entry["field"]] = since
+        for category in _contract_categories(entry):
+            fields = result.setdefault((entry["platform"], category), {})
+            current = fields.get(entry["field"], "")
+            if current is None:
+                continue
+            if (
+                since is None
+                or current == ""
+                or lib.parse_version(since) < lib.parse_version(current)
+            ):
+                fields[entry["field"]] = since
     return result
 
 
@@ -133,7 +150,8 @@ def parse_event_ids(raw: bytes) -> EventIds:
     for entry in json.loads(raw)["entries"]:
         event_id = entry.get("event_id")
         if isinstance(event_id, int) and not isinstance(event_id, bool):
-            result.setdefault((entry["platform"], entry["category"]), set()).add(str(event_id))
+            for category in _contract_categories(entry):
+                result.setdefault((entry["platform"], category), set()).add(str(event_id))
     return result
 
 

@@ -263,6 +263,27 @@ CHANNEL_MIN_ENGINES: dict[tuple[str, str], tuple[str, str]] = {
         "1.9.0",
         "classic PowerShell engine-start events arrived in v1.9.0",
     ),
+    ("windows", "driver_load"): ("1.11.0", "the driver_load channel arrived in v1.11.0"),
+    ("windows", "antivirus"): ("1.11.0", "antivirus routing arrived in v1.11.0"),
+    ("linux", "auditd"): ("1.11.0", "the auditd field view arrived in v1.11.0"),
+}
+
+# `since` describes field availability. The contract's Channel rows can date
+# back to the start of Security collection even for IDs added in v1.11.0.
+SECURITY_EVENTS_ADDED_IN_1_11 = {
+    "4661",
+    "4662",
+    "4672",
+    "4673",
+    "4740",
+    "4742",
+    "4768",
+    "4769",
+    "4799",
+    "5137",
+    "5140",
+    "5141",
+    "5379",
 }
 
 # Field -> first release that populates it comes from the vendored engine
@@ -295,6 +316,7 @@ _SERVICE_CATEGORIES = {
     ("windows", "application"): "application",
     ("windows", "wmi"): "wmi_event",
     ("windows", "powershell-classic"): "ps_classic_start",
+    ("linux", "auditd"): "auditd",
 }
 
 
@@ -326,6 +348,15 @@ def contract_category(logsource: dict) -> str:
     (file_create, registry_set, dns, ...) folded into the parent they share."""
     category = logsource_category(logsource)
     return _CATEGORY_PARENTS.get(category, category)
+
+
+def contract_key(logsource: dict) -> tuple[str, str]:
+    """Resolve the platform and category used in the contract indexes."""
+    product = str(logsource.get("product") or "").strip().lower()
+    category = contract_category(logsource)
+    if not product and category == "antivirus":
+        product = "windows"  # Product-less Sigma rules route to Defender detections.
+    return product, category
 
 
 def parse_version(version: str) -> tuple[int, ...]:
@@ -379,6 +410,29 @@ def detection_fields(detection: dict) -> set[str]:
     return fields
 
 
+def selected_event_ids(detection: dict) -> set[str]:
+    """Literal EventID selections, excluding expressions with modifiers."""
+    ids: set[str] = set()
+
+    def walk(node):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "EventID":
+                    for item in value if isinstance(value, list) else [value]:
+                        if isinstance(item, (int, str)) and not isinstance(item, bool):
+                            ids.add(str(item).strip())
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    for name, selection in detection.items():
+        if name not in ("condition", "timeframe"):
+            walk(selection)
+    return ids
+
+
 @lru_cache(maxsize=1)
 def _vendored_field_since() -> dict:
     import engine_contract  # engine_contract imports this module
@@ -410,21 +464,25 @@ def artifact_min_engine(
 
     if artifact.kind == "sigma" and isinstance(artifact.meta, dict):
         logsource = artifact.meta.get("logsource") or {}
-        product = str(logsource.get("product") or "").lower()
+        product, category = contract_key(logsource)
         platform_minimum, platform_reason = platform_baseline_engine(product)
         if parse_version(platform_minimum) > parse_version(minimum):
             minimum = platform_minimum
             if platform_reason:
                 reasons.append(platform_reason)
-        category = contract_category(logsource)
         channel_minimum = CHANNEL_MIN_ENGINES.get((product, category))
         if channel_minimum and parse_version(channel_minimum[0]) > parse_version(minimum):
             minimum = channel_minimum[0]
             reasons.append(channel_minimum[1])
-        used = detection_fields(artifact.meta.get("detection") or {})
+        detection = artifact.meta.get("detection") or {}
+        if (product, category) == ("windows", "security"):
+            new_ids = selected_event_ids(detection) & SECURITY_EVENTS_ADDED_IN_1_11
+            if new_ids:
+                minimum = max_version(minimum, "1.11.0")
+                reasons.append(f"Security EventID {', '.join(sorted(new_ids))}: added in v1.11.0")
 
         available = field_since.get((product, category), {})
-        for field in sorted(used):
+        for field in sorted(detection_fields(detection)):
             version = available.get(field)
             # Fields present from the platform baseline do not explain anything.
             if version is None or parse_version(version) <= parse_version(platform_minimum):
