@@ -203,6 +203,11 @@ jobs:
         run: python3 tests/replay/network_connection.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check cross-platform DNS detection replay cases
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/dns_detection.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Check shell-history tamper replay regressions
         if: matrix.platform == 'linux'
         run: python3 tests/replay/shell_history.py --engine tests/atomic/.engine/rustinel

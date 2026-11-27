@@ -1,0 +1,70 @@
+title: Messaging or File-Sharing DNS Query from Unexpected Process (macOS)
+id: 58fd1d22-1673-4c30-8d88-195d389d6362
+status: experimental
+description: >
+  Detects an attributed DNS lookup for messaging, paste, or file-sharing
+  services from a process outside the browser and service-specific client
+  paths. These services can carry command-and-control traffic or exfiltrated
+  data. The event shows a DNS query, without the URL, API path, or transfer.
+  macOS DNS process attribution is best-effort, so this rule stays in Advanced.
+references:
+  - https://attack.mitre.org/techniques/T1567/
+  - https://attack.mitre.org/techniques/T1102/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.exfiltration
+  - attack.t1567
+  - attack.t1102
+logsource:
+  category: dns_query
+  product: macos
+detection:
+  selection_domain:
+    QueryName|re: '(?i)^(?:api\.telegram\.org|discord\.com|discordapp\.com|cdn\.discordapp\.com|pastebin\.com|transfer\.sh|gofile\.io|file\.io|pixeldrain\.com)\.?$'
+  selection_image:
+    Image|re: '\S'
+  filter_browser:
+    Image|re:
+      - '^/(?:System/)?Applications/Safari\.app/Contents/MacOS/Safari$'
+      - '^/Applications/Firefox\.app/Contents/MacOS/firefox$'
+      - '^/Applications/Google Chrome\.app/Contents/MacOS/Google Chrome$'
+      - '^/Applications/Microsoft Edge\.app/Contents/MacOS/Microsoft Edge$'
+      - '^/Applications/Brave Browser\.app/Contents/MacOS/Brave Browser$'
+      - '^/Applications/Google Chrome\.app/Contents/Frameworks/Google Chrome Framework\.framework/Versions/[0-9.]+/Helpers/Google Chrome Helper\.app/Contents/MacOS/Google Chrome Helper$'
+  filter_telegram:
+    QueryName|re: '(?i)^api\.telegram\.org\.?$'
+    Image|re: '^/Applications/Telegram\.app/Contents/MacOS/Telegram$'
+  filter_discord:
+    QueryName|re: '(?i)^(?:discord\.com|discordapp\.com|cdn\.discordapp\.com)\.?$'
+    Image|re: '^/Applications/Discord\.app/Contents/MacOS/Discord$'
+  condition: all of selection_* and not 1 of filter_*
+falsepositives:
+  - Approved integrations, upload tooling, and legitimate clients installed outside the listed system paths.
+level: medium
+rustinel:
+  telemetry:
+    - dns_query
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: Hosted macOS DNS socket attribution can miss the originating process. Pinned-engine replay verifies attributed events and missing-Image handling.
+  tuning:
+    - surface: filter_browser, filter_telegram, filter_discord
+      guidance: Add anchored full executable paths from approved, administrator-controlled installations. Keep client exclusions scoped to their own service.
+  negatives:
+    - reason: Browser installed at its standard system path
+      fields:
+        QueryName: pastebin.com
+        Image: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    - reason: Telegram client using its own service
+      fields:
+        QueryName: api.telegram.org
+        Image: '/Applications/Telegram.app/Contents/MacOS/Telegram'
+    - reason: DNS query without process attribution
+      fields:
+        QueryName: gofile.io
+    - reason: Hostname with an unrelated suffix
+      fields:
+        QueryName: api.telegram.org.example.com
+        Image: '/usr/bin/curl'

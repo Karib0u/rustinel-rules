@@ -1,4 +1,4 @@
-"""Check that trusted-writer exclusions cannot be claimed by a lookalike path.
+"""Check that trusted executable exclusions cannot be claimed by a lookalike path.
 
 An exclusion that matches a basename or a path substring is satisfied by any
 binary an attacker names `dpkg`, drops under `.../jamf/`, or copies to
@@ -184,6 +184,52 @@ add(
         ({"Image": RCLONE, "CommandLine": "rclone.exe listremotes"}, False),
     ],
 )
+
+for platform, browser, telegram, discord, lookalike_dir in [
+    (
+        "win",
+        r"c:\program files\google\chrome\application\chrome.exe",
+        r"C:\Program Files\Telegram Desktop\Telegram.exe",
+        r"C:\Program Files\Discord\app-1.0.9000\Discord.exe",
+        "C:\\Users\\Public\\",
+    ),
+    (
+        "lnx",
+        "/usr/bin/firefox",
+        "/usr/bin/telegram-desktop",
+        "/opt/discord/Discord",
+        "/tmp/",
+    ),
+    (
+        "macos",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Telegram.app/Contents/MacOS/Telegram",
+        "/Applications/Discord.app/Contents/MacOS/Discord",
+        "/Users/alice/Downloads/",
+    ),
+]:
+    rule = f"dns_query_{platform}_non_browser_api.yml"
+    for domain, image in [
+        ("pastebin.com", browser),
+        ("API.TELEGRAM.ORG.", telegram),
+        ("CDN.DISCORDAPP.COM.", discord),
+    ]:
+        relative_path = image.split("\\", 1)[-1] if platform == "win" else image.lstrip("/")
+        add(
+            rule,
+            [
+                ({"QueryName": domain, "Image": image}, False),
+                ({"QueryName": domain, "Image": lookalike_dir + relative_path}, True),
+                ({"QueryName": domain, "Image": image + ".backup"}, True),
+            ],
+        )
+    add(
+        rule,
+        [
+            ({"QueryName": "gofile.io", "Image": telegram}, True),
+            ({"QueryName": "api.telegram.org", "Image": discord}, True),
+        ],
+    )
 
 
 def main():

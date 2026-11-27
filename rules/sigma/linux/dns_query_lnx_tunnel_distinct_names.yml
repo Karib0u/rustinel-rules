@@ -1,0 +1,53 @@
+title: Burst of Distinct Tunnel-Shaped DNS Names (Linux)
+id: b3c5470f-25de-40c8-a66a-e1f2dd7a5c0d
+status: experimental
+description: >
+  Detects at least 20 distinct tunnel-shaped DNS names for the same
+  registered domain and executable image in one minute. The name-shape
+  rule selects the input events. Grouping requires a recognized public
+  suffix and process attribution. Rustinel v1.11.0 compares query names
+  and group keys case-sensitively.
+references:
+  - https://attack.mitre.org/techniques/T1071/004/
+  - https://attack.mitre.org/techniques/T1568/
+  - https://attack.mitre.org/techniques/T1048/003/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.exfiltration
+  - attack.t1071.004
+  - attack.t1568
+  - attack.t1048.003
+generate: true
+correlation:
+  type: value_count
+  rules:
+    - 5172afac-6ce2-4f89-943b-57ddb23c9b40
+  group-by:
+    - QueryRegisteredDomain
+    - Image
+  timespan: 1m
+  condition:
+    field: QueryName
+    gte: 20
+falsepositives:
+  - A legitimate DNS-based service that generates many distinct, long names for one domain.
+level: high
+rustinel:
+  # The pack tooling infers field floors for selections. Declare this group-by requirement here.
+  min_engine: '1.11.0'
+  telemetry:
+    - dns_query
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: A live burst needs a controlled resolver for a name under a recognized public suffix and reliable Image attribution. Pinned-engine replay verifies grouping and window boundaries.
+  tuning:
+    - surface: timespan, condition.gte
+      guidance: Measure distinct query counts per registered domain and image to tune the window or minimum count.
+  negatives:
+    - reason: Retries of the same long name do not count as distinct queries
+      fields:
+        QueryName: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.example.co.uk
+        Image: '/usr/bin/curl'
+        count: 20

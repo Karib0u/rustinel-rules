@@ -1048,6 +1048,20 @@
       ]
     },
     {
+      "id": "89f6e24f-ca51-4c1d-beaf-018c9b9d856f",
+      "name": "windows_dns_tunnel_name_shape",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dns_tunnel_name_shape.ps1"
+    },
+    {
+      "id": "6b5cfac2-6cbd-4b0d-b053-56f4e557117b",
+      "name": "windows_dns_non_browser_api",
+      "platform": "windows",
+      "engine": "sigma",
+      "script": "windows/dns_non_browser_api.ps1"
+    },
+    {
       "id": "d0e8f644-2661-4f99-b1b2-69eb70abe050",
       "name": "windows_ransomware_mass_rename",
       "platform": "windows",
@@ -1087,6 +1101,20 @@
       ]
     },
     {
+      "id": "5172afac-6ce2-4f89-943b-57ddb23c9b40",
+      "name": "linux_dns_tunnel_name_shape",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "dns_query.sh"
+    },
+    {
+      "id": "5618002a-49ca-4dbd-9a15-bb15ff596367",
+      "name": "linux_dns_non_browser_api",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_non_browser_api.sh"
+    },
+    {
       "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
       "name": "linux_ransomware_mass_rename",
       "platform": "linux",
@@ -1118,6 +1146,13 @@
           "marker": "rustinel-negative.mytrycloudflare.com"
         }
       ]
+    },
+    {
+      "id": "3beb59ba-1bc7-4dbb-a0bb-7e101c4b51d4",
+      "name": "macos_dns_tunnel_name_shape",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "dns_query.sh"
     },
     {
       "id": "90ae463b-19cb-4fd3-9447-dc2222792865",

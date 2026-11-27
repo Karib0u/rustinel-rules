@@ -6,7 +6,7 @@ description: >
 os: windows
 level: advanced
 pack_schema_version: 2
-requires_rustinel: ">=1.10.0"
+requires_rustinel: ">=1.11.0"
 default: false
 expected_false_positive_level: medium
 status: experimental
@@ -21,6 +21,7 @@ attack_coverage:
   - T1036.003
   - T1036.005
   - T1047
+  - T1048.003
   - T1053.005
   - T1059
   - T1059.001
@@ -28,9 +29,11 @@ attack_coverage:
   - T1070
   - T1070.001
   - T1070.004
+  - T1071.004
   - T1090
   - T1090.001
   - T1098
+  - T1102
   - T1105
   - T1134.005
   - T1136.001
@@ -58,7 +61,9 @@ attack_coverage:
   - T1562.006
   - T1562.009
   - T1566.001
+  - T1567
   - T1567.002
+  - T1568
   - T1569.002
   - T1572
 telemetry_requirements:
@@ -71,6 +76,7 @@ telemetry_requirements:
   - service_creation
   - image_load
   - network_connection
+  - dns_query
   - file_event
   - file_scan
 test_status: mixed
@@ -103,6 +109,9 @@ rules:
           - 127db158-346f-4244-b2ad-1522e7c3c2a1   # Prefetch or Event Log File Deleted (sigma)
           - 5ffa485e-7667-4ecc-a17c-fc5f9068c0d4   # Renamed System Binary Execution (sigma)
           - c2f19723-1801-48d4-a45f-c47f2f9d41b5   # DNS Query to Tunnel Service (sigma)
+          - 89f6e24f-ca51-4c1d-beaf-018c9b9d856f   # Potential DNS Tunnel by Query Name Shape (sigma)
+          - 6b5cfac2-6cbd-4b0d-b053-56f4e557117b   # Messaging or File-Sharing DNS Query from Unexpected Process (sigma)
+          - ac134f0a-e39e-4263-a24b-00379d74be2d   # Burst of Distinct Tunnel-Shaped DNS Names (sigma)
           - 67826ffc-22c4-4418-a5c4-27da63f13306   # File Renamed to Ransomware-Style Extension (sigma)
           - d0e8f644-2661-4f99-b1b2-69eb70abe050   # Mass File Rename to Ransomware-Style Extension (sigma)
           - e813d6f6-5dbb-4587-a60e-20a04481fdc6   # Security Event Log Cleared (sigma)

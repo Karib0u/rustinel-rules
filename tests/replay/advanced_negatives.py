@@ -98,7 +98,9 @@ def build_events(artifact, negatives):
                     "event_time": timestamp,
                     "ingest_seq": len(events) + 1,
                     "platform": platform,
-                    "provider": PROVIDER[platform],
+                    "provider": "bpf"
+                    if (platform, category) == ("macos", "Dns")
+                    else PROVIDER[platform],
                     "category": category,
                     "event_id": record_id,
                     "opcode": opcode,
