@@ -51,6 +51,7 @@ attack_coverage:
   - T1137
   - T1137.001
   - T1137.006
+  - T1140
   - T1190
   - T1197
   - T1204.004
@@ -192,6 +193,11 @@ rules:
           - 580ff05e-9f19-45c0-aa58-ff84cbc5024c   # Windows Service ImagePath Set to a Potentially User-Writable Location
           - 224c94fc-da38-4e9e-8fa5-b892f8abb71d   # Windows Accessibility Binary Written in System32
           - 11a1e1f0-f49f-4f26-8205-3cdee4e52756   # Office Startup Macro or Add-in File Written
+          - e41b0197-ceee-40dc-92e4-4fd2f25ad59e   # .NET Framework Runtime Loaded by a Script Host
+          - 439b4c58-8ead-4719-8a84-dca5d7e4f612   # Certutil Decoding to an Executable or Staging Path
+          - 27ef6465-457b-4442-a6cc-3af7b595d1df   # Server-Side Script Created in a Windows Web Root
+          - ca63dcb9-6578-41fa-be10-e73f1111f2ff   # PowerShell Socket Stream With Command Execution
+          - f6599547-6e3e-4c33-be91-245433216c75   # Tunneling Tool Execution
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

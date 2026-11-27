@@ -198,6 +198,11 @@ jobs:
         run: uv run python tests/replay/windows_persistence.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check Windows execution, tunneling and evasion replay
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/windows_execution_tunneling.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Check Windows Security detection replay cases
         if: matrix.platform == 'linux'
         run: uv run python tests/replay/windows_security.py --engine tests/atomic/.engine/rustinel

@@ -1,0 +1,65 @@
+title: Certutil Decoding to an Executable or Staging Path
+id: 439b4c58-8ead-4719-8a84-dca5d7e4f612
+status: experimental
+description: >
+  Detects certutil invocation with -decode or -decodehex and an output argument
+  that has an executable or script extension or points into a common writable
+  staging directory. Requires Windows process creation with command-line
+  enrichment. The alert describes an attempted decode.
+references:
+  - https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/certutil
+  - https://attack.mitre.org/techniques/T1140/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1140
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_identity:
+    - Image|endswith: '\certutil.exe'
+    - OriginalFileName: 'CertUtil.exe'
+  selection_output:
+    # Skip the executable, options and input argument before examining the output.
+    CommandLine|re: >-
+      (?ix)^\s*(?:"[^"]+"|[^\s"]+)(?:\s+"?-[\w-]+"?)*\s+"?-decode(?:hex)?"?\s+
+      (?:"[^"]+"|[^\s"]+)\s+(?:
+        (?:"[^"]+\.(?:exe|dll|scr|com|msi|bat|cmd|ps1|vbs|vbe|js|jse|wsf|hta)"|
+          [^\s"]+\.(?:exe|dll|scr|com|msi|bat|cmd|ps1|vbs|vbe|js|jse|wsf|hta))(?:\s|$)|
+        "?(?:[a-z]:\\(?:users\\(?:public\\|[^\\"]+\\(?:downloads\\|appdata\\local\\temp\\))|
+          programdata\\|(?:windows\\)?temp\\)|%(?:temp|tmp|public|programdata)%\\)
+      )
+  condition: selection_identity and selection_output
+falsepositives:
+  - Certificate provisioning, package builds or administrators decoding files in temporary directories.
+level: medium
+rustinel:
+  roles: [workstation, server]
+  telemetry: [process_creation]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_output
+      guidance: >
+        Adjust staging roots to the writable locations used in your fleet. For
+        approved certificate jobs, scope a filter to the full decoded output path
+        and the trusted parent image.
+  negatives:
+    - reason: Certificate imported from a temporary input into a managed certificate directory
+      fields:
+        Image: 'C:\Windows\System32\certutil.exe'
+        CommandLine: 'certutil.exe -decode C:\Temp\root.b64 "C:\Program Files\Contoso\certs\root.cer"'
+    - reason: Encoded input has an executable suffix but the output is a managed data file
+      fields:
+        Image: 'C:\Windows\System32\certutil.exe'
+        CommandLine: 'certutil.exe -decodehex C:\Lab\sample.exe C:\Lab\sample.bin 4'
+    - reason: Certificate inventory reads a file in a writable directory
+      fields:
+        Image: 'C:\Windows\System32\certutil.exe'
+        CommandLine: 'certutil.exe -dump C:\Temp\certificate.cer'
+    - reason: Another utility uses its own decode option
+      fields:
+        Image: 'C:\Tools\converter.exe'
+        CommandLine: 'converter.exe -decode C:\Lab\input.txt C:\Temp\output.txt'

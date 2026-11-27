@@ -1,0 +1,65 @@
+title: Server-Side Script Created in a Windows Web Root
+id: 27ef6465-457b-4442-a6cc-3af7b595d1df
+status: experimental
+description: >
+  Detects a file-create event for a server-side script in common IIS, XAMPP,
+  WampServer or Apache document roots. This can flag a web shell upload or
+  unauthorized script deployment. Requires Windows kernel file telemetry.
+  The event records the path and may include the writer image. It provides no
+  file content or evidence that the server subsequently ran the script.
+references:
+  - https://attack.mitre.org/techniques/T1505/003/
+  - https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-074a
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.t1505.003
+logsource:
+  category: file_event
+  product: windows
+detection:
+  selection_create:
+    EventID: 11
+    TargetFilename|endswith:
+      - '.asp'
+      - '.aspx'
+      - '.php'
+      - '.jsp'
+      - '.jspx'
+      - '.ashx'
+  selection_root:
+    TargetFilename|re: '(?i)\\(?:inetpub\\wwwroot|xampp\\htdocs|wamp\\www|apache[^\\]*\\htdocs)\\'
+  filter_web_deploy:
+    Image|re: '(?i)^[a-z]:\\program files(?: \(x86\))?\\iis\\microsoft web deploy v[0-9]+\\msdeploy\.exe$'
+  condition: selection_create and selection_root and not filter_web_deploy
+falsepositives:
+  - Legitimate web application deployments, migrations or developer changes.
+level: medium
+rustinel:
+  roles: [web_server, developer]
+  telemetry: [file_event]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_root
+      guidance: Add the document roots configured for your IIS sites and other web servers.
+    - surface: filter_web_deploy
+      guidance: Use anchored full paths for approved deployment writers in protected installation directories.
+  negatives:
+    - reason: A deployment from the installed Microsoft Web Deploy executable
+      fields:
+        Image: 'C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe'
+        TargetFilename: 'C:\inetpub\wwwroot\site\Default.aspx'
+    - reason: A static asset written to the web root
+      fields:
+        Image: 'C:\Windows\System32\robocopy.exe'
+        TargetFilename: 'C:\inetpub\wwwroot\site\logo.png'
+    - reason: An ASP.NET file created in a source checkout outside a served root
+      fields:
+        Image: 'C:\Tools\editor.exe'
+        TargetFilename: 'C:\Source\Site\Default.aspx'
+    - reason: A script backup in a served root has a non-executable suffix
+      fields:
+        Image: 'C:\Tools\editor.exe'
+        TargetFilename: 'C:\xampp\htdocs\index.php.bak'
