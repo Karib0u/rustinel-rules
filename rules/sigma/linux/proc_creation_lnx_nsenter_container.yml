@@ -1,0 +1,46 @@
+title: Nsenter Targeting PID 1 from a Container
+id: c95c0aa6-fcae-409c-b0c3-f2c596ae6e96
+status: experimental
+description: >
+  Detects nsenter targeting PID 1 when the process has a container ID. This can
+  indicate an attempt to access host namespaces when the host PID namespace is
+  visible from the container.
+references:
+  - https://attack.mitre.org/techniques/T1611/
+  - https://man7.org/linux/man-pages/man1/nsenter.1.html
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.privilege-escalation
+  - attack.t1611
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection:
+    Image|endswith: '/nsenter'
+    CommandLine|re: '\s(?:-t\s*|--target(?:=|\s+))1(?:\s|$)'
+    ContainerId|re: '\S'
+  condition: selection
+falsepositives:
+  - Approved containerized agents that inspect namespaces.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: Hosted GitHub Ubuntu runners do not run atomics inside containers with ContainerId populated. Offline replay exercises positive and negative matches.
+  tuning:
+    - surface: ContainerId
+      guidance: Correlate container IDs with workload inventory to scope approved namespace inspection.
+  negatives:
+    - reason: host-side namespace administration
+      fields:
+        Image: /usr/bin/nsenter
+        CommandLine: nsenter -t 1
+    - reason: targeting PID 10 instead of PID 1 inside a container
+      fields:
+        Image: /usr/bin/nsenter
+        CommandLine: nsenter --target 10
+        ContainerId: '1a2b3c4d5e6f'

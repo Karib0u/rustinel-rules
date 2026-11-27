@@ -1,0 +1,55 @@
+title: Privileged Container or Host Root Mount
+id: 51030a36-b4ae-492c-9e71-e6067bb66b34
+status: experimental
+description: >
+  Detects Docker, Podman or nerdctl container creation with extended privileges,
+  the host PID namespace or a bind mount of the host's root filesystem.
+references:
+  - https://attack.mitre.org/techniques/T1611/
+  - https://docs.docker.com/reference/cli/docker/container/run/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.privilege-escalation
+  - attack.t1611
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_cli:
+    Image|endswith:
+      - '/docker'
+      - '/podman'
+      - '/nerdctl'
+    CommandLine|re: '\s(?:run|create)\s'
+  selection_option:
+    CommandLine|re:
+      - '\s--privileged(?:=true)?(?:\s|$)'
+      - '\s--pid(?:=|\s+)host(?:\s|$)'
+      - '\s(?:-v(?:=|\s+)?|--volume(?:=|\s+))/:/'
+      - '\s--mount(?:=|\s+)(?:\S*,)?(?:source|src)=/(?:,|\s|$)'
+  condition: selection_cli and selection_option
+falsepositives:
+  - Approved containerized build jobs, host diagnostics and system administration.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Scope approved build or diagnostic workflows by the full path of their launcher.
+  negatives:
+    - reason: bind-mounting only the workspace
+      fields:
+        Image: /usr/bin/docker
+        CommandLine: docker run -v /srv/workspace:/work image
+    - reason: explicitly disabling privileged mode
+      fields:
+        Image: /usr/bin/podman
+        CommandLine: podman run --privileged=false image
+    - reason: joining another container's PID namespace
+      fields:
+        Image: /usr/bin/nerdctl
+        CommandLine: 'nerdctl run --pid=container:worker image'

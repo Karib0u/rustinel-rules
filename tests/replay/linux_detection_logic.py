@@ -28,6 +28,11 @@ AUDITCTL = "Linux Audit Rules Deleted or Auditing Disabled"
 PAM = "PAM Configuration or Module Tampering"
 METADATA = "Cloud Instance Metadata Credential Request from the Command Line"
 MINER = "Cryptominer Command Line"
+PRIVILEGED_CONTAINER = "Privileged Container or Host Root Mount"
+NSENTER = "Nsenter Targeting PID 1 from a Container"
+DOCKER_SOCKET = "Docker CLI or Socket Access from a Container"
+IMMUTABLE = "Immutable Attribute Added to Linux Persistence Paths"
+FIREWALL = "Linux Firewall Rules Flushed or Firewall Disabled"
 
 RULE_FILES = {
     BACKDOOR: "proc_creation_lnx_backdoor_account.yml",
@@ -45,6 +50,11 @@ RULE_FILES = {
     PAM: "file_event_lnx_pam_tamper.yml",
     METADATA: "proc_creation_lnx_cloud_metadata_credentials.yml",
     MINER: "proc_creation_lnx_cryptominer_cmdline.yml",
+    PRIVILEGED_CONTAINER: "proc_creation_lnx_privileged_container.yml",
+    NSENTER: "proc_creation_lnx_nsenter_container.yml",
+    DOCKER_SOCKET: "proc_creation_lnx_docker_socket_container.yml",
+    IMMUTABLE: "proc_creation_lnx_chattr_immutable_persistence.yml",
+    FIREWALL: "proc_creation_lnx_firewall_disabled.yml",
 }
 
 # (rule, Image, CommandLine, alerts)
@@ -166,6 +176,107 @@ PROCESS_CASES = [
     (MINER, "/tmp/.x/kworker", "kworker -o stratum+tcp://pool.example:3333 -u wallet", True),
     (MINER, "/opt/miner", "miner --donate-level 1 -o pool.example:443", True),
     (MINER, "/usr/bin/curl", "curl http://example.com:3333/health", False),
+    # Container creation: each supported CLI and each risky flag.
+    (PRIVILEGED_CONTAINER, "/usr/bin/docker", "docker run --privileged image", True),
+    (PRIVILEGED_CONTAINER, "/usr/bin/podman", "podman run --pid=host image", True),
+    (PRIVILEGED_CONTAINER, "/usr/bin/nerdctl", "nerdctl run -v /:/host image", True),
+    (PRIVILEGED_CONTAINER, "/usr/bin/docker", "docker create --volume=/:/host image", True),
+    (
+        PRIVILEGED_CONTAINER,
+        "/usr/bin/docker",
+        "docker container run --mount type=bind,source=/,target=/host image",
+        True,
+    ),
+    (
+        PRIVILEGED_CONTAINER,
+        "/usr/bin/docker",
+        "docker run --mount=type=bind,source=/srv,target=/host image",
+        False,
+    ),
+    (PRIVILEGED_CONTAINER, "/usr/bin/docker", "docker run --privileged=false image", False),
+    (PRIVILEGED_CONTAINER, "/usr/bin/docker", "docker inspect --format=--privileged image", False),
+    # chattr: cover each persistence path family and attribute polarity.
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /var/spool/cron/crontabs/root", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +ia /root/.ssh/authorized_keys", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /etc/ld.so.preload", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /run/systemd/system/app.service", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /etc/pam.d/sshd", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /lib64/security/pam_unix.so", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /etc/sudoers.d/app", True),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr -i /etc/ld.so.preload", False),
+    (IMMUTABLE, "/usr/bin/chattr", "chattr +i /etc/ld.so.preload.bak", False),
+    # Firewall verbs, resolved iptables image, and similar read-only commands.
+    (FIREWALL, "/usr/sbin/iptables", "iptables -F", True),
+    (FIREWALL, "/usr/sbin/xtables-nft-multi", "iptables -t nat --flush", True),
+    (FIREWALL, "/usr/sbin/nft", "nft flush ruleset", True),
+    (FIREWALL, "/usr/sbin/ufw", "ufw --force disable", True),
+    (FIREWALL, "/usr/bin/systemctl", "systemctl stop firewalld", True),
+    (FIREWALL, "/usr/bin/systemctl", "systemctl disable --now firewalld.service", True),
+    (FIREWALL, "/usr/sbin/iptables", "iptables -L", False),
+    (FIREWALL, "/usr/sbin/nft", "nft list ruleset", False),
+    (FIREWALL, "/usr/sbin/ufw", "ufw status", False),
+    (FIREWALL, "/usr/bin/systemctl", "systemctl stop firewalld-helper.service", False),
+    (FIREWALL, "/usr/bin/systemctl", "systemctl is-enabled firewalld", False),
+    # The live atomics use copied shells with these exact arguments.
+    (
+        PRIVILEGED_CONTAINER,
+        "/opt/rustinel_atomic_privileged_container.d/docker",
+        "/opt/rustinel_atomic_privileged_container.d/docker -c sleep 1; :"
+        " run --privileged placeholder",
+        True,
+    ),
+    (
+        IMMUTABLE,
+        "/opt/rustinel_atomic_chattr_immutable_persistence.d/chattr",
+        "/opt/rustinel_atomic_chattr_immutable_persistence.d/chattr -c sleep 1; : +i /etc/crontab",
+        True,
+    ),
+    (
+        FIREWALL,
+        "/opt/rustinel_atomic_firewall_disabled.d/nft",
+        "/opt/rustinel_atomic_firewall_disabled.d/nft -c sleep 1; : flush ruleset",
+        True,
+    ),
+]
+
+CONTAINER_ID = "1a2b3c4d5e6f"
+DOCKER_CURL = "curl --unix-socket /var/run/docker.sock http://localhost/version"
+# (rule, Image, CommandLine, ContainerId, alerts)
+CONTAINER_CASES = [
+    (NSENTER, "/usr/bin/nsenter", "nsenter -t 1 --mount", CONTAINER_ID, True),
+    (NSENTER, "/usr/bin/nsenter", "nsenter -t1", CONTAINER_ID, True),
+    (NSENTER, "/usr/bin/nsenter", "nsenter --target 1", CONTAINER_ID, True),
+    (NSENTER, "/usr/bin/nsenter", "nsenter --target=1", CONTAINER_ID, True),
+    (NSENTER, "/usr/bin/nsenter", "nsenter -t 10", CONTAINER_ID, False),
+    (NSENTER, "/usr/bin/nsenter", "nsenter --mount", CONTAINER_ID, False),
+    (NSENTER, "/usr/bin/nsenter", "nsenter -t 1", None, False),
+    (NSENTER, "/usr/bin/nsenter", "nsenter -t 1", "", False),
+    (DOCKER_SOCKET, "/usr/bin/curl", DOCKER_CURL, CONTAINER_ID, True),
+    (
+        DOCKER_SOCKET,
+        "/usr/bin/curl",
+        "curl --unix-socket /run/docker.sock http://localhost/version",
+        CONTAINER_ID,
+        True,
+    ),
+    (DOCKER_SOCKET, "/usr/bin/docker", "docker ps", CONTAINER_ID, True),
+    (DOCKER_SOCKET, "/usr/bin/docker", "docker ps", None, False),
+    (DOCKER_SOCKET, "/usr/bin/docker", "docker ps", "", False),
+    (DOCKER_SOCKET, "/usr/bin/curl", DOCKER_CURL, None, False),
+    (
+        DOCKER_SOCKET,
+        "/usr/bin/curl",
+        "curl --unix-socket /var/run/docker.sock.backup http://localhost/version",
+        CONTAINER_ID,
+        False,
+    ),
+    (
+        DOCKER_SOCKET,
+        "/usr/bin/curl",
+        "curl http://localhost/var/run/docker.sock",
+        CONTAINER_ID,
+        False,
+    ),
 ]
 
 PKG = "/usr/bin/dpkg"
@@ -188,11 +299,14 @@ FILE_CASES = [
 ]
 
 
-def process_event(index, image, command_line):
+def process_event(index, image, command_line, container_id=None):
+    fields = {"ProcessId": str(index), "Image": image, "CommandLine": command_line}
+    if container_id is not None:
+        fields["ContainerId"] = container_id
     return {
         "category": "Process",
         "event_id": 1,
-        "fields": {"ProcessId": str(index), "Image": image, "CommandLine": command_line},
+        "fields": fields,
     }
 
 
@@ -217,6 +331,14 @@ def main():
     cases = []
     for rule, image, command_line, alerts in PROCESS_CASES:
         cases.append((rule, alerts, lambda i, a=image, c=command_line: process_event(i, a, c)))
+    for rule, image, command_line, container_id, alerts in CONTAINER_CASES:
+        cases.append(
+            (
+                rule,
+                alerts,
+                lambda i, a=image, c=command_line, d=container_id: process_event(i, a, c, d),
+            )
+        )
     for rule, image, path, alerts in FILE_CASES:
         cases.append((rule, alerts, lambda i, a=image, p=path: file_event(i, a, p)))
     for index, (rule, alerts, build) in enumerate(cases, 1):

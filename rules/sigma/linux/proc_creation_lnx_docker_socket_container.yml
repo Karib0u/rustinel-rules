@@ -1,0 +1,51 @@
+title: Docker CLI or Socket Access from a Container
+id: 3b1b1cad-9068-4ee9-8e3f-998018abea74
+status: experimental
+description: >
+  Detects a process in a container running the Docker CLI or directing curl at
+  the Docker daemon socket. These invocations can precede unauthorized
+  container deployment if the daemon is reachable.
+references:
+  - https://attack.mitre.org/techniques/T1610/
+  - https://docs.docker.com/reference/cli/dockerd/#bind-docker-to-another-hostport-or-a-unix-socket
+  - https://curl.se/docs/manpage.html#--unix-socket
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.execution
+  - attack.t1610
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_container:
+    ContainerId|re: '\S'
+  selection_docker:
+    Image|endswith: '/docker'
+  selection_curl:
+    Image|endswith: '/curl'
+    CommandLine|re: '\s--unix-socket(?:=|\s+)/(?:var/)?run/docker\.sock(?:\s|$)'
+  condition: selection_container and (selection_docker or selection_curl)
+falsepositives:
+  - Approved containerized CI jobs or management tools that use Docker.
+  - Docker CLI calls that use a remote daemon or only display client information.
+level: high
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: Hosted GitHub Ubuntu runners do not run atomics inside containers with ContainerId populated. Offline replay exercises positive and negative matches.
+  tuning:
+    - surface: ContainerId
+      guidance: Correlate container IDs with workload inventory to scope approved CI and orchestration jobs.
+  negatives:
+    - reason: Docker CLI use on the host
+      fields:
+        Image: /usr/bin/docker
+        CommandLine: docker ps
+    - reason: containerized curl accessing another Unix socket
+      fields:
+        Image: /usr/bin/curl
+        CommandLine: curl --unix-socket /run/app.sock http://localhost/health
+        ContainerId: '1a2b3c4d5e6f'

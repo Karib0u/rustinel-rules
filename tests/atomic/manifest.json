@@ -1217,6 +1217,27 @@
       "script": "linux/auditctl_disabled.sh"
     },
     {
+      "id": "51030a36-b4ae-492c-9e71-e6067bb66b34",
+      "name": "linux_privileged_container",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/privileged_container.sh"
+    },
+    {
+      "id": "81c851b7-74ea-4cae-80aa-ee45b25fb0af",
+      "name": "linux_chattr_immutable_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chattr_immutable_persistence.sh"
+    },
+    {
+      "id": "a66f0d92-6e07-47ff-8c9a-400a00e3caec",
+      "name": "linux_firewall_disabled",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/firewall_disabled.sh"
+    },
+    {
       "id": "2ef433bf-d843-424c-8223-c31efb639535",
       "name": "linux_pam_tamper",
       "platform": "linux",
