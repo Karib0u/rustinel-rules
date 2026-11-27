@@ -1,0 +1,55 @@
+title: Remote Management Tool Launched from a Staging Path (Windows)
+id: fc961eef-9d89-4b01-a1ed-4ac6b8013d97
+status: experimental
+description: >-
+  Detects known remote management executable names launched from a local
+  profile, shared application data, Downloads, or a temporary directory.
+  Rustinel's Windows process sensor must supply Image. Standard installs in
+  Program Files fall outside the selected roots. Portable support tools and
+  deployments under profiles or ProgramData can also match.
+references:
+  - https://attack.mitre.org/techniques/T1219/
+  - https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml
+  - https://www.microsoft.com/en-us/security/blog/2026/09/24/beyond-ransomware-tracking-storm-2570-consistent-tradecraft-across-deployments/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.command-and-control
+  - attack.t1219
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_path:
+    Image|re: '(?i)^(?:(?:[a-z]:|\\Device\\HarddiskVolume[0-9]+)\\(?:Users|ProgramData|Downloads|Temp|Windows\\(?:Temp|SystemTemp))|\\SystemRoot\\(?:Temp|SystemTemp))\\'
+  selection_name:
+    Image|re:
+      - '(?i)\\(?:AnyDesk|RustDesk|Splashtop[_-]Streamer[_-]Windows)(?:[-_][a-z0-9._-]+)?\.exe$'
+      - '(?i)\\ScreenConnect\.(?:ClientService|WindowsClient|ClientSetup(?: \([0-9]+\))?)\.exe$'
+      - '(?i)\\(?:AteraAgent|Atera_Agent|AlphaAgent|Splashtop|SplashtopSOS|strwinclt|sragent|srmanager|srserver|srservice|MeshAgent(?:32|64)?|SimpleHelp(?:Customer)?|SimpleService|SimpleGatewayService|spsrv|TeamViewer(?:QS|_Desktop|_Service|_Host)?|TacticalRMM)\.exe$'
+  condition: selection_path and selection_name
+falsepositives:
+  - Approved on-demand remote support clients launched from Downloads or temporary directories.
+  - Managed deployments that install or update a vendor executable under Users or ProgramData.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: selection_path.Image
+      guidance: Adjust staging roots for the fleet. Add exclusions using anchored full executable paths with verified directory permissions.
+  negatives:
+    - reason: TeamViewer installed in Program Files
+      fields:
+        Image: 'C:\Program Files\TeamViewer\TeamViewer.exe'
+    - reason: Program Files product tree with an internal Temp directory
+      fields:
+        Image: 'C:\Program Files\Acme\Temp\AnyDesk.exe'
+    - reason: executable name includes an RMM name as a suffix
+      fields:
+        Image: 'C:\Users\Alice\Downloads\FakeAnyDesk.exe'
+    - reason: directory name starts with a staging root name
+      fields:
+        Image: 'C:\UsersBackup\TeamViewer.exe'

@@ -1,4 +1,4 @@
-"""Check the first production IOC sets against the pack and engine contracts."""
+"""Check the production IOC sets against the pack and engine contracts."""
 
 import sys
 import tempfile
@@ -17,6 +17,7 @@ import validate  # noqa: E402
 
 DRIVERS = "ioc-loldrivers-vulnerable-hashes"
 POOLS = "ioc-cryptomining-pools"
+LOLRMM = "ioc-lolrmm-relay-domains"
 
 
 class IocSetsTest(unittest.TestCase):
@@ -28,7 +29,7 @@ class IocSetsTest(unittest.TestCase):
 
     def test_shipped_sets_pass_schema_and_value_validation(self):
         self.assertIsNotNone(self.schema)
-        for set_id, ioc_type in ((DRIVERS, "hashes"), (POOLS, "domains")):
+        for set_id, ioc_type in ((DRIVERS, "hashes"), (POOLS, "domains"), (LOLRMM, "domains")):
             with self.subTest(set_id=set_id):
                 artifact = self.artifacts[set_id]
                 report = validate.Report()
@@ -42,8 +43,57 @@ class IocSetsTest(unittest.TestCase):
                     self.assertTrue(comment)
                     if ioc_type == "hashes":
                         self.assertRegex(value, r"^[0-9a-f]{64}$")
-                    else:
+                    elif set_id == POOLS:
                         self.assertFalse(value.startswith(("*", ".")))
+
+    def test_lolrmm_is_attributed_and_excludes_shared_infrastructure(self):
+        artifact = self.artifacts[LOLRMM]
+        entries = artifact.indicators["domains"]
+        self.assertEqual(artifact.meta["license"], "Apache-2.0")
+        self.assertGreaterEqual(len(entries), 20)
+        self.assertLessEqual(len(entries), 35)
+        shared_zones = (
+            "amazonaws.com",
+            "azurewebsites.net",
+            "cloudfront.net",
+            "core.windows.net",
+            "pubnubapi.com",
+            "servicebus.windows.net",
+            "tailscale.com",
+        )
+        for value, comment in entries:
+            with self.subTest(value=value):
+                self.assertTrue(comment.startswith("LOLRMM "))
+                host = value.removeprefix("*.")
+                self.assertFalse(
+                    any(host == zone or host.endswith("." + zone) for zone in shared_zones)
+                )
+
+    def test_lolrmm_ships_only_in_windows_and_linux_hunting(self):
+        hunting_packs = {"linux-hunting", "windows-hunting"}
+        self.assertEqual(
+            {
+                pack_id
+                for pack_id, pack in self.packs.items()
+                if LOLRMM in lib.resolve_pack_rules(pack, self.packs)
+            },
+            hunting_packs,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            dist = Path(directory)
+            with patch.object(lib, "DIST_DIR", dist):
+                for pack_id in sorted(hunting_packs):
+                    with self.subTest(pack_id=pack_id):
+                        result = build_packs.materialize_pack(
+                            self.packs[pack_id], self.packs, self.artifacts, lib.release_version()
+                        )
+                        domains = (dist / pack_id / "ioc/domains.txt").read_text().splitlines()
+                        self.assertEqual(
+                            [line for line in domains if not line.startswith("#")],
+                            self.feed(POOLS, "domains") + self.feed(LOLRMM, "domains"),
+                        )
+                        with zipfile.ZipFile(dist / result["artifact"]) as archive:
+                            self.assertIn("LICENSES/Apache-2.0.txt", archive.namelist())
 
     def test_schema_rejects_malformed_minimum_engine(self):
         invalid = copy(self.artifacts[DRIVERS])

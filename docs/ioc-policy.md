@@ -1,8 +1,9 @@
 # IOC sourcing and upkeep
 
-Production IOC sets enter Advanced first. Windows Advanced carries both sets.
+Windows Advanced carries vulnerable driver hashes and mining pools.
 Linux and macOS Advanced carry mining pools. Hunting inherits the corresponding
-Advanced indicators where a Hunting pack exists. Essential promotion follows
+Advanced indicators where a Hunting pack exists. Windows and Linux Hunting
+also carry the LOLRMM set for analyst-driven inventory. Essential promotion follows
 the evidence and false-positive criteria in [#44](https://github.com/Karib0u/rustinel-rules/issues/44).
 
 ## Vulnerable Windows drivers
@@ -48,6 +49,31 @@ browser visit when the pool and its dashboard share a hostname. Review the
 process and follow-on traffic and account for approved mining before taking
 action.
 
+## Remote management services
+
+The LOLRMM set selects dedicated remote management service hostnames from the
+[pinned Apache-2.0 LOLRMM records](https://github.com/magicsword-io/LOLRMM/tree/0c2d56639673a232ff9d2548e16c6d045d3a1217/yaml)
+and narrows some catalog patterns using vendor documentation and primary
+research. Each comment identifies the source record and the service or
+reported gateway. Retain this attribution and the
+[Apache-2.0 license text](../LICENSES/Apache-2.0.txt) when redistributing the
+selection. Pack archives carrying the set include both.
+
+Prefer exact names and reserve suffixes for dedicated product service zones.
+Rustinel v1.11.0 matches a leading `*.` against the zone apex and its
+subdomains. The AnyDesk connectivity suffix covers both bootstrap and relay
+hosts. ScreenConnect entries use exact hostnames, including two documented
+cloud relays, because the engine cannot express an in-label wildcard.
+Exclude vendor support and marketing sites, shared cloud and CDN domains,
+and placeholder domains for self-hosted servers.
+
+The set includes rendezvous and agent services alongside relays. Action1
+entries cover selected remote desktop console hosts, and the Tactical RMM
+entry covers its dedicated agent IP discovery service. Most customer-operated
+Tactical RMM, MeshCentral, SimpleHelp, RustDesk, and ScreenConnect servers use
+their own names. Confirm use with process and connection telemetry and the
+approved support inventory.
+
 ## False-positive guard
 
 Validation rejects production IOC addresses or CIDRs that overlap special-use
@@ -64,10 +90,12 @@ reserved values for replay and atomics.
 
 ## Review and expiry
 
-Review both sets quarterly and when a source corrects an indicator, a mining
+Review these sets quarterly and when a source corrects an indicator, an
 endpoint closes or changes ownership, or new BYOVD abuse warrants an update.
 Verify each change against a primary source, record the revision or review date,
-and remove erroneous or stale entries. Initial hostname review was on
+and remove erroneous or stale entries. For reported RMM gateways, check whether
+the original report still supports retaining the exact name and remove entries
+that have been reassigned. Initial hostname review was on
 2026-11-27.
 
 Current builds flatten sets to the engine's text feeds. Comments preserve
@@ -83,8 +111,8 @@ that require it.
 Build the packs with `uv run python tools/build_packs.py`. Run
 `uv run python tests/replay/ioc_pools.py --engine /path/to/rustinel` with the
 [certified engine](../compatibility/engine.json). CI replays positive and benign
-DNS events against the Windows, Linux, and macOS Advanced feeds without making
-a network request.
+DNS events against the Windows, Linux, and macOS Advanced mining feeds and
+the Windows and Linux Hunting LOLRMM feeds without making a network request.
 
 Replay reads recorded events and cannot hash the original files. To exercise
 the production hash feed without driver binaries, run the integration test

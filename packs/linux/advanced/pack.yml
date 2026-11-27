@@ -31,6 +31,7 @@ attack_coverage:
   - T1102
   - T1105
   - T1136.001
+  - T1219
   - T1222.002
   - T1486
   - T1496
@@ -99,6 +100,7 @@ rules:
           - 3b1b1cad-9068-4ee9-8e3f-998018abea74   # Docker CLI or Socket Access from a Container (sigma)
           - 81c851b7-74ea-4cae-80aa-ee45b25fb0af   # Immutable Attribute Added to Linux Persistence Paths (sigma)
           - a66f0d92-6e07-47ff-8c9a-400a00e3caec   # Linux Firewall Rules Flushed or Firewall Disabled (sigma)
+          - ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb   # Remote Management Tool Launched from a Staging Path (Linux) (sigma)
         yara:
           - yara-lnx-sliver-implant   # Sliver C2 implant artifacts in Linux ELF (yara)
           - yara-lnx-xmrig-coinminer   # XMRig miner presence in Linux ELF binaries (yara)
