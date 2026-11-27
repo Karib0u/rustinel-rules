@@ -14,6 +14,7 @@ license: DRL-1.1
 extends:
   - windows-essential
 attack_coverage:
+  - T1003
   - T1003.001
   - T1003.002
   - T1003.003
@@ -32,6 +33,7 @@ attack_coverage:
   - T1059.005
   - T1059.007
   - T1068
+  - T1069.002
   - T1070
   - T1070.001
   - T1070.004
@@ -42,6 +44,8 @@ attack_coverage:
   - T1102
   - T1105
   - T1127.001
+  - T1134
+  - T1134.001
   - T1134.005
   - T1136.001
   - T1190
@@ -53,6 +57,7 @@ attack_coverage:
   - T1218.009
   - T1218.010
   - T1218.011
+  - T1484
   - T1486
   - T1490
   - T1496
@@ -168,6 +173,10 @@ rules:
           - aff3a851-eda8-49fa-8e1e-f353a909541e   # WMI or WinRM Provider Spawning a Shell or Script Host
           - c28cddd0-5518-4a27-b412-dcf69191825d   # PsExec or Renamed PsExec Execution
           - 77d79285-57e8-459d-9b8d-2a2627010d1e   # Explorer Spawning an Interpreter With a ClickFix-Style Command Line
+          - d33167a0-e4ee-4999-b979-2c9d05af934f   # Credential or AD Collection Tool Marker in PowerShell Script Block
+          - 213ed58b-d2bf-4466-8254-859da950fb4b   # Active Directory Resource-Based Constrained Delegation Modified
+          - 19a336c8-d058-43e3-b033-b128027ca367   # Cmd Echo Redirected to a Local Named Pipe
+          - 0d3044af-fba1-4dda-a5c7-2c0e2b57912c   # Service Account Parent Spawning an Interpreter as SYSTEM
         yara:
           - yara-win-sliver-implant   # Sliver C2 implant artifacts in Windows PE (yara)
           - yara-win-cobaltstrike-beacon   # Cobalt Strike beacon artifacts in Windows PE (yara)

@@ -198,6 +198,11 @@ jobs:
         run: uv run python tests/replay/windows_security.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
+      - name: Check Windows Security and PowerShell replay cases
+        if: matrix.platform == 'linux'
+        run: uv run python tests/replay/windows_security_powershell.py --engine tests/atomic/.engine/rustinel
+        shell: bash
+
       - name: Check Essential rule negative-evidence replay cases
         if: matrix.platform == 'linux'
         run: python3 tests/replay/essential_negatives.py --engine tests/atomic/.engine/rustinel

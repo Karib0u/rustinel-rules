@@ -1,0 +1,43 @@
+title: PowerShell PSReadLine Console History File Deleted
+id: f012555a-00ca-4849-a002-ae3de81d8903
+status: experimental
+description: >
+  Detects deletion of ConsoleHost_history.txt, the default PSReadLine console
+  history filename for Windows PowerShell and PowerShell 7. This includes
+  Remove-Item when it deletes the file. Requires Rustinel Windows Kernel-File
+  ETW deletion telemetry. No Security audit policy, SACL, or PowerShell logging
+  setting is required. Session-only Clear-History and custom history filenames
+  are outside this file deletion rule's scope.
+references:
+  - https://learn.microsoft.com/en-us/powershell/module/psreadline/about/about_psreadline
+  - https://attack.mitre.org/techniques/T1070/003/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.t1070.003
+logsource:
+  category: file_delete
+  product: windows
+detection:
+  selection:
+    TargetFilename|endswith: '\ConsoleHost_history.txt'
+  condition: selection
+falsepositives:
+  - User privacy cleanup, profile resets, and endpoint maintenance.
+level: low
+rustinel:
+  roles: [workstation, server, domain_controller, web_server, developer]
+  telemetry: [file_delete]
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: TargetFilename
+      guidance: Scope to approved PSReadLine profile directories or exclude exact paths of disposable test files.
+  negatives:
+    - reason: cleanup deletes a backup copy
+      fields:
+        TargetFilename: 'C:\Users\Alice\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt.bak'
+    - reason: cleanup deletes a similarly named report
+      fields:
+        TargetFilename: 'C:\Temp\Export_ConsoleHost_history.txt'

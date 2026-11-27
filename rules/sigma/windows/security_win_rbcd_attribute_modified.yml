@@ -1,0 +1,51 @@
+title: Active Directory Resource-Based Constrained Delegation Modified
+id: 213ed58b-d2bf-4466-8254-859da950fb4b
+status: experimental
+description: >
+  Detects Security event 5136 for a change to
+  msDS-AllowedToActOnBehalfOfOtherIdentity, the attribute that controls which
+  principals can delegate to a resource. A change can establish or remove
+  delegated access. Enable success auditing for Directory Service Changes on
+  domain controllers and configure a write-auditing SACL for this attribute on
+  the monitored directory objects. Rustinel collects 5136 through its default
+  Windows Security channel subscription.
+references:
+  - https://learn.microsoft.com/en-us/windows/win32/adschema/a-msds-allowedtoactonbehalfofotheridentity
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5136
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#audit-policy
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.privilege-escalation
+  - attack.t1484
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 5136
+    AttributeLDAPDisplayName: 'msDS-AllowedToActOnBehalfOfOtherIdentity'
+  condition: selection
+falsepositives:
+  - Authorized provisioning, changes or removal of resource-based constrained delegation.
+level: high
+rustinel:
+  roles: [domain_controller]
+  telemetry: [security]
+  expected_false_positive_level: low
+  test_status: manual
+  test_reason: >
+    Hosted runners lack a domain controller and an audited directory object.
+    Synthetic Security 5136 records cover changes without modifying AD.
+  tuning:
+    - surface: ObjectDN
+      guidance: Scope approved provisioning to the specific objects and SubjectUserSid pairs in the change record.
+  negatives:
+    - reason: administrator modifies conventional constrained delegation
+      fields:
+        EventID: '5136'
+        AttributeLDAPDisplayName: 'msDS-AllowedToDelegateTo'
+    - reason: administrator modifies the computer display name
+      fields:
+        EventID: '5136'
+        AttributeLDAPDisplayName: 'displayName'

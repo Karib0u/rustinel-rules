@@ -6,8 +6,9 @@ description: >
   well-known offensive-framework cmdlet: PowerSploit, Empire, Nishang or
   BloodHound/Inveigh collectors (Invoke-Mimikatz, Invoke-Kerberoast,
   Invoke-ReflectivePEInjection, Invoke-Shellcode, Invoke-TokenManipulation,
-  Get-GPPPassword, Invoke-DCSync, Invoke-BloodHound, Invoke-Inveigh,
-  Invoke-PSInject, Invoke-WMIExec, Invoke-SMBExec, Get-Keystrokes). Matching the
+  Get-GPPPassword, Out-Minidump, Invoke-DCSync, Invoke-BloodHound,
+  Invoke-SharpHound, Invoke-Inveigh, Invoke-PSInject, Invoke-WMIExec,
+  Invoke-SMBExec, Get-Keystrokes). Matching the
   command name works even when the payload is loaded in memory and never touches
   disk. Renamed functions evade it; it complements, not replaces, behavioural
   rules. Requires PowerShell Module Logging with `ModuleNames` set to `*`.
@@ -15,9 +16,11 @@ description: >
 references:
   - https://attack.mitre.org/techniques/T1059/001/
   - https://github.com/PowerShellMafia/PowerSploit
-  - https://github.com/Karib0u/rustinel/blob/v1.9.1/docs/windows-logging.md
+  - https://bloodhound.specterops.io/collect-data/ce-collection/sharphound
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#powershell-module-logging
 author: rustinel-rules
 date: 2026-10-08
+modified: 2026-11-27
 tags:
   - attack.execution
   - attack.t1059.001
@@ -28,12 +31,13 @@ detection:
   # Anchored to the CommandInvocation record so the name appearing as data (a
   # module manifest, help text, a path) does not match.
   selection:
-    Payload|re: '(?i)CommandInvocation\((Invoke-Mimikatz|Invoke-Kerberoast|Invoke-ReflectivePEInjection|Invoke-Shellcode|Invoke-TokenManipulation|Get-GPPPassword|Invoke-DCSync|Invoke-BloodHound|Invoke-Inveigh|Invoke-PSInject|Invoke-WMIExec|Invoke-SMBExec|Get-Keystrokes)\)'
+    Payload|re: '(?im)^[ \t]*CommandInvocation\((Invoke-Mimikatz|Invoke-Kerberoast|Invoke-ReflectivePEInjection|Invoke-Shellcode|Invoke-TokenManipulation|Get-GPPPassword|Out-Minidump|Invoke-DCSync|Invoke-BloodHound|Invoke-SharpHound|Invoke-Inveigh|Invoke-PSInject|Invoke-WMIExec|Invoke-SMBExec|Get-Keystrokes)\):'
   condition: selection
 falsepositives:
   - Authorized red-team and penetration-test tooling.
 level: high
 rustinel:
+  roles: [workstation, server, domain_controller, web_server, developer]
   telemetry:
     - ps_module
   expected_false_positive_level: low
@@ -56,3 +60,9 @@ rustinel:
     - reason: "process listing"
       fields:
         Payload: "CommandInvocation(Get-Process): \"Get-Process\""
+    - reason: module manifest exports names without invoking them
+      fields:
+        Payload: "ParameterBinding(Import-Module): name=\"Name\"; value=\"@{ FunctionsToExport = @('Out-Minidump', 'Invoke-BloodHound') }\""
+    - reason: script prints a sample invocation record as data
+      fields:
+        Payload: "ParameterBinding(Write-Output): name=\"InputObject\"; value=\"CommandInvocation(Out-Minidump): sample\""
