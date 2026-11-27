@@ -1,0 +1,44 @@
+title: Repeated Windows Account Lockouts
+id: e16f7988-8fce-46f8-9987-8598d5d7682f
+status: experimental
+description: >
+  Detects three or more Security 4740 account lockouts for the same
+  TargetUserName within one hour. Requires successful User Account Management
+  auditing and an account lockout threshold on the domain controller or local
+  computer responsible for the account. Rustinel v1.11.0 collects 4740 through
+  its default Windows Security channel subscription.
+references:
+  - https://attack.mitre.org/techniques/T1110/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4740
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-security-events.md
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1110
+correlation:
+  type: event_count
+  rules:
+    - 016628c2-d888-410c-8c88-e87af7ea2fd1
+  group-by:
+    - TargetUserName
+  timespan: 1h
+  condition:
+    gte: 3
+falsepositives:
+  - Stale saved credentials that trigger another lockout after the account unlocks.
+level: medium
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Hosted Windows CI runners are standalone. Live verification would require
+    repeatedly locking an isolated account under a controlled lockout policy.
+    Covered by offline replay and unit fixtures.
+  tuning:
+    - surface: timespan
+      guidance: Use a window that allows for repeated lockouts under the local lockout duration.
+    - surface: condition
+      guidance: Adjust the count against normal repeated lockouts in the environment.

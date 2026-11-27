@@ -1,0 +1,70 @@
+title: Kerberos RC4 Service Ticket Request
+id: d3fc84b0-fcd5-48a9-9298-b6c97ecac1e8
+status: experimental
+description: >
+  Detects successful RC4 Kerberos service ticket requests in Security event
+  4769 for services other than machine accounts and krbtgt. These requests
+  may indicate Kerberoasting. Requires successful Kerberos Service Ticket
+  Operations auditing on the domain controller and
+  windows.security_domain_controller_events = true.
+references:
+  - https://attack.mitre.org/techniques/T1558/003/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#domain-controller-events
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1558.003
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4769
+    TicketEncryptionType: '0x17'
+    Status: '0x0'
+  filter_machine:
+    ServiceName|endswith: '$'
+  filter_krbtgt:
+    ServiceName: 'krbtgt'
+  condition: selection and not (filter_machine or filter_krbtgt)
+falsepositives:
+  - Legitimate access to legacy services that use RC4.
+level: medium
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Kerberos ticket auditing requires a domain controller. Hosted Windows CI
+    runners are standalone. Covered by offline replay and unit fixtures.
+  tuning:
+    - surface: ServiceName
+      guidance: Filter exact service account names with a known operational need for RC4.
+  negatives:
+    - reason: a successful AES service ticket request
+      fields:
+        EventID: '4769'
+        TicketEncryptionType: '0x12'
+        Status: '0x0'
+        ServiceName: 'svc_reports'
+    - reason: a failed RC4 service ticket request
+      fields:
+        EventID: '4769'
+        TicketEncryptionType: '0x17'
+        Status: '0x7'
+        ServiceName: 'svc_reports'
+    - reason: an RC4 ticket for a machine service account
+      fields:
+        EventID: '4769'
+        TicketEncryptionType: '0x17'
+        Status: '0x0'
+        ServiceName: 'FILE01$'
+    - reason: an RC4 ticket for the ticket-granting service
+      fields:
+        EventID: '4769'
+        TicketEncryptionType: '0x17'
+        Status: '0x0'
+        ServiceName: 'krbtgt'

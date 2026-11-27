@@ -1,0 +1,61 @@
+title: Kerberos TGT Requested Without Pre-Authentication
+id: a8d81c43-faac-4023-bd32-7a1b1015cf66
+status: experimental
+description: >
+  Detects successful Kerberos ticket-granting ticket requests in Security event
+  4768 with pre-authentication type 0 for user accounts. These requests may
+  indicate AS-REP roasting. Requires successful Kerberos Authentication Service
+  auditing on the domain controller and windows.security_domain_controller_events = true.
+references:
+  - https://attack.mitre.org/techniques/T1558/004/
+  - https://learn.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4768
+  - https://github.com/Karib0u/rustinel/blob/v1.11.0/docs/windows-logging.md#domain-controller-events
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.t1558.004
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4768
+    PreAuthType: '0'
+    Status: '0x0'
+  filter_machine:
+    TargetUserName|endswith: '$'
+  condition: selection and not filter_machine
+falsepositives:
+  - Legitimate authentication by legacy accounts configured to omit Kerberos pre-authentication.
+level: high
+rustinel:
+  telemetry:
+    - security
+  expected_false_positive_level: medium
+  test_status: manual
+  test_reason: >
+    Kerberos ticket auditing requires a domain controller. Hosted Windows CI
+    runners are standalone. Covered by offline replay and unit fixtures.
+  tuning:
+    - surface: TargetUserName
+      guidance: Filter exact, approved legacy accounts that require pre-authentication to be disabled.
+  negatives:
+    - reason: a normal TGT request with pre-authentication
+      fields:
+        EventID: '4768'
+        PreAuthType: '2'
+        Status: '0x0'
+        TargetUserName: 'alice'
+    - reason: the request did not obtain a TGT
+      fields:
+        EventID: '4768'
+        PreAuthType: '0'
+        Status: '0x6'
+        TargetUserName: 'alice'
+    - reason: a TGT without pre-authentication for a machine account
+      fields:
+        EventID: '4768'
+        PreAuthType: '0'
+        Status: '0x0'
+        TargetUserName: 'FILE01$'
