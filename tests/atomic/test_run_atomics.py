@@ -1,5 +1,6 @@
 """Regression checks for atomic alert matching, without a running engine."""
 
+import argparse
 import base64
 import hashlib
 import json
@@ -11,8 +12,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import argparse
-
 import run_atomics
 from run_atomics import engine_version, make_predicate, parse_shard, report, shard_tests
 
@@ -22,8 +21,8 @@ import make_canary  # noqa: E402
 
 class AlertMatchingTests(unittest.TestCase):
     def setUp(self):
-        manifest = json.loads(Path(__file__).with_name("manifest.json").read_text())
-        test = next(t for t in manifest["tests"] if t["name"] == "windows_run_key_persistence")
+        tests = run_atomics.load_manifest(run_atomics.MANIFESTS_DIR)
+        test = next(t for t in tests if t["name"] == "windows_run_key_persistence")
         self.matches, _ = make_predicate(test, {})
         self.alert = {
             "rule.name": "Registry Run Key Persistence",
@@ -101,7 +100,7 @@ class NegativeFixtureTests(unittest.TestCase):
 
 class RegistryManifestTests(unittest.TestCase):
     def setUp(self):
-        self.manifest = json.loads(Path(__file__).with_name("manifest.json").read_text())["tests"]
+        self.manifest = run_atomics.load_manifest(run_atomics.MANIFESTS_DIR)
 
     def test_negative_scripts_exist_and_carry_markers(self):
         for test in self.manifest:
@@ -247,20 +246,58 @@ class FixtureOverlayTests(unittest.TestCase):
 
 
 class ManifestPolicyTests(unittest.TestCase):
-    def _load(self, tests):
-        with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "m.json"
-            path.write_text(json.dumps({"tests": tests}))
-            return run_atomics.load_manifest(path)
+    TEST = {"id": "i", "name": "n", "platform": "linux", "engine": "sigma", "script": "s"}
+
+    def setUp(self):
+        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+
+    def write_manifest(self, filename, *tests):
+        path = self.root / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"tests": tests}), encoding="utf-8")
+        return path
+
+    def test_manifest_directory_merges_nested_files_in_order(self):
+        sibling = {**self.TEST, "name": "mac", "platform": "macos"}
+        variant = {**self.TEST, "name": "variant", "variant": "another-branch"}
+        self.write_manifest("macos.json", sibling)
+        nested = self.write_manifest("linux/batch.json", self.TEST, variant)
+        (self.root / "README.md").write_text("ignored", encoding="utf-8")
+        self.assertEqual(run_atomics.load_manifest(self.root), [self.TEST, variant, sibling])
+        self.assertEqual(run_atomics.load_manifest(nested), [self.TEST, variant])
+
+    def test_duplicate_name_reports_both_manifest_files(self):
+        self.write_manifest("linux.json", self.TEST)
+        self.write_manifest("macos/batch.json", {**self.TEST, "id": "other", "platform": "macos"})
+        with self.assertRaisesRegex(
+            ValueError, r"batch\.json.*duplicate test name 'n'.*linux\.json"
+        ):
+            run_atomics.load_manifest(self.root)
+
+    def test_duplicate_id_on_the_same_platform_reports_both_manifest_files(self):
+        for fields in ({}, {"variant": "alternate"}):
+            with self.subTest(fields=fields):
+                self.write_manifest("linux/first.json", {**self.TEST, **fields})
+                self.write_manifest("linux/second.json", {**self.TEST, **fields, "name": "other"})
+                with self.assertRaisesRegex(
+                    ValueError, r"second\.json.*duplicate rule ID 'i' on linux.*first\.json"
+                ):
+                    run_atomics.load_manifest(self.root)
+
+    def test_empty_manifest_directory_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "no JSON manifests found"):
+            run_atomics.load_manifest(self.root)
 
     def test_allowed_failure_needs_a_reason(self):
-        base = {"id": "i", "name": "n", "platform": "linux", "engine": "sigma", "script": "s"}
-        with self.assertRaises(SystemExit):
-            self._load([{**base, "allow_failure": True}])
-        self._load([{**base, "allow_failure": True, "allow_failure_reason": "flaky"}])
+        test = {**self.TEST, "allow_failure": True}
+        path = self.write_manifest("linux.json", test)
+        with self.assertRaisesRegex(ValueError, "without allow_failure_reason"):
+            run_atomics.load_manifest(path)
+        self.write_manifest("linux.json", {**test, "allow_failure_reason": "flaky"})
+        run_atomics.load_manifest(path)
 
     def test_every_allowed_failure_in_the_shipped_manifest_has_a_reason(self):
-        tests = run_atomics.load_manifest(run_atomics.HARNESS_ROOT / "manifest.json")
+        tests = run_atomics.load_manifest(run_atomics.MANIFESTS_DIR)
         self.assertTrue(any(t.get("allow_failure") for t in tests))
 
 

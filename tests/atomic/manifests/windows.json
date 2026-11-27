@@ -1,15 +1,4 @@
 {
-  "_comment": [
-    "Each test maps an atomic action script (under atomics/) to a rule in this repo.",
-    "A test PASSES when the engine writes a matching alert after the script runs.",
-    "  - sigma/yara: the join key is rule.name == the rule's title (resolved by 'id'",
-    "    from rules/). No need to repeat the title here.",
-    "  - ioc/custom: give an explicit 'expect' {field, contains|equals} match,",
-    "    because IOC alerts use rule.name = 'ioc:<kind>:<indicator>'.",
-    "Set 'allow_failure': true for environment-dependent tests that should be",
-    "reported but not gate CI. Run `--check-coverage` to see which rules marked",
-    "test_status: atomic still lack a test here."
-  ],
   "tests": [
     {
       "id": "fc961eef-9d89-4b01-a1ed-4ac6b8013d97",
@@ -17,122 +6,6 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/rmm_staging_path.ps1"
-    },
-    {
-      "id": "ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb",
-      "name": "linux_rmm_staging_path",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/rmm_staging_path.sh"
-    },
-    {
-      "id": "4e7911b2-63a4-43c0-a97b-61c6f360782b",
-      "name": "macos_rmm_staging_path",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/rmm_staging_path.sh"
-    },
-    {
-      "id": "0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40",
-      "name": "linux_ldso_preload_hijack",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/ldso_preload_hijack.sh"
-    },
-    {
-      "id": "1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51",
-      "name": "linux_ssh_authorized_keys",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/ssh_authorized_keys.sh"
-    },
-    {
-      "id": "2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62",
-      "name": "linux_sudoers_tamper",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/sudoers_tamper.sh"
-    },
-    {
-      "id": "a3c5c821-004a-4e52-8684-0f7f9ea0404c",
-      "name": "linux_reverse_shell_dev_tcp",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/reverse_shell_dev_tcp.sh"
-    },
-    {
-      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
-      "name": "linux_webserver_spawns_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/webserver_spawns_shell.sh"
-    },
-    {
-      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
-      "name": "linux_webserver_spawns_shell_php_versioned",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/webserver_spawns_shell_php_versioned.sh"
-    },
-    {
-      "id": "9ac8732e-1818-4cda-89ac-01ca08a7b836",
-      "name": "linux_sshd_config_tamper",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/sshd_config_tamper.sh"
-    },
-    {
-      "id": "94fb53c7-debd-4287-99e4-6eb0ba923731",
-      "name": "linux_download_pipe_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/download_pipe_shell.sh"
-    },
-    {
-      "id": "4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84",
-      "name": "linux_cron_persistence",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/cron_persistence.sh"
-    },
-    {
-      "id": "3d4e5f60-7182-4394-9da5-2e3f4a5b6c73",
-      "name": "linux_systemd_persistence",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/systemd_persistence.sh"
-    },
-    {
-      "id": "5f607182-93a4-45b6-9fc7-4a5b6c7d8e95",
-      "name": "linux_shell_profile_persistence",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/shell_profile_persistence.sh"
-    },
-    {
-      "id": "60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6",
-      "name": "linux_exec_from_world_writable",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/exec_from_world_writable.sh"
-    },
-    {
-      "id": "yara-lnx-xmrig-coinminer",
-      "name": "linux_xmrig_yara_fixture",
-      "platform": "linux",
-      "engine": "yara",
-      "script": "linux/xmrig_yara_fixture.sh"
-    },
-    {
-      "id": "ioc-canary-exec",
-      "name": "linux_canary_ioc",
-      "platform": "linux",
-      "engine": "ioc",
-      "script": "linux/canary_ioc.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-hash"
-      }
     },
     {
       "id": "7f3a1c2e-4b5d-4e6f-8a90-1b2c3d4e5f60",
@@ -153,7 +26,8 @@
       "name": "windows_lsass_comsvcs_minidump_ordinal",
       "platform": "windows",
       "engine": "sigma",
-      "script": "windows/lsass_comsvcs_minidump_ordinal.ps1"
+      "script": "windows/lsass_comsvcs_minidump_ordinal.ps1",
+      "variant": "ordinal"
     },
     {
       "id": "1e9b4d68-2c7a-4f93-8b15-6d0a2e4c1b04",
@@ -348,97 +222,6 @@
       }
     },
     {
-      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
-      "name": "linux_nc_exec_reverse_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/nc_exec_reverse_shell.sh"
-    },
-    {
-      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
-      "name": "linux_nc_fifo_reverse_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/nc_fifo_reverse_shell.sh"
-    },
-    {
-      "id": "3f32d825-006a-45e9-b5a9-6e7edeeff13c",
-      "name": "linux_kmod_load_susp_path",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/kmod_load_susp_path.sh"
-    },
-    {
-      "id": "66fd4673-d86b-41d1-ba33-60d7c66dc962",
-      "name": "linux_backdoor_account",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/backdoor_account.sh"
-    },
-    {
-      "id": "6b124b53-1d4b-48a2-86b7-4df9bf43de61",
-      "name": "linux_log_clear",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/log_clear.sh"
-    },
-    {
-      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
-      "name": "linux_chmod_suid",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/chmod_suid.sh"
-    },
-    {
-      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
-      "name": "linux_chmod_suid_plus_s",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/chmod_suid_plus_s.sh"
-    },
-    {
-      "id": "1bb5e9e4-f17e-476e-8e77-aaa1858f12f7",
-      "name": "linux_udev_persistence",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/udev_persistence.sh"
-    },
-    {
-      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
-      "name": "linux_webshell_write",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/webshell_write.sh"
-    },
-    {
-      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
-      "name": "linux_webshell_write_php_versioned",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/webshell_write_php_versioned.sh"
-    },
-    {
-      "id": "d24c4943-3e22-481f-99ee-ca631b8a77af",
-      "name": "linux_base64_pipe_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/base64_pipe_shell.sh"
-    },
-    {
-      "id": "0cb59840-b420-4332-b7d1-2c3d4343901f",
-      "name": "linux_stop_security_services",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/stop_security_services.sh"
-    },
-    {
-      "id": "yara-lnx-msfvenom-stager",
-      "name": "linux_msfvenom_yara_fixture",
-      "platform": "linux",
-      "engine": "yara",
-      "script": "linux/msfvenom_yara_fixture.sh"
-    },
-    {
       "id": "e86de5fe-3908-4a95-b4e8-930a93bf4555",
       "name": "windows_bcdedit_recovery_tamper",
       "platform": "windows",
@@ -497,7 +280,8 @@
           "field": "registry.path",
           "endswith": "\\rustinel_atomic.exe\\GlobalFlag"
         }
-      ]
+      ],
+      "variant": "globalflag"
     },
     {
       "id": "cda4a133-fe67-4aa6-815d-f8c69ff16828",
@@ -514,7 +298,8 @@
           "field": "registry.path",
           "endswith": "\\SilentProcessExit\\rustinel_atomic.exe\\MonitorProcess"
         }
-      ]
+      ],
+      "variant": "silent-process-exit"
     },
     {
       "id": "52b94494-756b-40d7-af01-8d0c7d54a6cc",
@@ -585,213 +370,11 @@
       "script": "windows/msfvenom_yara_fixture.ps1"
     },
     {
-      "id": "be06a6b0-fa9f-4df4-9d4a-9f8794037508",
-      "name": "macos_reverse_shell_dev_tcp",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/reverse_shell_dev_tcp.sh",
-      "negatives": [
-        {"script": "macos/reverse_shell_dev_tcp_port_check_negative.sh", "marker": "rustinel_atomic_neg"}
-      ]
-    },
-    {
-      "id": "7a1c2e3f-4b5d-4e6f-8a90-1b2c3d4e5f01",
-      "name": "macos_keychain_dump_security",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/keychain_dump_security.sh"
-    },
-    {
-      "id": "6b2d3f40-5c6e-4f71-9b81-2c3d4e5f6012",
-      "name": "macos_osascript_admin_prompt",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/osascript_admin_prompt.sh"
-    },
-    {
-      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
-      "name": "macos_gatekeeper_bypass",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/gatekeeper_bypass.sh"
-    },
-    {
-      "id": "0b4db6de-848b-48e5-bebc-9fc4a2e24db2",
-      "name": "macos_gatekeeper_bypass_clear",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/gatekeeper_bypass_clear.sh"
-    },
-    {
-      "id": "4d4f5162-7e80-4193-9da3-4e5f60712304",
-      "name": "macos_launch_persistence",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/launch_persistence.sh"
-    },
-    {
-      "id": "3e506273-8f91-42a4-8eb4-5f6071823405",
-      "name": "macos_download_execute_cradle",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/download_execute_cradle.sh",
-      "negatives": [
-        {"script": "macos/download_execute_checksum_negative.sh", "marker": "rustinel_atomic_neg"}
-      ]
-    },
-    {
-      "id": "2f617384-9012-43b5-9fc5-60718293a416",
-      "name": "macos_local_admin_account",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/local_admin_account.sh"
-    },
-    {
-      "id": "1a728495-a123-44c6-8ad6-718293a4b527",
-      "name": "macos_exec_from_world_writable",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/exec_from_world_writable.sh"
-    },
-    {
-      "id": "yara-macos-coinminer-strings",
-      "name": "macos_coinminer_yara_fixture",
-      "platform": "macos",
-      "engine": "yara",
-      "script": "macos/coinminer_yara_fixture.sh"
-    },
-    {
-      "id": "ioc-canary-exec",
-      "name": "macos_canary_ioc",
-      "platform": "macos",
-      "engine": "ioc",
-      "script": "macos/canary_ioc.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-path"
-      }
-    },
-    {
-      "id": "6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb",
-      "name": "linux_history_delete",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/history_delete.sh"
-    },
-    {
-      "id": "55e6e499-c8d5-4d12-8e03-dd56f113d2a0",
-      "name": "linux_history_rename_away",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/history_rename_away.sh"
-    },
-    {
-      "id": "d16b52ef-8048-4edd-aafc-50a5a5c3c889",
-      "name": "linux_history_destruction",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/history_destruction.sh"
-    },
-    {
-      "id": "ffd3b3b3-9fd4-4fd2-9988-fe837e062181",
-      "name": "macos_history_delete",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/history_delete.sh"
-    },
-    {
-      "id": "457c6ee7-e5d8-4f06-b25e-a7a3d40e354d",
-      "name": "macos_history_rename_away",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/history_rename_away.sh"
-    },
-    {
-      "id": "40b5bf5b-055e-4db2-90df-bd2968ddad9f",
-      "name": "macos_history_destruction",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/history_destruction.sh"
-    },
-    {
       "id": "d6adbfee-548b-4def-9e49-8e6940251957",
       "name": "windows_wmi_subscription",
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/wmi_subscription.ps1"
-    },
-    {
-      "id": "829cee70-a60f-4e8a-8b2f-38e1fff83e61",
-      "name": "macos_tcc_db_access",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/tcc_db_access.sh"
-    },
-    {
-      "id": "db01bf97-33ca-4ce4-8ee7-7bbd4b4844f8",
-      "name": "macos_browser_credential_theft",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/browser_credential_theft.sh"
-    },
-    {
-      "id": "c92540cf-466d-4959-ab25-1c456bedf9d5",
-      "name": "macos_ssh_authorized_keys",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/ssh_authorized_keys.sh"
-    },
-    {
-      "id": "578195d3-de1a-4c46-84c8-b246a060474c",
-      "name": "macos_launchctl_susp_load",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/launchctl_susp_load.sh",
-      "negatives": [
-        {"script": "macos/launchctl_unload_negative.sh", "marker": "rustinel_atomic_launch_neg"}
-      ]
-    },
-    {
-      "id": "5c3e4051-6d7f-4082-8c92-3d4e5f601203",
-      "name": "macos_gatekeeper_global_disable",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/gatekeeper_global_disable.sh"
-    },
-    {
-      "id": "d3aaca03-eeea-4d6b-80a8-8e45c38b4fdd",
-      "name": "macos_osascript_admin_shell",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/osascript_admin_shell.sh"
-    },
-    {
-      "id": "97b0f988-7268-4854-9251-4da5a8397da9",
-      "name": "macos_account_admin_group",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/account_admin_group.sh"
-    },
-    {
-      "id": "55eaad6e-88a1-4eae-8014-24d96a68f965",
-      "name": "macos_hidden_user_account",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/hidden_user_account.sh"
-    },
-    {
-      "id": "8da551dd-08cf-4b73-b3cc-a18708f548b4",
-      "name": "macos_launch_persistence_scripted",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/launch_persistence_scripted.sh"
-    },
-    {
-      "id": "d0c6216e-881c-408f-8e72-0a466522306b",
-      "name": "linux_shell_outbound_connect",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/shell_outbound_connect.sh"
     },
     {
       "id": "59bbd501-1c61-45c9-940d-9465cabd36c4",
@@ -845,13 +428,6 @@
       "script": "windows/recon_commands.ps1"
     },
     {
-      "id": "yara-lnx-sliver-implant",
-      "name": "linux_sliver_yara_fixture",
-      "platform": "linux",
-      "engine": "yara",
-      "script": "linux/sliver_yara_fixture.sh"
-    },
-    {
       "id": "yara-win-sliver-implant",
       "name": "windows_sliver_yara_fixture",
       "platform": "windows",
@@ -867,52 +443,6 @@
     },
     {
       "id": "ioc-canary-exec",
-      "name": "linux_canary_ioc_ip",
-      "platform": "linux",
-      "engine": "ioc",
-      "script": "linux/ioc_ip_domain.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-ip"
-      }
-    },
-    {
-      "id": "ioc-canary-exec",
-      "name": "linux_canary_ioc_domain",
-      "platform": "linux",
-      "engine": "ioc",
-      "script": "linux/ioc_ip_domain.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-domain"
-      }
-    },
-    {
-      "id": "d943bd63-a255-4b5c-ba0d-2155d49cf2d3",
-      "name": "linux_sigma_correlation_fixture",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/sigma_correlation.sh"
-    },
-    {
-      "id": "yara-fixture-memory-marker",
-      "name": "linux_yara_memory_fixture",
-      "platform": "linux",
-      "engine": "yara",
-      "script": "linux/yara_memory_marker.sh",
-      "expect": [
-        {
-          "field": "rule.name",
-          "equals": "fixture_memory_marker"
-        },
-        {
-          "field": "edr.yara.scan_source",
-          "equals": "process_memory"
-        }
-      ]
-    },
-    {
-      "id": "ioc-canary-exec",
       "name": "windows_canary_ioc_ip",
       "platform": "windows",
       "engine": "ioc",
@@ -920,7 +450,8 @@
       "expect": {
         "field": "rule.description",
         "contains": "canary-exec-ip"
-      }
+      },
+      "variant": "ip"
     },
     {
       "id": "ioc-canary-exec",
@@ -931,7 +462,8 @@
       "expect": {
         "field": "rule.description",
         "contains": "canary-exec-domain"
-      }
+      },
+      "variant": "domain"
     },
     {
       "id": "3ea62257-1966-4582-b381-a5adcaf806a8",
@@ -946,52 +478,6 @@
       "platform": "windows",
       "engine": "yara",
       "script": "windows/yara_memory_marker.ps1",
-      "expect": [
-        {
-          "field": "rule.name",
-          "equals": "fixture_memory_marker"
-        },
-        {
-          "field": "edr.yara.scan_source",
-          "equals": "process_memory"
-        }
-      ]
-    },
-    {
-      "id": "ioc-canary-exec",
-      "name": "macos_canary_ioc_ip",
-      "platform": "macos",
-      "engine": "ioc",
-      "script": "macos/ioc_ip_domain.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-ip"
-      }
-    },
-    {
-      "id": "ioc-canary-exec",
-      "name": "macos_canary_ioc_domain",
-      "platform": "macos",
-      "engine": "ioc",
-      "script": "macos/ioc_ip_domain.sh",
-      "expect": {
-        "field": "rule.description",
-        "contains": "canary-exec-domain"
-      }
-    },
-    {
-      "id": "ac1a60e4-e530-43ff-8553-e0624f374305",
-      "name": "macos_sigma_correlation_fixture",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/sigma_correlation.sh"
-    },
-    {
-      "id": "yara-fixture-memory-marker",
-      "name": "macos_yara_memory_fixture",
-      "platform": "macos",
-      "engine": "yara",
-      "script": "macos/yara_memory_marker.sh",
       "expect": [
         {
           "field": "rule.name",
@@ -1096,99 +582,6 @@
       ]
     },
     {
-      "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
-      "name": "linux_suid_shell_euid0",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/suid_shell_euid0.sh",
-      "negatives": [
-        {
-          "script": "linux/suid_shell_euid0_negative.sh",
-          "marker": "rustinel_negative_suid"
-        }
-      ]
-    },
-    {
-      "id": "300f4d0e-79ef-4c53-9461-7b3f4e468537",
-      "name": "linux_dns_tunnel_service",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/dns_tunnel_service.sh",
-      "negatives": [
-        {
-          "script": "linux/dns_tunnel_service_negative.sh",
-          "marker": "rustinel-negative.mytrycloudflare.com"
-        }
-      ]
-    },
-    {
-      "id": "5172afac-6ce2-4f89-943b-57ddb23c9b40",
-      "name": "linux_dns_tunnel_name_shape",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "dns_query.sh"
-    },
-    {
-      "id": "5618002a-49ca-4dbd-9a15-bb15ff596367",
-      "name": "linux_dns_non_browser_api",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/dns_non_browser_api.sh"
-    },
-    {
-      "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
-      "name": "linux_ransomware_mass_rename",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/ransomware_mass_rename.sh",
-      "negatives": [
-        {
-          "script": "linux/ransomware_mass_rename_negative.sh",
-          "marker": "rustinel_negative_mass_rename"
-        }
-      ]
-    },
-    {
-      "id": "e6aa2995-f56a-454a-af2c-14db0ec296ee",
-      "name": "macos_shell_outbound_connect",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/shell_outbound_connect.sh"
-    },
-    {
-      "id": "6ffbed18-7975-470b-97ce-33d187ecd839",
-      "name": "macos_dns_tunnel_service",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/dns_tunnel_service.sh",
-      "negatives": [
-        {
-          "script": "macos/dns_tunnel_service_negative.sh",
-          "marker": "rustinel-negative.mytrycloudflare.com"
-        }
-      ]
-    },
-    {
-      "id": "3beb59ba-1bc7-4dbb-a0bb-7e101c4b51d4",
-      "name": "macos_dns_tunnel_name_shape",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "dns_query.sh"
-    },
-    {
-      "id": "90ae463b-19cb-4fd3-9447-dc2222792865",
-      "name": "macos_ransomware_mass_rename",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/ransomware_mass_rename.sh",
-      "negatives": [
-        {
-          "script": "macos/ransomware_mass_rename_negative.sh",
-          "marker": "rustinel_negative_mass_rename"
-        }
-      ]
-    },
-    {
       "id": "e813d6f6-5dbb-4587-a60e-20a04481fdc6",
       "name": "windows_security_log_cleared",
       "platform": "windows",
@@ -1278,76 +671,6 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/account_created.ps1"
-    },
-    {
-      "id": "f7c3b270-a699-4597-a5b6-0e2860f3decf",
-      "name": "linux_scripted_reverse_shell",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/scripted_reverse_shell.sh"
-    },
-    {
-      "id": "40109cc2-5bab-4d23-9761-080badad3447",
-      "name": "linux_auditctl_disabled",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/auditctl_disabled.sh"
-    },
-    {
-      "id": "862678f2-acca-4646-a500-57cfed335737",
-      "name": "linux_setcap_dangerous_grant",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/setcap_dangerous_grant.sh"
-    },
-    {
-      "id": "f817eb9c-254b-421d-a2f8-c0ee949fa811",
-      "name": "linux_ssh_startup_file",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/ssh_startup_file.sh"
-    },
-    {
-      "id": "51030a36-b4ae-492c-9e71-e6067bb66b34",
-      "name": "linux_privileged_container",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/privileged_container.sh"
-    },
-    {
-      "id": "81c851b7-74ea-4cae-80aa-ee45b25fb0af",
-      "name": "linux_chattr_immutable_persistence",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/chattr_immutable_persistence.sh"
-    },
-    {
-      "id": "a66f0d92-6e07-47ff-8c9a-400a00e3caec",
-      "name": "linux_firewall_disabled",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/firewall_disabled.sh"
-    },
-    {
-      "id": "2ef433bf-d843-424c-8223-c31efb639535",
-      "name": "linux_pam_tamper",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/pam_tamper.sh"
-    },
-    {
-      "id": "94f6d29a-b19b-4bb2-9283-f3d6f9976811",
-      "name": "linux_cloud_metadata_credentials",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/cloud_metadata_credentials.sh"
-    },
-    {
-      "id": "43dae6e5-fb47-46a0-90a3-a0992f985eaa",
-      "name": "linux_cryptominer_cmdline",
-      "platform": "linux",
-      "engine": "sigma",
-      "script": "linux/cryptominer_cmdline.sh"
     },
     {
       "id": "157ffa4c-89d0-4b92-9119-66ca256eea60",
@@ -1488,83 +811,6 @@
       "platform": "windows",
       "engine": "sigma",
       "script": "windows/tunneling_tools.ps1"
-    },
-    {
-      "id": "7cdd4118-b1f9-4396-a9fd-728b9d453803",
-      "name": "macos_dscl_authonly",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/dscl_authonly.sh"
-    },
-    {
-      "id": "abc435d7-cb05-4288-8e87-f549e189bbb0",
-      "name": "macos_authorization_plugin",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/authorization_plugin.sh"
-    },
-    {
-      "id": "b01a8433-8768-4825-8d7e-665e132f17b6",
-      "name": "macos_shell_profile_scripted",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/shell_profile_scripted.sh"
-    },
-    {
-      "id": "ba4c78ad-7cd1-4fce-b409-57af0f79c814",
-      "name": "macos_login_hook_or_item",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/login_hook.sh"
-    },
-    {
-      "id": "a360dda4-e2ba-42e1-8fda-4a787afebf2d",
-      "name": "macos_trusted_cert_added",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/trusted_cert_added.sh"
-    },
-    {
-      "id": "ae9f76d9-4f90-4111-ab43-0b11314d4ceb",
-      "name": "macos_cryptominer_cmdline",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/cryptominer_cmdline.sh"
-    },
-    {
-      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
-      "name": "macos_stealer_sudo_stdin",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/stealer_sudo_stdin.sh"
-    },
-    {
-      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
-      "name": "macos_stealer_jxa_bridge",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/stealer_jxa_bridge.sh"
-    },
-    {
-      "id": "0a001338-814e-44d5-aab5-b7bb7290938f",
-      "name": "macos_scheduled_job",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/scheduled_job.sh"
-    },
-    {
-      "id": "c35a831e-4046-4e9b-9378-a180d00814f7",
-      "name": "macos_configuration_profile_install",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/configuration_profile_install.sh"
-    },
-    {
-      "id": "52013862-0171-4b0c-a0d0-97bc065109e5",
-      "name": "macos_dyld_insert_libraries",
-      "platform": "macos",
-      "engine": "sigma",
-      "script": "macos/dyld_insert_libraries.sh"
     }
   ]
 }

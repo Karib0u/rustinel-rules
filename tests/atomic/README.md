@@ -230,7 +230,7 @@ and `engine.stdout.log` beside the report.
 ```text
 tests/atomic/
 ├── run_atomics.py          orchestrator (pure stdlib: runs under `sudo python3`)
-├── manifest.json           rule id  ->  atomic script + how to match the alert
+├── manifests/             JSON files mapping rule IDs to scripts and alert matches
 ├── test_run_atomics.py     unit tests: alert matching, canary blob/hash agreement
 ├── canary/make_canary.py   generates the deterministic hash-IOC canary binaries
 └── atomics/
@@ -326,9 +326,12 @@ harness command. Filtered runs do not replace the full suite for a pin update.
    rule's `detection:` block). Make it clean up after itself. (macOS ships no
    GNU `timeout`: background the process and `kill` it, or bound the tool
    itself - e.g. `curl --max-time`.)
-2. Add an entry to `manifest.json` with the rule `id`, `name`, `platform`,
-   `engine`, `script`. For Sigma/YARA the title resolves automatically; for IOC
-   or anything else, add `expect: {field, contains}`.
+2. Add a JSON file such as `manifests/<platform>/<batch>.json` with a `tests`
+   array. The runner recursively loads all JSON files under `manifests/` in
+   path order. Use `--manifest` to select one file or a different directory.
+   Each entry needs the rule `id`, a unique test `name`, `platform`, `engine`,
+   and `script`. For Sigma/YARA the title resolves automatically. For IOC or
+   other custom alerts, add `expect: {field, contains}`.
    `expect` also accepts a list of conditions that must all match the same alert.
    Each condition uses `field` and one of `equals`, `contains`, or `endswith`.
    The Run key atomic requires both the rule name and a registry path ending in
@@ -340,8 +343,8 @@ harness command. Filtered runs do not replace the full suite for a pin update.
    `--negative-wait` seconds (default 8) and fails if the rule alerts on an event
    whose alert JSON contains `marker` (a string or list of strings). The marker
    ties the alert to the negative action, so a late duplicate of the positive
-   cannot fail it. Several manifest entries may share one rule `id` to cover
-   separate detection branches.
+   cannot fail it. To cover multiple branches of one rule on the same
+   platform, give each additional entry a distinct `variant` string.
 3. `python3 tests/atomic/run_atomics.py --list` to confirm the join key resolves.
 4. Flip that artifact's `test_status` to `atomic`.
    `--check-coverage` reports platform-specific manifest gaps and Essential

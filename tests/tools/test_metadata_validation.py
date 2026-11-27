@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from hashlib import sha256
 from pathlib import Path
 from unittest.mock import patch
 
@@ -64,8 +65,41 @@ class MetadataValidationTests(unittest.TestCase):
             collection command-and-control exfiltration impact
         """.split()
         tags = [f"attack.{tactic}" for tactic in tactics]
-        tags += ["attack.t1555", "attack.T1059.006", "attack.s0002", "cve.2020-1234"]
+        tags += ["attack.t1555", "attack.T1218.015", "attack.s0002", "cve.2020-1234"]
         self.assertEqual(self.errors(sigma_rule(tags=tags)), "")
+
+    def test_enterprise_v18_1_technique_table_is_complete_and_consistent(self):
+        metadata = lib.load_attack_metadata()
+        self.assertEqual(
+            set(metadata), {"_comment", "source", "tactics", "techniques", "software", "deprecated"}
+        )
+        self.assertTrue(metadata["source"].endswith("/v18.1"))
+        techniques = metadata["techniques"]
+        deprecated = metadata["deprecated"]
+        self.assertEqual(len(techniques), 691)
+        self.assertEqual(sum("." in ident for ident in techniques), 475)
+        # SHA-256 of the newline-joined, sorted active IDs in MITRE's v18.1 STIX bundle.
+        self.assertEqual(
+            sha256("\n".join(sorted(techniques)).encode()).hexdigest(),
+            "de117e006ad993b36b80a6810a4145846103769d22c2cc3ea847651e6ed384de",
+        )
+        self.assertEqual(len(metadata["tactics"]), 14)
+        self.assertEqual(sum(ident.startswith("T") for ident in deprecated), 144)
+        self.assertFalse(techniques.keys() & deprecated.keys())
+        for ident, info in techniques.items():
+            with self.subTest(technique=ident):
+                self.assertRegex(ident, r"^T\d{4}(?:\.\d{3})?$")
+                self.assertEqual(set(info), {"name", "tactic"})
+                self.assertIsInstance(info["name"], str)
+                self.assertTrue(info["name"].strip())
+                self.assertIn(info["tactic"], metadata["tactics"])
+                if "." in ident:
+                    parent = techniques[ident.split(".")[0]]
+                    self.assertTrue(info["name"].startswith(f"{parent['name']}: "))
+        for replacement in deprecated.values():
+            self.assertIsInstance(replacement, str)
+            if replacement:
+                self.assertTrue(replacement in techniques or replacement in metadata["software"])
 
     def test_bad_attack_tags_are_file_specific(self):
         for tag, expected in (
@@ -76,11 +110,14 @@ class MetadataValidationTests(unittest.TestCase):
             ("attack.t1059.999", "unknown ATT&CK technique ID 'T1059.999'"),
             ("attack.s9999", "unknown ATT&CK software ID 'S9999'"),
             ("attack.t1086", "deprecated ATT&CK ID 'T1086'. Use 'T1059.001'"),
+            ("attack.t1066", "deprecated ATT&CK ID 'T1066'. Use 'T1027.005'"),
             ("attack.t1053.001", "deprecated ATT&CK ID 'T1053.001'. Use 'T1053.002'"),
             ("attack.s0209", "deprecated ATT&CK ID 'S0209'. Use 'S0012'"),
         ):
             with self.subTest(tag=tag):
                 self.assertIn(expected, self.errors(sigma_rule(tags=[tag])))
+        errors = self.errors(sigma_rule(tags=["attack.t1053.004"]))
+        self.assertTrue(errors.endswith("deprecated ATT&CK ID 'T1053.004'."))
         for tags in ("attack.execution", {"attack.execution": True}, [1], ["other.tag"]):
             with self.subTest(tags=tags):
                 self.assertIn("no ATT&CK tag", self.errors(sigma_rule(tags=tags)))

@@ -1,0 +1,414 @@
+{
+  "tests": [
+    {
+      "id": "ed1b952a-5fd2-4ac2-bbc0-387ada9d2afb",
+      "name": "linux_rmm_staging_path",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/rmm_staging_path.sh"
+    },
+    {
+      "id": "0a1b2c3d-4e5f-4061-8a72-9b0c1d2e3f40",
+      "name": "linux_ldso_preload_hijack",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ldso_preload_hijack.sh"
+    },
+    {
+      "id": "1b2c3d4e-5f60-4172-9b83-0c1d2e3f4a51",
+      "name": "linux_ssh_authorized_keys",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ssh_authorized_keys.sh"
+    },
+    {
+      "id": "2c3d4e5f-6071-4283-8c94-1d2e3f4a5b62",
+      "name": "linux_sudoers_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sudoers_tamper.sh"
+    },
+    {
+      "id": "a3c5c821-004a-4e52-8684-0f7f9ea0404c",
+      "name": "linux_reverse_shell_dev_tcp",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/reverse_shell_dev_tcp.sh"
+    },
+    {
+      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
+      "name": "linux_webserver_spawns_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webserver_spawns_shell.sh"
+    },
+    {
+      "id": "8fd4d1d9-38cf-4704-8009-00e41a009c98",
+      "name": "linux_webserver_spawns_shell_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webserver_spawns_shell_php_versioned.sh",
+      "variant": "versioned-php"
+    },
+    {
+      "id": "9ac8732e-1818-4cda-89ac-01ca08a7b836",
+      "name": "linux_sshd_config_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sshd_config_tamper.sh"
+    },
+    {
+      "id": "94fb53c7-debd-4287-99e4-6eb0ba923731",
+      "name": "linux_download_pipe_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/download_pipe_shell.sh"
+    },
+    {
+      "id": "4e5f6071-8293-44a5-8eb6-3f4a5b6c7d84",
+      "name": "linux_cron_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cron_persistence.sh"
+    },
+    {
+      "id": "3d4e5f60-7182-4394-9da5-2e3f4a5b6c73",
+      "name": "linux_systemd_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/systemd_persistence.sh"
+    },
+    {
+      "id": "5f607182-93a4-45b6-9fc7-4a5b6c7d8e95",
+      "name": "linux_shell_profile_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/shell_profile_persistence.sh"
+    },
+    {
+      "id": "60718293-a4b5-46c7-8fd8-5b6c7d8e9fa6",
+      "name": "linux_exec_from_world_writable",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/exec_from_world_writable.sh"
+    },
+    {
+      "id": "yara-lnx-xmrig-coinminer",
+      "name": "linux_xmrig_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/xmrig_yara_fixture.sh"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/canary_ioc.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-hash"
+      }
+    },
+    {
+      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
+      "name": "linux_nc_exec_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/nc_exec_reverse_shell.sh"
+    },
+    {
+      "id": "1adaaaca-bfcf-46fe-9bd1-4b475d7bc827",
+      "name": "linux_nc_fifo_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/nc_fifo_reverse_shell.sh",
+      "variant": "fifo"
+    },
+    {
+      "id": "3f32d825-006a-45e9-b5a9-6e7edeeff13c",
+      "name": "linux_kmod_load_susp_path",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/kmod_load_susp_path.sh"
+    },
+    {
+      "id": "66fd4673-d86b-41d1-ba33-60d7c66dc962",
+      "name": "linux_backdoor_account",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/backdoor_account.sh"
+    },
+    {
+      "id": "6b124b53-1d4b-48a2-86b7-4df9bf43de61",
+      "name": "linux_log_clear",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/log_clear.sh"
+    },
+    {
+      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
+      "name": "linux_chmod_suid",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chmod_suid.sh"
+    },
+    {
+      "id": "7a34ffc3-adbc-4d9d-94a4-4bd33ac05cc3",
+      "name": "linux_chmod_suid_plus_s",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chmod_suid_plus_s.sh",
+      "variant": "symbolic-mode"
+    },
+    {
+      "id": "1bb5e9e4-f17e-476e-8e77-aaa1858f12f7",
+      "name": "linux_udev_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/udev_persistence.sh"
+    },
+    {
+      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
+      "name": "linux_webshell_write",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webshell_write.sh"
+    },
+    {
+      "id": "e96a9b85-26f6-4251-a26b-361d4b6761ef",
+      "name": "linux_webshell_write_php_versioned",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/webshell_write_php_versioned.sh",
+      "variant": "versioned-php"
+    },
+    {
+      "id": "d24c4943-3e22-481f-99ee-ca631b8a77af",
+      "name": "linux_base64_pipe_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/base64_pipe_shell.sh"
+    },
+    {
+      "id": "0cb59840-b420-4332-b7d1-2c3d4343901f",
+      "name": "linux_stop_security_services",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/stop_security_services.sh"
+    },
+    {
+      "id": "yara-lnx-msfvenom-stager",
+      "name": "linux_msfvenom_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/msfvenom_yara_fixture.sh"
+    },
+    {
+      "id": "6df6fcdc-e5e5-413b-aabe-ec3d51d6bfeb",
+      "name": "linux_history_delete",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_delete.sh"
+    },
+    {
+      "id": "55e6e499-c8d5-4d12-8e03-dd56f113d2a0",
+      "name": "linux_history_rename_away",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_rename_away.sh"
+    },
+    {
+      "id": "d16b52ef-8048-4edd-aafc-50a5a5c3c889",
+      "name": "linux_history_destruction",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/history_destruction.sh"
+    },
+    {
+      "id": "d0c6216e-881c-408f-8e72-0a466522306b",
+      "name": "linux_shell_outbound_connect",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/shell_outbound_connect.sh"
+    },
+    {
+      "id": "yara-lnx-sliver-implant",
+      "name": "linux_sliver_yara_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/sliver_yara_fixture.sh"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_ip",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-ip"
+      },
+      "variant": "ip"
+    },
+    {
+      "id": "ioc-canary-exec",
+      "name": "linux_canary_ioc_domain",
+      "platform": "linux",
+      "engine": "ioc",
+      "script": "linux/ioc_ip_domain.sh",
+      "expect": {
+        "field": "rule.description",
+        "contains": "canary-exec-domain"
+      },
+      "variant": "domain"
+    },
+    {
+      "id": "d943bd63-a255-4b5c-ba0d-2155d49cf2d3",
+      "name": "linux_sigma_correlation_fixture",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/sigma_correlation.sh"
+    },
+    {
+      "id": "yara-fixture-memory-marker",
+      "name": "linux_yara_memory_fixture",
+      "platform": "linux",
+      "engine": "yara",
+      "script": "linux/yara_memory_marker.sh",
+      "expect": [
+        {
+          "field": "rule.name",
+          "equals": "fixture_memory_marker"
+        },
+        {
+          "field": "edr.yara.scan_source",
+          "equals": "process_memory"
+        }
+      ]
+    },
+    {
+      "id": "b5df6758-24ff-49c0-ba6e-c67760177ddb",
+      "name": "linux_suid_shell_euid0",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/suid_shell_euid0.sh",
+      "negatives": [
+        {
+          "script": "linux/suid_shell_euid0_negative.sh",
+          "marker": "rustinel_negative_suid"
+        }
+      ]
+    },
+    {
+      "id": "300f4d0e-79ef-4c53-9461-7b3f4e468537",
+      "name": "linux_dns_tunnel_service",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_tunnel_service.sh",
+      "negatives": [
+        {
+          "script": "linux/dns_tunnel_service_negative.sh",
+          "marker": "rustinel-negative.mytrycloudflare.com"
+        }
+      ]
+    },
+    {
+      "id": "5172afac-6ce2-4f89-943b-57ddb23c9b40",
+      "name": "linux_dns_tunnel_name_shape",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "dns_query.sh"
+    },
+    {
+      "id": "5618002a-49ca-4dbd-9a15-bb15ff596367",
+      "name": "linux_dns_non_browser_api",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/dns_non_browser_api.sh"
+    },
+    {
+      "id": "ae619e3b-9950-4cec-89f0-8874c142197b",
+      "name": "linux_ransomware_mass_rename",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ransomware_mass_rename.sh",
+      "negatives": [
+        {
+          "script": "linux/ransomware_mass_rename_negative.sh",
+          "marker": "rustinel_negative_mass_rename"
+        }
+      ]
+    },
+    {
+      "id": "f7c3b270-a699-4597-a5b6-0e2860f3decf",
+      "name": "linux_scripted_reverse_shell",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/scripted_reverse_shell.sh"
+    },
+    {
+      "id": "40109cc2-5bab-4d23-9761-080badad3447",
+      "name": "linux_auditctl_disabled",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/auditctl_disabled.sh"
+    },
+    {
+      "id": "862678f2-acca-4646-a500-57cfed335737",
+      "name": "linux_setcap_dangerous_grant",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/setcap_dangerous_grant.sh"
+    },
+    {
+      "id": "f817eb9c-254b-421d-a2f8-c0ee949fa811",
+      "name": "linux_ssh_startup_file",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/ssh_startup_file.sh"
+    },
+    {
+      "id": "51030a36-b4ae-492c-9e71-e6067bb66b34",
+      "name": "linux_privileged_container",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/privileged_container.sh"
+    },
+    {
+      "id": "81c851b7-74ea-4cae-80aa-ee45b25fb0af",
+      "name": "linux_chattr_immutable_persistence",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/chattr_immutable_persistence.sh"
+    },
+    {
+      "id": "a66f0d92-6e07-47ff-8c9a-400a00e3caec",
+      "name": "linux_firewall_disabled",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/firewall_disabled.sh"
+    },
+    {
+      "id": "2ef433bf-d843-424c-8223-c31efb639535",
+      "name": "linux_pam_tamper",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/pam_tamper.sh"
+    },
+    {
+      "id": "94f6d29a-b19b-4bb2-9283-f3d6f9976811",
+      "name": "linux_cloud_metadata_credentials",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cloud_metadata_credentials.sh"
+    },
+    {
+      "id": "43dae6e5-fb47-46a0-90a3-a0992f985eaa",
+      "name": "linux_cryptominer_cmdline",
+      "platform": "linux",
+      "engine": "sigma",
+      "script": "linux/cryptominer_cmdline.sh"
+    }
+  ]
+}
