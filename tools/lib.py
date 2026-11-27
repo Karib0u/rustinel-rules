@@ -24,6 +24,7 @@ Requires PyYAML (see tools/requirements.txt).
 
 from __future__ import annotations
 
+import json
 import re
 import tomllib
 from functools import lru_cache
@@ -40,6 +41,7 @@ SCHEMA_DIR = REPO_ROOT / "schemas"
 PACK_SCHEMA_PATH = SCHEMA_DIR / "pack.schema.json"
 IOC_SCHEMA_PATH = SCHEMA_DIR / "ioc.schema.json"
 PREVIEW_SCHEMA_PATH = SCHEMA_DIR / "preview.schema.json"
+ATTACK_MAP_PATH = REPO_ROOT / "tools" / "attack_techniques.json"
 DIST_DIR = REPO_ROOT / "dist"
 PYPROJECT_PATH = REPO_ROOT / "pyproject.toml"
 # Test-only content is flattened here, deliberately outside dist/ so no release
@@ -121,18 +123,28 @@ def load_sigma_rules(root: Path | None = None) -> list[Artifact]:
 
 
 _YARA_RULE_RE = re.compile(r"\brule\s+([A-Za-z_][A-Za-z0-9_]*)")
-_YARA_META_ID_RE = re.compile(r'\bid\s*=\s*"([^"]+)"')
-_YARA_META_ATTACK_RE = re.compile(r'\battack\s*=\s*"([^"]+)"')
+_YARA_META_RE = re.compile(r"meta:\s*(.*?)\n\s*(?:strings|condition)\s*:", re.DOTALL)
+_YARA_KV_RE = re.compile(r'^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?:"([^"]*)"|(\S+))', re.MULTILINE)
+
+
+def parse_yara_meta(raw: str) -> dict[str, str]:
+    block = _YARA_META_RE.search(raw)
+    return (
+        {key: bare or quoted for key, quoted, bare in _YARA_KV_RE.findall(block[1])}
+        if block
+        else {}
+    )
 
 
 def load_yara_rules(root: Path | None = None) -> list[Artifact]:
     artifacts: list[Artifact] = []
     for path in sorted((root or RULES_DIR).glob(YARA_GLOB)):
         raw = path.read_text(encoding="utf-8")
-        meta_id = _YARA_META_ID_RE.search(raw)
         name = _YARA_RULE_RE.search(raw)
-        rule_id = (meta_id.group(1) if meta_id else name.group(1) if name else "").strip()
-        meta = {"rule_name": name.group(1) if name else None}
+        meta = parse_yara_meta(raw)
+        if name:
+            meta["rule_name"] = name.group(1)
+        rule_id = (meta.get("id") or meta.get("rule_name", "")).strip()
         artifacts.append(Artifact(rule_id, "yara", path, meta, raw))
     return artifacts
 
@@ -196,10 +208,13 @@ def parse_ioc_indicators(doc: dict) -> dict[str, list[tuple[str, str | None]]]:
     Unknown indicator types are ignored here and flagged by validation.
     """
     result: dict[str, list[tuple[str, str | None]]] = {t: [] for t in IOC_TYPES}
-    for ioc_type, entries in (doc.get("indicators") or {}).items():
-        if ioc_type not in IOC_TYPES:
+    indicators = doc.get("indicators")
+    if not isinstance(indicators, dict):
+        return result
+    for ioc_type, entries in indicators.items():
+        if ioc_type not in IOC_TYPES or not isinstance(entries, list):
             continue
-        for entry in entries or []:
+        for entry in entries:
             if isinstance(entry, dict):
                 value = str(entry.get("value", "")).strip()
                 comment = entry.get("comment")
@@ -212,26 +227,65 @@ def parse_ioc_indicators(doc: dict) -> dict[str, list[tuple[str, str | None]]]:
     return result
 
 
-_SIGMA_TECHNIQUE_RE = re.compile(r"^attack\.(t\d{4}(?:\.\d{3})?)$", re.IGNORECASE)
+ATTACK_TAG_PREFIX = "attack."
+ATTACK_TECHNIQUE_RE = re.compile(r"T[0-9]{4}(?:\.[0-9]{3})?", re.IGNORECASE)
+ATTACK_SOFTWARE_RE = re.compile(r"S[0-9]{4}", re.IGNORECASE)
 
 
-def artifact_attack_techniques(artifact: Artifact) -> set:
-    """Best-effort set of ATT&CK technique ids (e.g. {"T1059.001"}) declared by
-    an artifact, used to detect pack attack_coverage drift."""
-    techniques: set = set()
+@lru_cache(maxsize=1)
+def load_attack_metadata() -> dict:
+    return json.loads(ATTACK_MAP_PATH.read_text(encoding="utf-8"))
+
+
+def sigma_attack_tags(meta: dict) -> set[str]:
+    tags = meta.get("tags")
+    if not isinstance(tags, list):
+        return set()
+    return {
+        tag.lower().removeprefix(ATTACK_TAG_PREFIX)
+        for tag in tags
+        if isinstance(tag, str) and tag.lower().startswith(ATTACK_TAG_PREFIX)
+    }
+
+
+def artifact_attack_techniques(artifact: Artifact) -> set[str]:
+    """Normalized technique IDs declared by the artifact."""
     if artifact.kind == "sigma":
-        for tag in artifact.meta.get("tags") or []:
-            match = _SIGMA_TECHNIQUE_RE.match(str(tag))
-            if match:
-                techniques.add(match.group(1).upper())
-    elif artifact.kind == "yara":
-        match = _YARA_META_ATTACK_RE.search(artifact.raw)
-        if match:
-            techniques.add(match.group(1).strip().upper())
-    elif artifact.kind == "ioc":
-        for technique in artifact.meta.get("attack") or []:
-            techniques.add(str(technique).strip().upper())
-    return techniques
+        return {
+            tag.upper()
+            for tag in sigma_attack_tags(artifact.meta)
+            if ATTACK_TECHNIQUE_RE.fullmatch(tag)
+        }
+    if artifact.kind == "yara":
+        technique = artifact.meta.get("attack")
+        return {technique.strip().upper()} if isinstance(technique, str) else set()
+    attack = artifact.meta.get("attack")
+    if not isinstance(attack, list):
+        return set()
+    return {t.strip().upper() for t in attack if isinstance(t, str)}
+
+
+def artifact_attack_software(artifact: Artifact) -> set[str]:
+    if artifact.kind == "sigma":
+        return {
+            tag.upper()
+            for tag in sigma_attack_tags(artifact.meta)
+            if ATTACK_SOFTWARE_RE.fullmatch(tag)
+        }
+    if artifact.kind == "yara":
+        software = artifact.meta.get("software")
+        return {software.strip().upper()} if isinstance(software, str) else set()
+    return set()
+
+
+def sigma_rustinel_metadata(meta: dict) -> dict:
+    rustinel = meta.get("rustinel")
+    return rustinel if isinstance(rustinel, dict) else {}
+
+
+def artifact_behavioral_techniques(artifact: Artifact) -> set[str]:
+    """ATT&CK coverage claims, excluding contextual technique IDs on YARA signatures."""
+    return set() if artifact.kind == "yara" else artifact_attack_techniques(artifact)
 
 
 # --------------------------------------------------------------------------- #
@@ -495,7 +549,7 @@ def artifact_min_engine(
                 minimum = version
             reasons.append(f"{field}: populated from v{version} (engine field contract)")
 
-        declared = str((artifact.meta.get("rustinel") or {}).get("min_engine") or "").strip()
+        declared = str(sigma_rustinel_metadata(artifact.meta).get("min_engine") or "").strip()
         if declared:
             if parse_version(declared) > parse_version(minimum):
                 minimum = declared
@@ -559,15 +613,13 @@ def active_response_eligible(pack: dict) -> bool:
 
 
 def artifact_test_status(artifact: Artifact) -> str | None:
-    """Declared test evidence of a rule: Sigma `rustinel.test_status`, YARA
-    `test_status` meta. IOC sets carry none and are left out of the roll-up."""
+    """Declared test evidence of a rule. IOC sets without a declaration are omitted."""
     if artifact.kind == "sigma":
-        value = (artifact.meta.get("rustinel") or {}).get("test_status")
-    elif artifact.kind == "yara":
-        match = re.search(r'^\s*test_status\s*=\s*"([^"]*)"', artifact.raw, re.MULTILINE)
-        value = match.group(1) if match else None
+        value = sigma_rustinel_metadata(artifact.meta).get("test_status")
     else:
-        return None
+        value = artifact.meta.get("test_status")
+        if artifact.kind == "ioc" and value is None:
+            return None
     return str(value or "none").strip().lower()
 
 
@@ -579,9 +631,9 @@ def derive_pack_summary(resolved_ids, artifact_index) -> dict:
     statuses: set[str] = set()
     for artifact_id in resolved_ids:
         artifact = artifact_index.get(artifact_id)
-        if artifact is None:
+        if artifact is None or artifact.meta.get("status") == "deprecated":
             continue
-        techniques |= artifact_attack_techniques(artifact)
+        techniques |= artifact_behavioral_techniques(artifact)
         status = artifact_test_status(artifact)
         if status is not None:
             statuses.add(status)
@@ -664,11 +716,9 @@ def get_pack_subfolder_rules(pack: dict) -> dict[str, list[str]]:
                 else:
                     try:
                         raw = file.read_text(encoding="utf-8")
-                        meta_id = _YARA_META_ID_RE.search(raw)
+                        meta_id = parse_yara_meta(raw).get("id")
                         name = _YARA_RULE_RE.search(raw)
-                        rule_id = (
-                            meta_id.group(1) if meta_id else name.group(1) if name else ""
-                        ).strip()
+                        rule_id = (meta_id if meta_id else name.group(1) if name else "").strip()
                         if rule_id:
                             result["yara"].append(rule_id)
                     except Exception:

@@ -31,6 +31,7 @@ falsepositives:
   - Active Directory migrations that intentionally preserve SID History.
 level: high
 rustinel:
+  roles: [domain_controller]
   telemetry:
     - security
   expected_false_positive_level: low

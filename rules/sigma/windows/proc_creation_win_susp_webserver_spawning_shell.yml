@@ -46,6 +46,7 @@ falsepositives:
   - Legacy web applications or SQL Agent jobs that deliberately shell out to cmd.exe.
 level: high
 rustinel:
+  roles: [web_server, server]
   telemetry:
     - process_creation
   expected_false_positive_level: medium

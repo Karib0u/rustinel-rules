@@ -34,7 +34,6 @@ import lib
 
 SOURCE_REPO = "https://github.com/Karib0u/rustinel-rules"
 GITHUB_BLOB = f"{SOURCE_REPO}/blob/main"
-ATTACK_MAP_PATH = lib.REPO_ROOT / "tools" / "attack_techniques.json"
 
 # Reserved single-segment slugs the website routes statically under /rules/.
 # A rule must never slugify to one of these, or its detail page would collide.
@@ -57,11 +56,6 @@ _TITLE_CASING = {
 # Prefixes carried by artifact ids/rule-names that add no meaning to a title.
 _TITLE_DROP = {"yara", "ioc", "win", "windows", "lnx", "linux", "mac", "osx", "susp", "hunting"}
 
-_TACTIC_TECH_RE = re.compile(r"^attack\.(t\d{4}(?:\.\d{3})?)$", re.IGNORECASE)
-_TACTIC_NAME_RE = re.compile(r"^attack\.([a-z][a-z0-9-]+)$", re.IGNORECASE)
-_YARA_META_RE = re.compile(r"meta:\s*(.*?)\n\s*(?:strings|condition)\s*:", re.DOTALL)
-_YARA_KV_RE = re.compile(r'^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"([^"]*)"', re.MULTILINE)
-
 
 def slugify(text: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")
@@ -77,18 +71,6 @@ def technique_url(tid: str) -> str:
     base, _, sub = tid.partition(".")
     path = f"{base}/{sub}" if sub else base
     return f"https://attack.mitre.org/techniques/{path}/"
-
-
-def load_attack_map() -> dict[str, dict]:
-    data = json.loads(ATTACK_MAP_PATH.read_text(encoding="utf-8"))
-    return data.get("techniques", {})
-
-
-def parse_yara_meta(raw: str) -> dict[str, str]:
-    block = _YARA_META_RE.search(raw)
-    if not block:
-        return {}
-    return {k: v for k, v in _YARA_KV_RE.findall(block.group(1))}
 
 
 def as_list(value) -> list[str]:
@@ -110,8 +92,12 @@ def rule_record(
     `artifacts_by_id` lets a correlation take its platform from the rules it
     references, since a correlation document has no log source of its own.
     """
-    techniques = sorted(lib.artifact_attack_techniques(art))
+    techniques = sorted(lib.artifact_behavioral_techniques(art))
+    related_techniques = sorted(lib.artifact_attack_techniques(art)) if art.kind == "yara" else []
     tactics: set[str] = set()
+    roles: list[str] = []
+    modified = None
+    test_status = lib.artifact_test_status(art)
 
     if art.kind == "sigma":
         meta = art.meta
@@ -134,24 +120,22 @@ def rule_record(
         falsepositives = as_list(meta.get("falsepositives"))
         author = str(meta.get("author") or "").strip() or None
         date = str(meta.get("date") or "").strip() or None
-        rustinel = meta.get("rustinel") or {}
+        modified = str(meta.get("modified") or "").strip() or None
+        rustinel = lib.sigma_rustinel_metadata(meta)
         telemetry = as_list(rustinel.get("telemetry"))
+        roles = as_list(rustinel.get("roles"))
         efp = str(rustinel.get("expected_false_positive_level") or "").strip().lower() or None
-        test_status = str(rustinel.get("test_status") or "").strip().lower() or None
         tuning = [
             {"surface": str(t["surface"]), "guidance": str(t["guidance"])}
             for t in (rustinel.get("tuning") or [])
             if isinstance(t, dict) and t.get("surface") and t.get("guidance")
         ]
         os_name = product or "windows"
-        for tag in as_list(meta.get("tags")):
-            tactic_match = _TACTIC_NAME_RE.match(tag)
-            if tactic_match and not _TACTIC_TECH_RE.match(tag):
-                tactics.add(tactic_match.group(1).lower())
+        tactics = lib.sigma_attack_tags(meta).intersection(lib.load_attack_metadata()["tactics"])
         source_lang = "yaml"
 
     elif art.kind == "yara":
-        meta = parse_yara_meta(art.raw)
+        meta = art.meta
         title = (meta.get("title") or "").strip() or humanize_from_id(
             art.meta.get("rule_name") or art.id
         )
@@ -166,7 +150,6 @@ def rule_record(
         date = (meta.get("date") or "").strip() or None
         telemetry = as_list(meta.get("telemetry") or "file_scan")
         efp = (meta.get("expected_false_positive_level") or "").strip().lower() or None
-        test_status = (meta.get("test_status") or "").strip().lower() or None
         tuning = []
         os_name = product or "windows"
         source_lang = "yara"
@@ -186,13 +169,11 @@ def rule_record(
         date = str(meta.get("date") or "").strip() or None
         telemetry = ["file_scan"]
         efp = None
-        test_status = None
         tuning = []
         os_name = product
         source_lang = "yaml"
 
-    # Backfill tactics from each technique's curated primary tactic so YARA/IOC
-    # (which have no tactic tags) and any gaps still group correctly.
+    # Backfill tactics from each behavioral technique's curated primary tactic.
     for tid in techniques:
         info = attack_map.get(tid)
         if info and info.get("tactic"):
@@ -210,11 +191,15 @@ def rule_record(
         "description": description,
         "level": level,
         "status": status,
+        "active": bool(pack_ids) and status != "deprecated",
         "os": os_name,
         "product": product,
         "category": category,
+        "roles": roles,
         "tactics": sorted(tactics),
         "techniques": techniques,
+        "related_techniques": related_techniques,
+        "software": sorted(lib.artifact_attack_software(art)),
         "references": references,
         "falsepositives": falsepositives,
         "telemetry": telemetry,
@@ -223,6 +208,7 @@ def rule_record(
         "tuning": tuning,
         "author": author,
         "date": date,
+        "modified": modified,
         "packs": pack_ids,
         "source": art.raw,
         "source_lang": source_lang,
@@ -231,8 +217,9 @@ def rule_record(
 
 
 def build_catalog(version: str) -> dict:
-    attack_map = load_attack_map()
+    attack_map = lib.load_attack_metadata()["techniques"]
     artifacts = [a for a in lib.load_all_artifacts() if a.id]
+    artifacts_by_id = {a.id: a for a in artifacts}
     packs = lib.load_packs()
     by_id = {p["id"]: p for p in packs if "id" in p}
 
@@ -244,6 +231,7 @@ def build_catalog(version: str) -> dict:
         resolved = lib.resolve_pack_rules(pack, by_id)
         for rid in resolved:
             rule_packs.setdefault(rid, []).append(pack_id)
+        summary = lib.derive_pack_summary(resolved, artifacts_by_id)
         pack_entries.append(
             {
                 "id": pack_id,
@@ -258,7 +246,7 @@ def build_catalog(version: str) -> dict:
                 "expected_false_positive_level": pack.get("expected_false_positive_level"),
                 "active_response_eligible": lib.active_response_eligible(pack),
                 "extends": as_list(pack.get("extends")),
-                "attack_coverage": as_list(pack.get("attack_coverage")),
+                **summary,
                 "telemetry_requirements": as_list(pack.get("telemetry_requirements")),
                 "rule_ids": resolved,
                 "rule_count": len(resolved),
@@ -274,7 +262,6 @@ def build_catalog(version: str) -> dict:
             }
         )
 
-    artifacts_by_id = {a.id: a for a in artifacts}
     rules = [
         rule_record(a, rule_packs.get(a.id, []), attack_map, artifacts_by_id) for a in artifacts
     ]
@@ -288,6 +275,8 @@ def build_catalog(version: str) -> dict:
     # the build still succeeds but a maintainer notices the gap.
     seen_techniques: dict[str, list[str]] = {}
     for r in rules:
+        if not r["active"]:
+            continue
         for tid in r["techniques"]:
             seen_techniques.setdefault(tid, []).append(r["id"])
     for tid in sorted(seen_techniques):
@@ -320,6 +309,7 @@ def build_catalog(version: str) -> dict:
         "source_repo": SOURCE_REPO,
         "counts": {
             "rules": len(rules),
+            "active_rules": sum(r["active"] for r in rules),
             "sigma": by_kind["sigma"],
             "yara": by_kind["yara"],
             "ioc": by_kind["ioc"],

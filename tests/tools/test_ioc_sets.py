@@ -52,6 +52,71 @@ class IocSetsTest(unittest.TestCase):
         validate.check_ioc_set(invalid, report, self.schema)
         self.assertIn("schema: min_engine:", "\n".join(report.errors))
 
+    def warninglist_errors(self, kind, value, *, preview=False):
+        root = lib.PREVIEW_DIR if preview else lib.RULES_DIR
+        artifact = lib.Artifact(
+            "ioc-fixture",
+            "ioc",
+            root / "ioc" / "common" / "fixture.yml",
+            {
+                "id": "ioc-fixture",
+                "description": "Fixture IOC",
+                "references": ["https://example.test/indicator-report"],
+                "indicators": {kind: [{"value": value, "comment": "fixture"}]},
+            },
+            "",
+        )
+        report = validate.Report()
+        validate.check_ioc_set(artifact, report, self.schema)
+        for error in report.errors:
+            self.assertIn(artifact.rel_path, error)
+        return "\n".join(report.errors)
+
+    def test_production_warninglist_rejects_addresses_and_overlapping_cidrs(self):
+        for value, match in (
+            ("192.168.1.1", "192.168.0.0/16"),
+            ("10.0.2.1/24", "10.0.0.0/8"),
+            ("169.254.169.254", "169.254.0.0/16"),
+            ("127.0.0.1", "127.0.0.0/8"),
+            ("203.0.113.42", "203.0.113.0/24"),
+            ("8.8.8.0/24", "8.8.8.8/32"),
+            ("1.1.1.1", "1.1.1.1/32"),
+            ("9.9.9.9", "9.9.9.9/32"),
+            ("::1", "::1/128"),
+            ("fe80::1", "fe80::/10"),
+            ("2001:db8:1::/48", "2001:db8::/32"),
+            ("2606:4700:4700::1111", "2606:4700:4700::1111/128"),
+            ("::ffff:8.8.8.8", "8.8.8.8/32"),
+        ):
+            with self.subTest(value=value):
+                errors = self.warninglist_errors("ips", value)
+                self.assertIn(f"'{value}' overlaps warninglist network {match}", errors)
+
+    def test_production_warninglist_rejects_apexes_and_subdomains(self):
+        for value, suffix in (
+            ("cloudflare.com", "cloudflare.com"),
+            ("*.Distribution.CloudFront.NET", "cloudfront.net"),
+            (".S3.AmazonAWS.com", "amazonaws.com"),
+            ("assets.GitHubUserContent.com.", "githubusercontent.com"),
+            ("example.org", "example.org"),
+        ):
+            with self.subTest(value=value):
+                self.assertIn(
+                    f"'{value}' matches warninglist suffix '{suffix}'",
+                    self.warninglist_errors("domains", value),
+                )
+
+    def test_warninglist_does_not_match_near_misses_or_preview_fixtures(self):
+        for domain in ("notgithub.com", "github.com.other.example", "*.ioc.example.test"):
+            with self.subTest(domain=domain):
+                self.assertEqual(self.warninglist_errors("domains", domain), "")
+        for ip in ("8.8.8.22", "2606:4700:4700::1112"):
+            with self.subTest(ip=ip):
+                self.assertEqual(self.warninglist_errors("ips", ip), "")
+        self.assertEqual(self.warninglist_errors("ips", "8.8.8.8", preview=True), "")
+        self.assertEqual(self.warninglist_errors("domains", "github.com", preview=True), "")
+        self.assertIn("invalid IP/CIDR", self.warninglist_errors("ips", "300.1.1.1", preview=True))
+
     def test_ioc_telemetry_contributes_to_pack_requirements(self):
         driver_floor = lib.pack_min_engine([DRIVERS], self.artifacts, "windows")
         self.assertEqual(driver_floor, ("1.9.0", {DRIVERS: ["declared IOC min_engine: 1.9.0"]}))

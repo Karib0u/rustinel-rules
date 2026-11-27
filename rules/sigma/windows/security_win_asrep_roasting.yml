@@ -30,6 +30,7 @@ falsepositives:
   - Legitimate authentication by legacy accounts configured to omit Kerberos pre-authentication.
 level: high
 rustinel:
+  roles: [domain_controller]
   telemetry:
     - security
   expected_false_positive_level: medium

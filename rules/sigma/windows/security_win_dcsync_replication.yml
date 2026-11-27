@@ -38,6 +38,7 @@ falsepositives:
   - Directory synchronization or identity management using custom replication accounts.
 level: high
 rustinel:
+  roles: [domain_controller]
   telemetry:
     - security
   expected_false_positive_level: low

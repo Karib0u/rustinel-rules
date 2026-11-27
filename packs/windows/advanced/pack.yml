@@ -45,7 +45,6 @@ attack_coverage:
   - T1218.005
   - T1218.010
   - T1218.011
-  - T1219
   - T1486
   - T1490
   - T1496
@@ -73,7 +72,7 @@ attack_coverage:
   - T1568
   - T1569.002
   - T1572
-  - T1574.002
+  - T1574.001
 telemetry_requirements:
   - process_creation
   - registry_event

@@ -45,6 +45,7 @@ falsepositives:
     filters per environment.
 level: high
 rustinel:
+  roles: [web_server]
   telemetry:
     - file_event
   expected_false_positive_level: medium

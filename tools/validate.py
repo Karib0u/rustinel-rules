@@ -6,9 +6,9 @@ Mandatory v1 checks:
   - required artifact metadata
   - unique artifact ids (across Sigma, YARA and IOC sets)
   - source/license metadata
-  - ATT&CK tags when relevant
+  - ATT&CK tactics, techniques and software IDs
   - Rustinel telemetry compatibility
-  - IOC value sanity (hash/ip/domain/regex well-formed)
+  - IOC value sanity and shared-infrastructure warninglists
   - pack manifest validation (schema + referential integrity)
   - pack attack_coverage and test_status match what member rules derive
   - no production rule selects on a field the engine never populates
@@ -24,13 +24,20 @@ Run: uv run python tools/validate.py
 
 from __future__ import annotations
 
+import argparse
 import ipaddress
 import json
 import os
 import re
+import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from datetime import date
+from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
+
+import yaml
 
 import engine_contract
 import lib
@@ -134,7 +141,17 @@ REQUIRED_CORRELATION_FIELDS = [
 
 SIGMA_STATUSES = ("experimental", *lib.PROMOTED_SIGMA_STATUSES, "deprecated")
 ATOMIC_DIR = lib.REPO_ROOT / "tests" / "atomic"
-_REFERENCE_URL_RE = re.compile(r"https?://[^/?#\s]+(?:[/?#]\S*)?")
+IOC_WARNINGLISTS_PATH = lib.REPO_ROOT / "tools" / "ioc_warninglists.json"
+_UUID4_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}")
+_ISO_DATE_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+HOST_ROLES = {
+    "workstation",
+    "server",
+    "domain_controller",
+    "web_server",
+    "developer",
+    "container_host",
+}
 
 # What rsigma-parser 0.21 (the engine's Sigma parser) accepts.
 CORRELATION_TYPES = {
@@ -158,10 +175,8 @@ VALUE_CORRELATION_TYPES = {
 CORRELATION_OPERATORS = {"lt", "lte", "gt", "gte", "eq", "neq"}
 _TIMESPAN_RE = re.compile(r"^\d+[smhdwMy]$")
 
-ATTACK_TAG_PREFIX = "attack."
-
 _HEX_RE = re.compile(r"^[0-9a-fA-F]+$")
-_DOMAIN_RE = re.compile(r"^(\*\.|\.)?([a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,}$")
+_DOMAIN_RE = re.compile(r"(?:\*\.|\.)?(?:[a-zA-Z0-9_-]+\.)+[a-zA-Z]{2,}\.?")
 VALID_HASH_LENGTHS = {32, 40, 64}  # MD5, SHA1, SHA256
 
 
@@ -229,7 +244,49 @@ def check_unique_ids(artifacts, rep: Report):
             seen[art.id] = art.rel_path
 
 
-def check_sigma_rule(art, rep: Report):
+def _check_attack_id(ident: str, kind: str, where: str, rep: Report):
+    metadata = lib.load_attack_metadata()
+    if ident in metadata["deprecated"]:
+        replacement = metadata["deprecated"][ident]
+        rep.error(where, f"deprecated ATT&CK ID '{ident}'. Use '{replacement}' instead")
+    elif ident not in metadata["software" if kind == "software" else "techniques"]:
+        rep.error(where, f"unknown ATT&CK {kind} ID '{ident}' in attack_techniques.json")
+
+
+def _http_source_url(value) -> bool:
+    if not isinstance(value, str) or re.search(r"[\s\x00-\x1f\x7f\\]", value):
+        return False
+    try:
+        url = urlsplit(value)
+        return (
+            url.scheme in ("http", "https")
+            and bool(url.hostname)
+            and url.username is None
+            and (url.port is None or url.port > 0)
+        )
+    except ValueError:
+        return False
+
+
+def check_references(references, where: str, rep: Report):
+    if (
+        not isinstance(references, list)
+        or not references
+        or not all(map(_http_source_url, references))
+    ):
+        rep.error(where, "rule needs references with HTTP(S) source URLs")
+
+
+def _iso_date(value) -> date | None:
+    if not _ISO_DATE_RE.fullmatch(str(value)):
+        return None
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        return None
+
+
+def check_sigma_rule(art, rep: Report, *, production: bool = True):
     doc = art.meta
     if not isinstance(doc, dict):
         rep.error(art.rel_path, "Sigma rule is not a mapping")
@@ -240,17 +297,54 @@ def check_sigma_rule(art, rep: Report):
         if field not in doc or doc[field] in (None, "", [], {}):
             rep.error(art.rel_path, f"missing required field '{field}'")
 
+    rule_id = doc.get("id")
+    if not isinstance(rule_id, str) or not _UUID4_RE.fullmatch(rule_id):
+        rep.error(art.rel_path, "Sigma id must be a canonical lowercase UUID v4")
+    if production:
+        check_references(doc.get("references"), art.rel_path, rep)
+
+    created = _iso_date(doc.get("date"))
+    modified = _iso_date(doc.get("modified"))
+    for field, parsed in (("date", created), ("modified", modified)):
+        if field in doc and parsed is None:
+            rep.error(art.rel_path, f"Sigma {field} must be a valid YYYY-MM-DD date")
+    if created is not None and modified is not None and modified < created:
+        rep.error(art.rel_path, "Sigma modified date must be on or after date")
+
     status = doc.get("status")
     if status not in (None, "", [], {}) and status not in SIGMA_STATUSES:
         rep.error(
             art.rel_path, f"unsupported Sigma status {status!r}; use {', '.join(SIGMA_STATUSES)}"
         )
 
-    tags = doc.get("tags") or []
-    if not any(str(t).startswith(ATTACK_TAG_PREFIX) for t in tags):
+    tags = doc.get("tags")
+    attack_tags = lib.sigma_attack_tags(doc)
+    if not isinstance(tags, list) or any(not _has_text(tag) or tag != tag.strip() for tag in tags):
+        rep.error(art.rel_path, "Sigma tags must be a list of non-empty, unpadded strings")
+    if not attack_tags:
         rep.error(art.rel_path, "no ATT&CK tag present (expected at least one 'attack.*' tag)")
+    tactics = set(lib.load_attack_metadata()["tactics"])
+    for tag in sorted(attack_tags - tactics):
+        if lib.ATTACK_TECHNIQUE_RE.fullmatch(tag):
+            _check_attack_id(tag.upper(), "technique", art.rel_path, rep)
+        elif lib.ATTACK_SOFTWARE_RE.fullmatch(tag):
+            _check_attack_id(tag.upper(), "software", art.rel_path, rep)
+        else:
+            rep.error(art.rel_path, f"unknown or malformed ATT&CK tag 'attack.{tag}'")
 
-    rustinel = doc.get("rustinel") or {}
+    rustinel = lib.sigma_rustinel_metadata(doc)
+    if "rustinel" in doc and not isinstance(doc["rustinel"], dict):
+        rep.error(art.rel_path, "rustinel must be a mapping")
+    if "roles" in rustinel:
+        roles = rustinel["roles"]
+        if not isinstance(roles, list) or not roles:
+            rep.error(art.rel_path, "rustinel.roles must be a non-empty list of host roles")
+        else:
+            for role in roles:
+                if not isinstance(role, str) or role not in HOST_ROLES:
+                    rep.error(art.rel_path, f"unsupported rustinel.roles value {role!r}")
+            if all(isinstance(role, str) for role in roles) and len(set(roles)) != len(roles):
+                rep.error(art.rel_path, "rustinel.roles must not contain duplicate roles")
     telemetry = rustinel.get("telemetry") or []
     if not telemetry:
         rep.error(art.rel_path, "missing rustinel.telemetry (Rustinel compatibility)")
@@ -331,10 +425,10 @@ def check_correlation(
     if len(products) > 1:
         rep.error(where, f"correlation mixes rules for {sorted(products)}; use one platform")
 
-    telemetry = set((doc.get("rustinel") or {}).get("telemetry") or [])
+    telemetry = set(lib.sigma_rustinel_metadata(doc).get("telemetry") or [])
     for target in referenced:
         logsource = target.meta.get("logsource") or {}
-        missing = set((target.meta.get("rustinel") or {}).get("telemetry") or []) - telemetry
+        missing = set(lib.sigma_rustinel_metadata(target.meta).get("telemetry") or []) - telemetry
         if missing:
             rep.error(
                 where,
@@ -398,7 +492,14 @@ def check_yara_rule(art, rep: Report, compile_yara=None):
     raw = art.raw
     if not art.id:
         rep.error(art.rel_path, "YARA rule missing meta id / rule name")
-    if "attack" not in raw and "reference" not in raw:
+    for technique in lib.artifact_attack_techniques(art):
+        _check_attack_id(technique, "technique", art.rel_path, rep)
+    for software in lib.artifact_attack_software(art):
+        _check_attack_id(software, "software", art.rel_path, rep)
+    references = [art.meta[key] for key in ("reference", "references") if key in art.meta]
+    if art.path.is_relative_to(lib.RULES_DIR / "yara"):
+        check_references(references, art.rel_path, rep)
+    elif not references and "attack" not in art.meta:
         rep.warn(art.rel_path, "no attack/reference metadata")
     if compile_yara is not None:
         # Real compile gate (yara-x) supersedes the structural brace/condition checks.
@@ -410,7 +511,19 @@ def check_yara_rule(art, rep: Report, compile_yara=None):
             rep.error(art.rel_path, "YARA rule has no 'condition:' section")
 
 
-def _check_ioc_value(ioc_type: str, value: str, where: str, rep: Report):
+@lru_cache(maxsize=1)
+def load_ioc_warninglists() -> tuple[
+    tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...], tuple[str, ...]
+]:
+    data = json.loads(IOC_WARNINGLISTS_PATH.read_text(encoding="utf-8"))
+    networks = tuple(
+        ipaddress.ip_network(value)
+        for value in data["special_use_networks"] + data["public_dns_resolvers"]
+    )
+    return networks, tuple(data["domain_suffixes"])
+
+
+def _check_ioc_value(ioc_type: str, value: str, where: str, rep: Report, *, production: bool):
     if ";" in value:
         rep.error(where, f"IOC value contains ';' (the file delimiter): '{value}'")
         return
@@ -419,12 +532,33 @@ def _check_ioc_value(ioc_type: str, value: str, where: str, rep: Report):
             rep.error(where, f"invalid hash (expected hex MD5/SHA1/SHA256): '{value}'")
     elif ioc_type == "ips":
         try:
-            ipaddress.ip_network(value, strict=False)
+            network = ipaddress.ip_network(value, strict=False)
         except ValueError:
             rep.error(where, f"invalid IP/CIDR: '{value}'")
+            return
+        if production:
+            if isinstance(network, ipaddress.IPv6Network) and network.prefixlen >= 96:
+                mapped = network.network_address.ipv4_mapped
+                if mapped is not None:
+                    network = ipaddress.IPv4Network((mapped, network.prefixlen - 96))
+            networks, _ = load_ioc_warninglists()
+            for blocked in networks:
+                if network.overlaps(blocked):
+                    rep.error(
+                        where, f"IOC IP/CIDR '{value}' overlaps warninglist network {blocked}"
+                    )
+                    break
     elif ioc_type == "domains":
-        if not _DOMAIN_RE.match(value):
+        if not _DOMAIN_RE.fullmatch(value):
             rep.error(where, f"invalid domain: '{value}'")
+            return
+        if production:
+            _, suffixes = load_ioc_warninglists()
+            domain = value.lower().removeprefix("*").strip(".")
+            for suffix in suffixes:
+                if domain == suffix or domain.endswith(f".{suffix}"):
+                    rep.error(where, f"IOC domain '{value}' matches warninglist suffix '{suffix}'")
+                    break
     elif ioc_type == "paths_regex":
         try:
             re.compile(value)
@@ -442,15 +576,21 @@ def check_ioc_set(art, rep: Report, schema_validate):
     if schema_validate is not None:
         schema_validate(doc, where, rep)
 
+    production = art.path.is_relative_to(lib.RULES_DIR / "ioc")
+    for technique in sorted(lib.artifact_attack_techniques(art)):
+        _check_attack_id(technique, "technique", where, rep)
+
     indicators = lib.parse_ioc_indicators(doc)
     total = sum(len(v) for v in indicators.values())
     if total == 0:
         rep.error(where, "IOC set has no indicators")
     for ioc_type, entries in indicators.items():
         for value, _comment in entries:
-            _check_ioc_value(ioc_type, value, where, rep)
+            _check_ioc_value(ioc_type, value, where, rep, production=production)
 
-    if not doc.get("references"):
+    if production:
+        check_references(doc.get("references"), where, rep)
+    elif not doc.get("references"):
         rep.warn(where, "no 'references' on IOC set")
 
 
@@ -473,7 +613,7 @@ def _has_text(value) -> bool:
 
 
 def check_tuning_and_negatives(art: lib.Artifact, rep: Report, *, min_negatives: int = 1):
-    rustinel = art.meta.get("rustinel") or {}
+    rustinel = lib.sigma_rustinel_metadata(art.meta)
     where = art.rel_path
     tuning = rustinel.get("tuning")
     if not isinstance(tuning, list) or not tuning:
@@ -549,7 +689,7 @@ def check_sigma_lifecycle(
     art: lib.Artifact, pack_platforms: set[str], atomics: set[tuple[str, str]], rep: Report
 ):
     status = art.meta.get("status")
-    rustinel = art.meta.get("rustinel") or {}
+    rustinel = lib.sigma_rustinel_metadata(art.meta)
     where = art.rel_path
     if status == "deprecated":
         if not _has_text(rustinel.get("deprecation_reason")):
@@ -569,13 +709,6 @@ def check_sigma_lifecycle(
         if (platform, art.id) not in atomics:
             rep.error(where, f"{status} rule needs a gating positive Sigma atomic on {platform}")
 
-    references = art.meta.get("references")
-    if (
-        not isinstance(references, list)
-        or not references
-        or not all(isinstance(ref, str) and _REFERENCE_URL_RE.fullmatch(ref) for ref in references)
-    ):
-        rep.error(where, f"{status} rule needs references with HTTP(S) source URLs")
     if not _has_text(art.meta.get("author")):
         rep.error(where, f"{status} rule needs author attribution")
     if rustinel.get("expected_false_positive_level") not in ("low", "medium", "high"):
@@ -741,7 +874,7 @@ def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_y
 
     for art in preview_artifacts:
         if art.kind == "sigma":
-            check_sigma_rule(art, rep)
+            check_sigma_rule(art, rep, production=False)
         elif art.kind == "yara":
             check_yara_rule(art, rep, compile_yara)
         elif art.kind == "ioc":
@@ -787,7 +920,61 @@ def check_release_version(rep: Report):
         )
 
 
-def main() -> int:
+def check_sigma_history(base: str, artifacts: list[lib.Artifact], rep: Report):
+    """Check existing Sigma rules against a base revision, including Git-detected renames."""
+
+    def git(*args: str) -> str:
+        return subprocess.check_output(["git", *args], cwd=lib.REPO_ROOT, encoding="utf-8")
+
+    revision = git("rev-parse", "--verify", "--end-of-options", f"{base}^{{commit}}").strip()
+    changes = git(
+        "diff",
+        "--name-status",
+        "-z",
+        "--find-renames",
+        "--diff-filter=MR",
+        revision,
+        "--",
+        "rules/sigma/",
+        "preview/sigma/",
+    )
+    by_path = {art.path.relative_to(lib.REPO_ROOT).as_posix(): art for art in artifacts}
+    fields = iter(changes.rstrip("\0").split("\0")) if changes else iter(())
+    for status in fields:
+        old_path = next(fields)
+        new_path = next(fields) if status.startswith("R") else old_path
+        artifact = by_path.get(new_path)
+        if artifact is None:
+            continue
+        old = yaml.safe_load(git("show", f"{revision}:{old_path}"))
+        new = artifact.meta
+        if old.get("id") != new.get("id"):
+            rep.error(artifact.rel_path, f"keep the existing Sigma id '{old.get('id')}'")
+        behavior_fields = ("detection", "logsource", "correlation")
+        if all(old.get(field) == new.get(field) for field in behavior_fields):
+            continue
+        prior_modified = _iso_date(old.get("modified"))
+        previous = prior_modified or _iso_date(old.get("date"))
+        modified = _iso_date(new.get("modified"))
+        same_day = (
+            modified is not None
+            and modified == prior_modified
+            and modified == _iso_date(git("log", "-1", "--format=%cs", "--", new_path).strip())
+        )
+        if (
+            modified is None
+            or (previous is not None and modified < previous)
+            or (modified == prior_modified and not same_day)
+        ):
+            rep.error(
+                artifact.rel_path, "update the Sigma modified date when detection behavior changes"
+            )
+
+
+def main(argv: Sequence[str] = ()) -> int:
+    parser = argparse.ArgumentParser(description="Validate Rustinel detection content.")
+    parser.add_argument("--base", help="Git revision to check for changed Sigma IDs and logic")
+    args = parser.parse_args(argv)
     rep = Report()
 
     try:
@@ -795,6 +982,12 @@ def main() -> int:
         collected_event_ids = engine_contract.load_event_ids()
     except (OSError, ValueError) as exc:
         print(f"[ERROR] engine field contract: {exc}")
+        return 1
+    try:
+        lib.load_attack_metadata()
+        load_ioc_warninglists()
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"[ERROR] ATT&CK metadata or IOC warninglists: {exc}")
         return 1
     print(
         f"Engine field contract: Rustinel {engine_pin['version']} "
@@ -837,6 +1030,11 @@ def main() -> int:
     for rule_id, art in sigma_by_id.items():
         check_sigma_lifecycle(art, sigma_platforms.get(rule_id, set()), gating_atomics, rep)
     check_advanced_documentation(packs, artifacts, rep)
+    if args.base:
+        try:
+            check_sigma_history(args.base, [a for a in artifacts if a.kind == "sigma"], rep)
+        except (OSError, subprocess.CalledProcessError, yaml.YAMLError) as exc:
+            rep.error("Sigma history", str(exc))
 
     counts = {k: sum(1 for a in artifacts if a.kind == k) for k in ("sigma", "yara", "ioc")}
     print(
@@ -859,4 +1057,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
