@@ -1,0 +1,67 @@
+title: Configuration Profile Installation Attempt (macOS)
+id: c35a831e-4046-4e9b-9378-a180d00814f7
+status: experimental
+description: >
+  Detects profile installation arguments to profiles or open launching a
+  .mobileconfig file from a temporary, Downloads, or shared user directory.
+  Profiles can change proxy, trust, authentication, and enrollment settings.
+  On macOS 11 and later, installing a local configuration profile requires
+  confirmation in System Settings.
+references:
+  - https://support.apple.com/guide/mac-help/mh35561/mac
+  - https://attack.mitre.org/techniques/T1176/
+  - https://attack.mitre.org/techniques/T1556/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.persistence
+  - attack.credential-access
+  - attack.t1176
+  - attack.t1556
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_profiles:
+    Image|endswith: '/profiles'
+  selection_modern_install:
+    CommandLine|re: '^\S+\s+install(?:\s|$)'
+  selection_legacy_install:
+    CommandLine|re: '(?:^|\s)-(?:I|F)(?:\s|$)'
+  filter_profile_management:
+    CommandLine|re:
+      - '^\S+\s+(?:list|show|status|remove|validate)(?:\s|$)'
+      - '(?:^|\s)-R(?:\s|$)'
+  selection_open:
+    Image|endswith: '/open'
+    # ESF joins argv with spaces. Allow spaces inside a path without crossing into another absolute path or flag.
+    CommandLine|re: '\s["'']?(?:/(?:private/)?tmp/|/Users/(?:Shared/|[^/\s]+/Downloads/))(?:[^\s"'';&|]|[ \t]+[^/\s"'';&|-])+(?i:\.mobileconfig)["'']?(?:\s|$)'
+  condition: (selection_profiles and (selection_modern_install or (selection_legacy_install and not filter_profile_management))) or selection_open
+falsepositives:
+  - Help desk or endpoint enrollment workflows that stage a legitimate configuration profile for approval.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: CommandLine
+      guidance: Filter known profile paths used by approved provisioning workflows.
+  negatives:
+    - reason: listing enrolled profiles
+      fields:
+        Image: /usr/bin/profiles
+        CommandLine: profiles list -type configuration
+    - reason: legacy profile removal by file
+      fields:
+        Image: /usr/bin/profiles
+        CommandLine: profiles -R -F /tmp/retired.mobileconfig
+    - reason: opening a backup of a profile download
+      fields:
+        Image: /usr/bin/open
+        CommandLine: open /Users/alice/Downloads/VPN.mobileconfig.bak
+    - reason: opening a temporary text file and a separate system profile
+      fields:
+        Image: /usr/bin/open
+        CommandLine: open /tmp/readme.txt /Library/Profiles/Corp.mobileconfig

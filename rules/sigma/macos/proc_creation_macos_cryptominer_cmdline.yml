@@ -1,0 +1,49 @@
+title: Cryptominer Command Line (macOS)
+id: ae9f76d9-4f90-4111-ab43-0b11314d4ceb
+status: experimental
+description: >
+  Detects Stratum pool URLs or XMRig-style donate-level and coin options on a
+  macOS process command line. Matching arguments also catches renamed or
+  packed miners that evade file-based detection.
+references:
+  - https://xmrig.com/docs/miner/command-line-options
+  - https://xmrig.com/docs/miner/config/pool
+  - https://attack.mitre.org/techniques/T1496/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.impact
+  - attack.t1496
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_pool:
+    CommandLine|contains:
+      - 'stratum+tcp://'
+      - 'stratum+ssl://'
+      - 'stratum+tls://'
+  selection_option:
+    CommandLine|re: '(?:^|[\s"''])--(?:donate-level|coin)(?:[\s="'']|$)'
+  condition: 1 of selection_*
+falsepositives:
+  - Authorized mining, benchmarking, or commands processing mining documentation.
+  - Non-mining tools that use the same coin option.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: Image
+      guidance: Filter the full executable path of an approved miner on hosts where mining is expected.
+  negatives:
+    - reason: wallet option starting with the coin prefix
+      fields:
+        Image: /Applications/Wallet.app/Contents/MacOS/Wallet
+        CommandLine: Wallet --coinbase https://example.test
+    - reason: HTTP request to a health check on a mining-pool port
+      fields:
+        Image: /usr/bin/curl
+        CommandLine: curl http://example.test:3333/health

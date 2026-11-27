@@ -1,0 +1,64 @@
+title: sudo Password from Stdin or JXA Objective-C Import
+id: aa829539-72ff-4da9-a986-d5ce84293bba
+status: experimental
+description: >
+  Detects sudo requesting password input from stdin or osascript using the
+  JavaScript for Automation language with an inline Objective-C import.
+  Infostealers can feed a phished password to sudo or use the Objective-C
+  bridge to access native APIs. An exec event shows the requested input mode
+  or inline script, with no visibility into stdin or script file contents.
+references:
+  - https://github.com/sudo-project/sudo/blob/main/docs/sudo.man.in
+  - https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/HowMacScriptingWorks.html
+  - https://attack.mitre.org/techniques/T1056/002/
+  - https://attack.mitre.org/techniques/T1059/007/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.credential-access
+  - attack.execution
+  - attack.t1056.002
+  - attack.t1059.007
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_sudo:
+    Image|endswith: '/sudo'
+    # Match sudo options before the child command, including common options with operands.
+    CommandLine|re: '^\S+\s+(?:(?:-[ugphDCRT]\s+\S+|--(?:user|group|prompt|host|chdir|chroot|close-from|command-timeout)\s+\S+|-[A-Za-z]+|--[a-z-]+(?:=\S+)?)\s+)*(?:-[A-Za-z]*S[A-Za-z]*|--stdin)(?:\s|$)'
+  selection_jxa_language:
+    Image|endswith: '/osascript'
+    CommandLine|re: '(?:^|\s)-l\s*["'']?(?i:JavaScript)["'']?(?:\s|$)'
+  selection_jxa_bridge:
+    CommandLine|re: '\bObjC\.import\s*\('
+  condition: selection_sudo or (selection_jxa_language and selection_jxa_bridge)
+falsepositives:
+  - Approved automation using sudo with a password supplied through stdin.
+  - Developer or administrative JXA scripts that import system frameworks.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: ParentImage
+      guidance: Filter the full paths of approved automation tools after confirming their expected arguments.
+  negatives:
+    - reason: sudo requesting a shell with lowercase -s
+      fields:
+        Image: /usr/bin/sudo
+        CommandLine: sudo -s
+    - reason: sudo passing a socket option to an SSH client
+      fields:
+        Image: /usr/bin/sudo
+        CommandLine: sudo /usr/bin/ssh -S /tmp/ssh.sock example.test
+    - reason: JXA without an Objective-C import
+      fields:
+        Image: /usr/bin/osascript
+        CommandLine: osascript -l JavaScript -e '1 + 1'
+    - reason: AppleScript emitting text about the Objective-C bridge
+      fields:
+        Image: /usr/bin/osascript
+        CommandLine: osascript -l AppleScript -e 'return "ObjC.import()"'

@@ -1299,6 +1299,48 @@
       "platform": "macos",
       "engine": "sigma",
       "script": "macos/trusted_cert_added.sh"
+    },
+    {
+      "id": "ae9f76d9-4f90-4111-ab43-0b11314d4ceb",
+      "name": "macos_cryptominer_cmdline",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/cryptominer_cmdline.sh"
+    },
+    {
+      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
+      "name": "macos_stealer_sudo_stdin",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/stealer_sudo_stdin.sh"
+    },
+    {
+      "id": "aa829539-72ff-4da9-a986-d5ce84293bba",
+      "name": "macos_stealer_jxa_bridge",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/stealer_jxa_bridge.sh"
+    },
+    {
+      "id": "0a001338-814e-44d5-aab5-b7bb7290938f",
+      "name": "macos_scheduled_job",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/scheduled_job.sh"
+    },
+    {
+      "id": "c35a831e-4046-4e9b-9378-a180d00814f7",
+      "name": "macos_configuration_profile_install",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/configuration_profile_install.sh"
+    },
+    {
+      "id": "52013862-0171-4b0c-a0d0-97bc065109e5",
+      "name": "macos_dyld_insert_libraries",
+      "platform": "macos",
+      "engine": "sigma",
+      "script": "macos/dyld_insert_libraries.sh"
     }
   ]
 }

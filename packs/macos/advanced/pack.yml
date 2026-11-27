@@ -20,15 +20,19 @@ extends:
 attack_coverage:
   - T1005
   - T1037.002
+  - T1053.002
+  - T1053.003
   - T1056.002
   - T1059.002
   - T1059.004
+  - T1059.007
   - T1070.003
   - T1090
   - T1098
   - T1098.004
   - T1105
   - T1136.001
+  - T1176
   - T1204.002
   - T1486
   - T1496
@@ -46,6 +50,7 @@ attack_coverage:
   - T1562.001
   - T1564.002
   - T1572
+  - T1574.006
 telemetry_requirements:
   - process_creation
   - file_event
@@ -82,5 +87,10 @@ rules:
           - b01a8433-8768-4825-8d7e-665e132f17b6   # Shell Profile Modified by a Shell or Scripting Process (sigma)
           - ba4c78ad-7cd1-4fce-b409-57af0f79c814   # Login Hook or Login Item Added from the Command Line (sigma)
           - a360dda4-e2ba-42e1-8fda-4a787afebf2d   # Root Certificate Added to the Trust Store via security (sigma)
+          - ae9f76d9-4f90-4111-ab43-0b11314d4ceb   # Cryptominer Command Line (macOS) (sigma)
+          - aa829539-72ff-4da9-a986-d5ce84293bba   # sudo Password from Stdin or JXA Objective-C Import (sigma)
+          - 0a001338-814e-44d5-aab5-b7bb7290938f   # Cron or At Job Submission (macOS) (sigma)
+          - c35a831e-4046-4e9b-9378-a180d00814f7   # Configuration Profile Installation Attempt (macOS) (sigma)
+          - 52013862-0171-4b0c-a0d0-97bc065109e5   # DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS) (sigma)
         yara:
           - yara-macos-coinminer-strings   # XMRig miner presence in Mach-O binaries (yara)

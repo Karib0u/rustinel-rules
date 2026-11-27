@@ -35,6 +35,11 @@ AUTH_PLUGIN = "Authorization Plugin Written to SecurityAgentPlugins"
 PROFILE = "Shell Profile Modified by a Shell or Scripting Process"
 LOGIN_HOOK = "Login Hook or Login Item Added from the Command Line"
 TRUSTED_CERT = "Root Certificate Added to the Trust Store via security"
+MINER = "Cryptominer Command Line (macOS)"
+STEALER = "sudo Password from Stdin or JXA Objective-C Import"
+SCHEDULED_JOB = "Cron or At Job Submission (macOS)"
+CONFIG_PROFILE = "Configuration Profile Installation Attempt (macOS)"
+DYLD_INSERT = "DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS)"
 
 RULE_FILES = {
     GK_GLOBAL: "proc_creation_macos_gatekeeper_bypass.yml",
@@ -57,10 +62,120 @@ RULE_FILES = {
     PROFILE: "file_event_macos_shell_profile_scripted.yml",
     LOGIN_HOOK: "proc_creation_macos_login_hook_or_item.yml",
     TRUSTED_CERT: "proc_creation_macos_trusted_cert_added.yml",
+    MINER: "proc_creation_macos_cryptominer_cmdline.yml",
+    STEALER: "proc_creation_macos_stealer_execution.yml",
+    SCHEDULED_JOB: "proc_creation_macos_scheduled_job.yml",
+    CONFIG_PROFILE: "proc_creation_macos_configuration_profile_install.yml",
+    DYLD_INSERT: "proc_creation_macos_dyld_insert_libraries.yml",
 }
 
 # (rule, Image, CommandLine, extra fields, alerts)
 PROCESS_CASES = [
+    (MINER, "/usr/bin/true", "true stratum+tcp://pool.invalid:3333", {}, True),
+    (MINER, "/usr/bin/true", "true --url=stratum+ssl://pool.invalid:443", {}, True),
+    (MINER, "/usr/bin/true", "true stratum+tls://pool.invalid:443", {}, True),
+    (MINER, "/usr/bin/true", "true --donate-level 1", {}, True),
+    (MINER, "/usr/bin/true", "true --coin=monero", {}, True),
+    (MINER, "/usr/bin/true", "true --coinbase value", {}, False),
+    (STEALER, "/usr/bin/sudo", "sudo -S --version", {}, True),
+    (STEALER, "/usr/bin/sudo", "sudo -u root -Sk /usr/bin/true", {}, True),
+    (STEALER, "/usr/bin/sudo", "sudo --user=root --stdin /usr/bin/true", {}, True),
+    (STEALER, "/usr/bin/sudo", "sudo --user root -S /usr/bin/true", {}, True),
+    (STEALER, "/usr/bin/sudo", "sudo -s", {}, False),
+    (STEALER, "/usr/bin/sudo", "sudo /usr/bin/ssh -S /tmp/ssh.sock example.test", {}, False),
+    (
+        STEALER,
+        "/usr/bin/osascript",
+        'osascript -l JavaScript -e ObjC.import("Foundation"); 1',
+        {},
+        True,
+    ),
+    (
+        STEALER,
+        "/usr/bin/osascript",
+        'osascript -lJavaScript -e ObjC.import ("Foundation")',
+        {},
+        True,
+    ),
+    (STEALER, "/usr/bin/osascript", "osascript -l JavaScript /tmp/script.js", {}, False),
+    (SCHEDULED_JOB, "/usr/bin/crontab", "crontab -", {}, True),
+    (SCHEDULED_JOB, "/usr/bin/crontab", "crontab -u alice ./backup.cron", {}, True),
+    (
+        SCHEDULED_JOB,
+        "/usr/bin/crontab",
+        "crontab -e",
+        {"ParentImage": "/bin/bash", "ParentCommandLine": "/bin/bash /opt/admin/update.sh"},
+        True,
+    ),
+    (
+        SCHEDULED_JOB,
+        "/usr/bin/crontab",
+        "crontab -e",
+        {"ParentImage": "/bin/zsh", "ParentCommandLine": "-zsh"},
+        False,
+    ),
+    (SCHEDULED_JOB, "/usr/bin/crontab", "crontab -u alice -r", {}, False),
+    (SCHEDULED_JOB, "/usr/bin/at", "at now + 1 hour", {}, True),
+    (SCHEDULED_JOB, "/usr/bin/at", "at -q a -f /tmp/job.txt 17:30", {}, True),
+    (SCHEDULED_JOB, "/usr/bin/at", "at -t 203001011200", {}, True),
+    (SCHEDULED_JOB, "/usr/bin/at", "at -c 172", {}, False),
+    (
+        CONFIG_PROFILE,
+        "/usr/bin/profiles",
+        "profiles install -path /tmp/missing.mobileconfig",
+        {},
+        True,
+    ),
+    (CONFIG_PROFILE, "/usr/bin/profiles", "profiles -I -F /tmp/a.mobileconfig", {}, True),
+    (CONFIG_PROFILE, "/usr/bin/profiles", "profiles -F /tmp/a.mobileconfig", {}, True),
+    (CONFIG_PROFILE, "/usr/bin/profiles", "profiles -R -F /tmp/a.mobileconfig", {}, False),
+    (CONFIG_PROFILE, "/usr/bin/open", "open /tmp/a.mobileconfig", {}, True),
+    (CONFIG_PROFILE, "/usr/bin/open", "open /private/tmp/a.mobileconfig", {}, True),
+    (CONFIG_PROFILE, "/usr/bin/open", "open /Users/Shared/a.mobileconfig", {}, True),
+    (
+        CONFIG_PROFILE,
+        "/usr/bin/open",
+        "open /Users/alice/Downloads/Company VPN.MOBILECONFIG",
+        {},
+        True,
+    ),
+    (CONFIG_PROFILE, "/usr/bin/open", "open /Users/alice/Documents/a.mobileconfig", {}, False),
+    (CONFIG_PROFILE, "/usr/bin/open", "open /tmp/a.mobileconfig.zip", {}, False),
+    (
+        DYLD_INSERT,
+        "/usr/bin/env",
+        "env DYLD_INSERT_LIBRARIES=/private/tmp/missing.dylib",
+        {},
+        True,
+    ),
+    (
+        DYLD_INSERT,
+        "/bin/zsh",
+        "zsh -c 'DYLD_INSERT_LIBRARIES=\"/Users/alice/Build Output/hook.dylib\" /usr/bin/true'",
+        {},
+        True,
+    ),
+    (
+        DYLD_INSERT,
+        "/bin/launchctl",
+        "launchctl setenv DYLD_INSERT_LIBRARIES /usr/lib/first.dylib:/Users/Shared/second.dylib",
+        {},
+        True,
+    ),
+    (
+        DYLD_INSERT,
+        "/bin/launchctl",
+        "launchctl setenv DYLD_INSERT_LIBRARIES /usr/lib/libSystem.B.dylib",
+        {},
+        False,
+    ),
+    (
+        DYLD_INSERT,
+        "/usr/bin/env",
+        "env BACKUP_DYLD_INSERT_LIBRARIES=/tmp/missing.dylib",
+        {},
+        False,
+    ),
     (AUTHONLY, "/usr/bin/dscl", "dscl . -authonly alice hunter2", {}, True),
     (AUTHONLY, "/usr/bin/dscl", "dscl /Local/Default -authonly alice pw", {}, True),
     (AUTHONLY, "/usr/bin/dscl", "dscl . -read /Users/alice", {}, False),

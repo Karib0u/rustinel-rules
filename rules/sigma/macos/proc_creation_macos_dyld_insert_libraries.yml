@@ -1,0 +1,60 @@
+title: DYLD_INSERT_LIBRARIES Set to a User-Writable Path (macOS)
+id: 52013862-0171-4b0c-a0d0-97bc065109e5
+status: experimental
+description: >
+  Detects env, a shell, or launchctl setting DYLD_INSERT_LIBRARIES to a
+  location in a user home, shared, or temporary directory. The dynamic loader
+  may load the specified library into a subsequent process when platform
+  protections and library validation permit it.
+references:
+  - https://github.com/apple-oss-distributions/dyld/blob/main/doc/man/man1/dyld.1
+  - https://attack.mitre.org/techniques/T1574/006/
+author: rustinel-rules
+date: 2026-11-27
+tags:
+  - attack.defense-evasion
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1574.006
+logsource:
+  category: process_creation
+  product: macos
+detection:
+  selection_assignment:
+    Image|endswith:
+      - '/env'
+      - '/sh'
+      - '/bash'
+      - '/zsh'
+      - '/fish'
+      - '/dash'
+      - '/ksh'
+    CommandLine|re: '(?:^|[\s;|&"''(])DYLD_INSERT_LIBRARIES=["'']?(?:[^\s"'':=;|&]+:)*(?:/(?:private/)?(?:var/)?tmp/|/(?:private/)?var/(?:folders|root)/|/Users/)[^\s"'':;|&]'
+  selection_launchctl:
+    Image|endswith: '/launchctl'
+    CommandLine|re: '^\S+\s+setenv\s+DYLD_INSERT_LIBRARIES\s+["'']?(?:[^\s"'':=;|&]+:)*(?:/(?:private/)?(?:var/)?tmp/|/(?:private/)?var/(?:folders|root)/|/Users/)[^\s"'':;|&]'
+  condition: 1 of selection_*
+falsepositives:
+  - Development, profiling, and debugging tools that insert a test library from a local build.
+level: medium
+rustinel:
+  telemetry:
+    - process_creation
+  expected_false_positive_level: medium
+  test_status: atomic
+  tuning:
+    - surface: CommandLine
+      guidance: Filter known development library paths on hosts where their use is expected.
+  negatives:
+    - reason: setting a different DYLD variable
+      fields:
+        Image: /usr/bin/env
+        CommandLine: env DYLD_LIBRARY_PATH=/tmp/debug /usr/bin/true
+    - reason: reading the current launchd variable
+      fields:
+        Image: /bin/launchctl
+        CommandLine: launchctl getenv DYLD_INSERT_LIBRARIES
+    - reason: unrelated temporary argument after a system library assignment
+      fields:
+        Image: /usr/bin/env
+        CommandLine: env DYLD_INSERT_LIBRARIES=/usr/lib/libSystem.B.dylib /usr/bin/true /tmp/input
