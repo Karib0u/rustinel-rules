@@ -122,10 +122,11 @@ in neither place. Essential YARA rules are covered by the near-miss corpus in
 python3 tests/replay/essential_negatives.py --engine /path/to/rustinel
 ```
 
-`tests/replay/advanced_negatives.py` replays the `rustinel.negatives` documented on every Advanced
-Sigma rule (next to its `rustinel.tuning`), each against its own rule, and fails when a benign
-example alerts. `tools/validate.py` fails an Advanced rule that lacks either. It needs the repo's
-Python environment (YAML), so run it with `uv run`:
+`tests/replay/advanced_negatives.py` replays the `rustinel.negatives` documented on Advanced
+Sigma rules ([#44](https://github.com/Karib0u/rustinel-rules/issues/44)) and every production Sigma
+rule marked `test` or `stable` ([lifecycle policy](../../docs/rule-lifecycle.md)). It fails when
+a benign example alerts against its rule. It needs the repo's Python environment (YAML), so
+run it with `uv run`:
 
 ```bash
 uv run python tests/replay/advanced_negatives.py --engine /path/to/rustinel

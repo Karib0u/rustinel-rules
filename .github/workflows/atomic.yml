@@ -183,7 +183,7 @@ jobs:
         run: python3 tests/replay/essential_negatives.py --engine tests/atomic/.engine/rustinel
         shell: bash
 
-      - name: Check Advanced rule negative examples
+      - name: Check Advanced and promoted rule negative examples
         if: matrix.platform == 'linux'
         run: uv run python tests/replay/advanced_negatives.py --engine tests/atomic/.engine/rustinel
         shell: bash

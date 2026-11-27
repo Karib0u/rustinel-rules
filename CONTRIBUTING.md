@@ -53,7 +53,7 @@ uv run python tools/validate.py
 | -------------------- | ----------------------------------------------------------- |
 | `title`              | Short, descriptive                                          |
 | `id`                 | UUID v4, unique across the repo                             |
-| `status`             | `experimental` \| `test` \| `stable`                        |
+| `status`             | `experimental` \| `test` \| `stable` \| `deprecated`. See the [Sigma rule lifecycle](docs/rule-lifecycle.md). |
 | `description`        | What it detects and why                                     |
 | `references`         | Source/CTI links                                            |
 | `author`             | Attribution                                                 |
@@ -135,6 +135,10 @@ each line with its source set id for provenance.
 
 ## Choosing a pack level
 
+New rules enter Advanced or Hunting. Essential requires passing positive and negative evidence
+on the certified engine, observability, and low noise. Review [pack tier and rule maturity](docs/rule-lifecycle.md#pack-tier-and-response)
+as separate decisions.
+
 | Level       | Bar for inclusion                                                            |
 | ----------- | --------------------------------------------------------------------------- |
 | `essential` | High-confidence, low-FP, broadly applicable. Safe to enable by default.     |
@@ -151,7 +155,8 @@ Packs are cumulative: don't re-list a rule in Advanced if it's already in Essent
 ## Testing detections
 
 Rules marked `test_status: atomic` need a manifest entry for each platform whose packs include them.
-Essential rules must declare a test status other than `none`; manual tests also require a `test_reason` explaining the limitation.
+Essential inclusion requires passing positive and negative evidence on the certified engine.
+For Sigma rules tested manually, document the limitation in `test_reason`.
 Run the coverage check before opening a PR:
 
 ```bash
@@ -222,6 +227,7 @@ Use `--baseline none` only for offline checks.
 ## Submitting a PR
 
 Use a conventional title such as `feat(windows): detect suspicious task actions` or `fix(linux): reduce persistence false positives`.
+Include the [evidence record](docs/rule-lifecycle.md#evidence-record-for-pull-requests) for each Sigma status change.
 Add an appropriate label: `detections` (rule content), `enhancement`, `bug`, `testing`, `performance`, `documentation`, `dependencies`, `refactor`, `ci`, or `chore`.
 Use `breaking-change` for incompatible changes and `skip-changelog` for release preparation or changes with no release-note value.
 [Changelog categories](.github/release.yml) use labels, not title prefixes.

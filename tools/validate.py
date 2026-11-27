@@ -14,6 +14,7 @@ Mandatory v1 checks:
   - no production rule selects on a field the engine never populates
   - each pack's requires_rustinel covers what its own content needs
   - preview / test-only content is registered, and no pack references it
+  - promoted Sigma rules have gating atomics, provenance, tuning and benign evidence
   - on a tagged build, the tag agrees with the declared release version
 
 Exit code 0 = all checks pass, 1 = one or more failures.
@@ -28,6 +29,7 @@ import json
 import os
 import re
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 import engine_contract
@@ -119,6 +121,10 @@ REQUIRED_SIGMA_FIELDS = [
 REQUIRED_CORRELATION_FIELDS = [
     f for f in REQUIRED_SIGMA_FIELDS if f not in ("logsource", "detection")
 ] + ["correlation"]
+
+SIGMA_STATUSES = ("experimental", *lib.PROMOTED_SIGMA_STATUSES, "deprecated")
+ATOMIC_DIR = lib.REPO_ROOT / "tests" / "atomic"
+_REFERENCE_URL_RE = re.compile(r"https?://[^/?#\s]+(?:[/?#]\S*)?")
 
 # What rsigma-parser 0.21 (the engine's Sigma parser) accepts.
 CORRELATION_TYPES = {
@@ -223,6 +229,12 @@ def check_sigma_rule(art, rep: Report):
     for field in required:
         if field not in doc or doc[field] in (None, "", [], {}):
             rep.error(art.rel_path, f"missing required field '{field}'")
+
+    status = doc.get("status")
+    if status not in (None, "", [], {}) and status not in SIGMA_STATUSES:
+        rep.error(
+            art.rel_path, f"unsupported Sigma status {status!r}; use {', '.join(SIGMA_STATUSES)}"
+        )
 
     tags = doc.get("tags") or []
     if not any(str(t).startswith(ATTACK_TAG_PREFIX) for t in tags):
@@ -454,38 +466,128 @@ REQUIRED_PACK_FIELDS = [
 ]
 
 
+def _has_text(value) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def check_tuning_and_negatives(art: lib.Artifact, rep: Report, *, min_negatives: int = 1):
+    rustinel = art.meta.get("rustinel") or {}
+    where = art.rel_path
+    tuning = rustinel.get("tuning")
+    if not isinstance(tuning, list) or not tuning:
+        rep.error(where, "rule needs rustinel.tuning (the surfaces an operator filters)")
+    else:
+        for item in tuning:
+            if not (
+                isinstance(item, dict)
+                and _has_text(item.get("surface"))
+                and _has_text(item.get("guidance"))
+            ):
+                rep.error(where, "each rustinel.tuning entry needs 'surface' and 'guidance'")
+
+    negatives = rustinel.get("negatives")
+    if not isinstance(negatives, list) or not negatives:
+        rep.error(where, "rule needs rustinel.negatives (benign events it must ignore)")
+        return
+    distinct = []
+    for item in negatives:
+        if not (
+            isinstance(item, dict)
+            and _has_text(item.get("reason"))
+            and isinstance(item.get("fields"), dict)
+            and item["fields"]
+        ):
+            rep.error(where, "each rustinel.negatives entry needs 'reason' and 'fields'")
+        elif item["fields"] not in distinct:
+            distinct.append(item["fields"])
+    if min_negatives > 1 and len(distinct) < min_negatives:
+        rep.error(where, f"stable rule needs at least {min_negatives} distinct rustinel.negatives")
+
+
 def check_advanced_documentation(packs, artifacts, rep: Report):
-    """Advanced rules must document how to tune them and what they must not match."""
+    """Apply the pack evidence requirements to rules outside the promotion checks."""
     for art in lib.advanced_sigma_rules(packs, artifacts):
-        rustinel = art.meta.get("rustinel") or {}
-        where = art.rel_path
-        tuning = rustinel.get("tuning")
-        if not isinstance(tuning, list) or not tuning:
-            rep.error(
-                where, "Advanced rule needs rustinel.tuning (the surfaces an operator filters)"
-            )
-        else:
-            for item in tuning:
-                if not (
-                    isinstance(item, dict)
-                    and str(item.get("surface") or "").strip()
-                    and str(item.get("guidance") or "").strip()
-                ):
-                    rep.error(where, "each rustinel.tuning entry needs 'surface' and 'guidance'")
-        negatives = rustinel.get("negatives")
-        if not isinstance(negatives, list) or not negatives:
-            rep.error(
-                where, "Advanced rule needs rustinel.negatives (benign events it must ignore)"
-            )
-        else:
-            for item in negatives:
-                if not (
-                    isinstance(item, dict)
-                    and str(item.get("reason") or "").strip()
-                    and isinstance(item.get("fields"), dict)
-                    and item["fields"]
-                ):
-                    rep.error(where, "each rustinel.negatives entry needs 'reason' and 'fields'")
+        if art.meta.get("status") not in lib.PROMOTED_SIGMA_STATUSES:
+            check_tuning_and_negatives(art, rep)
+
+
+def load_gating_sigma_atomics(
+    atomic_dir: Path, titles: Mapping[str, str | None]
+) -> set[tuple[str, str]]:
+    """Positive manifest entries that run in CI and have a script in the harness."""
+    tests = json.loads((atomic_dir / "manifest.json").read_text(encoding="utf-8"))["tests"]
+    atomics = (atomic_dir / "atomics").resolve()
+    pairs = set()
+    for test in tests:
+        if test.get("engine") != "sigma" or test.get("allow_failure") or "skip" in test:
+            continue
+        title = titles.get(test["id"])
+        if not title:
+            continue
+        # The harness defaults to the rule's title. A custom predicate must
+        # preserve the title check so an unrelated alert cannot pass the test.
+        expect = test.get("expect")
+        if expect and not any(
+            isinstance(item, dict)
+            and item.get("field") == "rule.name"
+            and item.get("equals") == title
+            for item in (expect if isinstance(expect, list) else [expect])
+        ):
+            continue
+        script_name = test.get("script")
+        if not isinstance(script_name, str) or not script_name.strip():
+            continue
+        script = (atomics / script_name).resolve()
+        if script.is_relative_to(atomics) and script.is_file():
+            pairs.add((test["platform"], test["id"]))
+    return pairs
+
+
+def check_sigma_lifecycle(
+    art: lib.Artifact, pack_platforms: set[str], atomics: set[tuple[str, str]], rep: Report
+):
+    status = art.meta.get("status")
+    rustinel = art.meta.get("rustinel") or {}
+    where = art.rel_path
+    if status == "deprecated":
+        if not _has_text(rustinel.get("deprecation_reason")):
+            rep.error(where, "deprecated rule needs rustinel.deprecation_reason")
+        if pack_platforms:
+            rep.error(where, "deprecated rule must be removed from all production packs")
+        return
+    if status not in lib.PROMOTED_SIGMA_STATUSES:
+        if rustinel.get("test_status") == "manual" and not _has_text(rustinel.get("test_reason")):
+            rep.error(where, "manual rule needs rustinel.test_reason")
+        return
+
+    if rustinel.get("test_status") != "atomic":
+        rep.error(where, f"{status} rule needs rustinel.test_status: atomic")
+    platforms = pack_platforms or {art.path.relative_to(lib.RULES_DIR / "sigma").parts[0]}
+    for platform in sorted(platforms):
+        if (platform, art.id) not in atomics:
+            rep.error(where, f"{status} rule needs a gating positive Sigma atomic on {platform}")
+
+    references = art.meta.get("references")
+    if (
+        not isinstance(references, list)
+        or not references
+        or not all(isinstance(ref, str) and _REFERENCE_URL_RE.fullmatch(ref) for ref in references)
+    ):
+        rep.error(where, f"{status} rule needs references with HTTP(S) source URLs")
+    if not _has_text(art.meta.get("author")):
+        rep.error(where, f"{status} rule needs author attribution")
+    if rustinel.get("expected_false_positive_level") not in ("low", "medium", "high"):
+        rep.error(where, f"{status} rule needs rustinel.expected_false_positive_level")
+
+    check_tuning_and_negatives(art, rep, min_negatives=2 if status == "stable" else 1)
+    if status == "stable":
+        falsepositives = art.meta.get("falsepositives")
+        if (
+            not isinstance(falsepositives, list)
+            or not falsepositives
+            or not all(_has_text(item) for item in falsepositives)
+        ):
+            rep.error(where, "stable rule needs falsepositives documenting known benign matches")
 
 
 def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
@@ -496,6 +598,7 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
     by_id = {p["id"]: p for p in packs if "id" in p}
     artifact_index = {a.id: a for a in artifacts if a.id}
     preview_by_id = preview_by_id or {}
+    sigma_platforms: dict[str, set[str]] = {}
 
     for pack in packs:
         where = str(Path(pack["__path__"]).relative_to(lib.REPO_ROOT))
@@ -587,7 +690,11 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
         members = set(resolved)
         for rule_id in resolved:
             artifact = artifact_index.get(rule_id)
-            if artifact is None or not lib.is_correlation(artifact.meta):
+            if artifact is None or artifact.kind != "sigma":
+                continue
+            if pack.get("os") in ("linux", "macos", "windows"):
+                sigma_platforms.setdefault(rule_id, set()).add(pack["os"])
+            if not lib.is_correlation(artifact.meta):
                 continue
             for ref in lib.correlation_rule_ids(artifact.meta):
                 if ref not in members:
@@ -611,14 +718,14 @@ def check_packs(packs, artifacts, rep: Report, preview_by_id=None):
                 f"test_status is {pack.get('test_status')!r} but member rules roll up to "
                 f"{summary['test_status']!r}",
             )
+    return sigma_platforms
 
 
 def check_preview(preview_artifacts, rep: Report, ioc_schema_validate, compile_yara):
     """The preview tree is validated like production content, plus its register.
 
-    Preview rules must still parse and carry full metadata so promotion is a move
-    rather than a rewrite; they are exempt only from the never-populated-field
-    check, which is the very reason most of them are here.
+    Preview rules still need core metadata for parsing and staging. Production
+    lifecycle evidence and field availability are checked when they ship.
     """
     register = lib.load_preview_register()
     schema_validate = load_schema_validator(lib.PREVIEW_SCHEMA_PATH)
@@ -702,6 +809,13 @@ def main() -> int:
 
     check_unique_ids(artifacts + preview_artifacts, rep)
     sigma_by_id = {a.id: a for a in artifacts if a.kind == "sigma" and a.id}
+    try:
+        gating_atomics = load_gating_sigma_atomics(
+            ATOMIC_DIR, {rule_id: art.meta.get("title") for rule_id, art in sigma_by_id.items()}
+        )
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"[ERROR] atomic manifest: {exc}")
+        return 1
     for art in artifacts:
         if art.kind == "sigma":
             check_sigma_rule(art, rep)
@@ -717,7 +831,9 @@ def main() -> int:
     check_release_version(rep)
 
     packs = lib.load_packs()
-    check_packs(packs, artifacts, rep, preview_by_id)
+    sigma_platforms = check_packs(packs, artifacts, rep, preview_by_id)
+    for rule_id, art in sigma_by_id.items():
+        check_sigma_lifecycle(art, sigma_platforms.get(rule_id, set()), gating_atomics, rep)
     check_advanced_documentation(packs, artifacts, rep)
 
     counts = {k: sum(1 for a in artifacts if a.kind == k) for k in ("sigma", "yara", "ioc")}

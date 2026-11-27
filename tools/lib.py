@@ -69,6 +69,8 @@ def release_version() -> str:
     return version
 
 
+PROMOTED_SIGMA_STATUSES = ("test", "stable")
+
 # Canonical source globs, one per artifact kind.
 SIGMA_GLOB = "sigma/**/*.yml"
 YARA_GLOB = "yara/**/*.yar"

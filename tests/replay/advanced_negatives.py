@@ -1,7 +1,7 @@
-"""Replay the documented negative examples of every Advanced Sigma rule (#44).
+"""Replay documented negative examples for Advanced and promoted Sigma rules.
 
-Each Advanced rule lists `rustinel.negatives`: benign events (an installer, a
-package manager, an administrator's read-only command) that must stay silent.
+Each rule lists `rustinel.negatives`: benign events (an installer, a package
+manager, an administrator's read-only command) that must stay silent.
 They sit next to `rustinel.tuning`, which names the fields an operator filters
 on. This replays every negative against its own rule with the real engine, so a
 loosened pattern fails here instead of in a customer's alert queue.
@@ -52,8 +52,15 @@ OPCODE = {"Registry": 39}
 DELETE_OPCODE = 38
 
 
-def advanced_sigma_rules():
-    return lib.advanced_sigma_rules(lib.load_packs(), lib.load_all_artifacts())
+def sigma_rules_with_required_negatives():
+    artifacts = lib.load_all_artifacts()
+    rules = {art.id: art for art in lib.advanced_sigma_rules(lib.load_packs(), artifacts)}
+    rules.update(
+        (art.id, art)
+        for art in artifacts
+        if art.kind == "sigma" and art.meta.get("status") in lib.PROMOTED_SIGMA_STATUSES
+    )
+    return sorted(rules.values(), key=lambda art: art.rel_path)
 
 
 def logsource(artifact):
@@ -171,7 +178,7 @@ def main():
     engine = args.engine.resolve()
     failures = []
     rules = cases = 0
-    for artifact in advanced_sigma_rules():
+    for artifact in sigma_rules_with_required_negatives():
         platform = logsource(artifact)["product"]
         if args.platform and platform != args.platform:
             continue
@@ -190,7 +197,7 @@ def main():
         cases += len(negatives)
     if failures:
         raise RuntimeError("\n".join(failures))
-    print(f"Passed {cases} negative examples across {rules} Advanced rules.")
+    print(f"Passed {cases} negative examples across {rules} Sigma rules.")
 
 
 if __name__ == "__main__":
